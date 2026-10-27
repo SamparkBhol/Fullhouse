@@ -1,0 +1,56 @@
+{
+  "success": true,
+  "results": {
+    "entities": [
+      {
+        "entity_id": "A2DEF825-7285-40C8-A39F-1E9BC86E6F6E",
+        "type": "urn:entity",
+        "subtype": "urn:entity:book",
+        "name": "The Catcher in the Rye",
+        "disambiguation": "1951, J.D. Salinger",
+        "popularity": 0.9997517986100722,
+        "properties": {
+          "title": "The Catcher in the Rye",
+          "description": "It's Christmas time and Holden Caulfield has just been expelled from yet another school...",
+          "short_description": "Holden Caulfield, expelled from school, wanders New York City, grappling with alienation and a desire to protect innocence.",
+          "format": "Paperback",
+          "isbn13": "9780316769174",
+          "language": "English",
+          "page_count": 234,
+          "publication_date": "1951-07-16",
+          "publication_year": 1951,
+          "publisher": "Back Bay Books",
+          "image": {
+            "url": "https://images.qloo.com/i/A2DEF825-7285-40C8-A39F-1E9BC86E6F6E-420x-auto.jpg"
+          }
+        },
+        "tags": [
+          {
+            "id": "urn:tag:genre:media:classics",
+            "name": "Classics",
+            "type": "urn:tag:genre:media"
+          },
+          {
+            "id": "urn:tag:genre:media:young_adult",
+            "name": "Young Adult",
+            "type": "urn:tag:genre:media"
+          },
+          {
+            "id": "urn:tag:genre:media:banned_books",
+            "name": "Banned Books",
+            "type": "urn:tag:genre:media"
+          },
+          {
+            "id": "urn:tag:genre:media:high_school",
+            "name": "High School",
+            "type": "urn:tag:genre:media"
+          }
+        ],
+        "query": {
+          "affinity": 0.9631669272078096
+        }
+      }
+    ]
+  },
+  "duration": 29
+}

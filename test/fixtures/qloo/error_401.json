@@ -1,0 +1,7 @@
+{
+  "error": {
+    "reason": "API keys mismatch",
+    "message": "Unauthorized",
+    "code": 401
+  }
+}

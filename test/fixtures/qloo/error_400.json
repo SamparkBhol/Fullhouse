@@ -1,0 +1,5 @@
+{
+  "code": 400,
+  "reason": "Bad Request",
+  "message": "entity_ids must be specified."
+}

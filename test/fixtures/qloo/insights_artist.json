@@ -1,0 +1,64 @@
+{
+  "success": true,
+  "results": {
+    "entities": [
+      {
+        "entity_id": "BC212422-0726-4219-9B65-BC7535C596E1",
+        "type": "urn:entity",
+        "subtype": "urn:entity:artist",
+        "name": "Neil Young",
+        "popularity": 0.9993218875142961,
+        "disambiguation": "Neil Young",
+        "properties": {
+          "short_description": "Canadian-American singer-songwriter known for his distinctive guitar work and deeply personal lyrics.",
+          "date_of_birth": "1945-11-12",
+          "place_of_birth": "Toronto, Ontario, Canada",
+          "image": {
+            "url": "https://images.qloo.com/i/BC212422-0726-4219-9B65-BC7535C596E1-420x-auto.jpg"
+          }
+        },
+        "tags": [
+          {
+            "id": "urn:tag:genre:music:rock",
+            "name": "Rock",
+            "type": "urn:tag:genre:music"
+          },
+          {
+            "id": "urn:tag:genre:music:folk_rock",
+            "name": "Folk Rock",
+            "type": "urn:tag:genre:music"
+          }
+        ],
+        "external": {
+          "spotify": [
+            {
+              "id": "6v8FB84lnmJs434UJf2Mrm"
+            }
+          ]
+        },
+        "query": {
+          "affinity": 0.88,
+          "explainability": {
+            "signal.interests.entities": {
+              "18B098FD-3D84-4609-BFF3-ADF9A0B00E40": 0.72,
+              "FCE8B172-4795-43E4-B222-3B550DC05FD9": 0.28
+            }
+          }
+        }
+      }
+    ]
+  },
+  "query": {
+    "explainability": {
+      "top_3": {
+        "18B098FD-3D84-4609-BFF3-ADF9A0B00E40": 0.66,
+        "FCE8B172-4795-43E4-B222-3B550DC05FD9": 0.34
+      },
+      "all": {
+        "18B098FD-3D84-4609-BFF3-ADF9A0B00E40": 0.61,
+        "FCE8B172-4795-43E4-B222-3B550DC05FD9": 0.39
+      }
+    }
+  },
+  "duration": 102
+}

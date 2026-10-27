@@ -1,0 +1,37 @@
+{
+  "duration": 0.42,
+  "results": {
+    "tags": [
+      {
+        "tag_id": "urn:tag:style:qloo:athletic",
+        "name": "Athletic",
+        "type": "urn:tag",
+        "subtype": "urn:tag:style:qloo",
+        "popularity": 0.91,
+        "query": {
+          "score": 0.729
+        }
+      },
+      {
+        "tag_id": "urn:tag:genre:brand:fashion:activewear",
+        "name": "Activewear",
+        "type": "urn:tag",
+        "subtype": "urn:tag:genre:brand",
+        "popularity": 0.88,
+        "query": {
+          "score": 0.654
+        }
+      },
+      {
+        "tag_id": "urn:tag:adjective:qloo:sustainable",
+        "name": "Sustainable",
+        "type": "urn:tag",
+        "subtype": "urn:tag:adjective:qloo",
+        "popularity": 0.76,
+        "query": {
+          "score": 0.512
+        }
+      }
+    ]
+  }
+}

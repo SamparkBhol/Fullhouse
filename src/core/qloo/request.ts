@@ -94,7 +94,7 @@ export function locationSignal(lat: number, lng: number, radiusM?: number): Para
   return out;
 }
 
-export function searchNear(lat: number, lng: number, miles: number): Params {
+export function searchNear(lat: number, lng: number, miles: number): Record<string, string> {
   checkLatLng(lat, lng);
   const r = Math.min(100, Math.max(0, miles));
   return { "filter.location": `${fmtCoord(lat)},${fmtCoord(lng)}`, "filter.radius": String(r) };

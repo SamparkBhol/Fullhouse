@@ -1,0 +1,199 @@
+{
+  "success": true,
+  "results": {
+    "entities": [
+      {
+        "name": "Catch NYC",
+        "entity_id": "8119141A-D38C-428E-819D-CAA5027120C2",
+        "type": "urn:entity",
+        "subtype": "urn:entity:place",
+        "popularity": 0.9971,
+        "disambiguation": "21 9th Ave, New York, NY 10014",
+        "properties": {
+          "address": "21 9th Ave, New York, NY 10014",
+          "geocode": {
+            "name": "New York",
+            "admin1_region": "New York",
+            "admin2_region": "New York County",
+            "country_code": "US",
+            "metro": "New York City",
+            "neighborhood": "Meatpacking District"
+          },
+          "lat": 40.7404,
+          "lon": -74.0059,
+          "phone": "+1 212 392 5978",
+          "website": "https://catchrestaurants.com/catchnyc/",
+          "menu_url": "https://catchrestaurants.com/catchnyc/menu",
+          "business_rating": 4.4,
+          "price_level": 3,
+          "currency": "usd",
+          "is_closed": false,
+          "description": "Seafood centred rooftop restaurant with a sceney crowd.",
+          "image": {
+            "url": "https://images.qloo.com/i/8119141A-D38C-428E-819D-CAA5027120C2-420x-auto.jpg"
+          },
+          "hours": {
+            "monday": "17:00-00:00",
+            "sunday": "11:00-00:00"
+          }
+        },
+        "external": {
+          "resy": [
+            {
+              "id": "catch-nyc",
+              "rating": 4.6,
+              "rating_count": 1830,
+              "party_size_min": 1,
+              "party_size_max": 8
+            }
+          ],
+          "tripadvisor": [
+            {
+              "id": "d1234567",
+              "rating": 4.0,
+              "rating_count": 2210
+            }
+          ]
+        },
+        "tags": [
+          {
+            "id": "urn:tag:genre:place:restaurant:seafood",
+            "name": "Seafood",
+            "type": "urn:tag:genre:place"
+          },
+          {
+            "id": "urn:tag:amenity:place:rooftop_bar",
+            "name": "Rooftop Bar",
+            "type": "urn:tag:amenity:place"
+          },
+          {
+            "id": "urn:tag:ambience:qloo:lively",
+            "name": "Lively",
+            "type": "urn:tag:ambience:qloo"
+          },
+          {
+            "id": "urn:tag:good_for:qloo:special_occasions",
+            "name": "Special Occasions",
+            "type": "urn:tag:good_for:qloo"
+          }
+        ],
+        "query": {
+          "affinity": 0.97,
+          "distance": 1240.5,
+          "measurements": {
+            "audience_growth": 0.012
+          },
+          "explainability": {
+            "signal.interests.entities": {
+              "FCE8B172-4795-43E4-B222-3B550DC05FD9": 1.0
+            }
+          }
+        }
+      },
+      {
+        "name": "L'Artusi",
+        "entity_id": "SYNTHETIC-0000-0000-0000-000000000002",
+        "type": "urn:entity",
+        "subtype": "urn:entity:place",
+        "popularity": 0.994,
+        "properties": {
+          "address": "228 W 10th St, New York, NY 10014",
+          "geocode": {
+            "name": "New York",
+            "admin1_region": "New York",
+            "country_code": "US",
+            "metro": "New York City",
+            "neighborhood": "West Village"
+          },
+          "business_rating": 4.6,
+          "price_level": 3
+        },
+        "external": {
+          "michelin": [
+            {
+              "id": "l-artusi",
+              "award": "Bib Gourmand"
+            }
+          ]
+        },
+        "tags": [
+          {
+            "id": "urn:tag:genre:place:restaurant:italian",
+            "name": "Italian",
+            "type": "urn:tag:genre:place"
+          },
+          {
+            "id": "urn:tag:ambience:qloo:intimate",
+            "name": "Intimate",
+            "type": "urn:tag:ambience:qloo"
+          }
+        ],
+        "query": {
+          "affinity": 0.95,
+          "distance": 1817.0
+        }
+      },
+      {
+        "name": "Roberta's",
+        "entity_id": "SYNTHETIC-0000-0000-0000-000000000003",
+        "type": "urn:entity",
+        "subtype": "urn:entity:place",
+        "popularity": 0.991,
+        "properties": {
+          "address": "261 Moore St, Brooklyn, NY 11206",
+          "geocode": {
+            "name": "New York",
+            "admin1_region": "New York",
+            "admin2_region": "Kings County",
+            "country_code": "US",
+            "metro": "New York City",
+            "neighborhood": "Bushwick"
+          },
+          "business_rating": 4.5,
+          "price_level": 2
+        },
+        "tags": [
+          {
+            "id": "urn:tag:genre:place:restaurant:pizza",
+            "name": "Pizza",
+            "type": "urn:tag:genre:place"
+          }
+        ],
+        "query": {
+          "affinity": 0.93,
+          "distance": 6150.2
+        }
+      }
+    ]
+  },
+  "query": {
+    "locality": {
+      "signal": {
+        "entity_id": "81E61924-6CEE-4AB4-93D3-282A5C784AB8",
+        "name": "New York",
+        "subtype": "urn:entity:locality",
+        "location": {
+          "lat": 40.66320611815103,
+          "lng": -73.93889084762313
+        },
+        "popularity": 1,
+        "disambiguation": "New York, New York, United States of America"
+      }
+    },
+    "explainability": {
+      "top_3": {
+        "FCE8B172-4795-43E4-B222-3B550DC05FD9": 1.0
+      },
+      "top_5": {
+        "FCE8B172-4795-43E4-B222-3B550DC05FD9": 1.0
+      },
+      "top_10": {
+        "FCE8B172-4795-43E4-B222-3B550DC05FD9": 1.0
+      },
+      "all": {
+        "FCE8B172-4795-43E4-B222-3B550DC05FD9": 1.0
+      }
+    }
+  },
+  "duration": 88
+}

@@ -1,0 +1,15 @@
+{
+  "success": true,
+  "results": {
+    "entities": [
+      {
+        "name": "Sabrina Carpenter",
+        "entity_id": "F5453A45-593C-41EC-BD5A-453D1AEC565C",
+        "type": "urn:entity:artist",
+        "properties": {
+          "trend_rank": 1
+        }
+      }
+    ]
+  }
+}
