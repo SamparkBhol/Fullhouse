@@ -397,7 +397,7 @@ export async function readStreet(
     ...CROSS_TYPES.map((t) => typeCall(t)),
   ]);
 
-  let streetRes = streetRes0;
+  const streetRes = streetRes0;
   let streetQTags = streetRes ? parseTags(streetRes.body) : [];
   let streetRetry: QlooResult | null = null;
   if (streetRes && !streetQTags.length) {
@@ -563,7 +563,7 @@ export async function readStreet(
     if (cells.length) heat.push({ label: `Where ${name}'s audience over indexes`, cells, provenance: iHeatVenue });
     else limits.push(`The heatmap for ${name}'s audience came back with no cells around the venue.`);
   }
-  if (noRead) limits.push(`${noRead} heatmap cells came back with no read and are not drawn.`);
+  if (noRead) limits.push(noRead === 1 ? "1 heatmap cell came back with no read and is not drawn." : `${noRead} heatmap cells came back with no read and are not drawn.`);
 
   let shared: StreetTag[] = [];
   if (compareRes) {
@@ -600,23 +600,24 @@ export async function readStreet(
     limits.push(`Gaps from the street's taste tags are missing because the read of ${name}'s audience did not come back.`);
   }
   if (top3.length && iLoved >= 0) {
-    const counts = new Map<string, { tag: QTag; places: string[] }>();
-    for (const e of top3) {
+    const venueAudience = new Set(venueTagsRanked.map((t) => t.id));
+    const counts = new Map<string, { tag: QTag; places: string[]; best: number }>();
+    top3.forEach((e, rank) => {
       for (const t of e.tags) {
-        if (venueOwn.has(t.id)) continue;
-        const c = counts.get(t.id) ?? { tag: t, places: [] };
+        if (venueOwn.has(t.id) || venueAudience.has(t.id)) continue;
+        const c = counts.get(t.id) ?? { tag: t, places: [], best: rank };
         c.places.push(e.name);
         counts.set(t.id, c);
       }
-    }
+    });
     const placeGaps = [...counts.values()]
       .filter((c) => !gaps.some((g) => g.tag.id === c.tag.id))
-      .sort((a, b) => b.places.length - a.places.length || a.tag.id.localeCompare(b.tag.id))
+      .sort((a, b) => b.places.length - a.places.length || a.best - b.best || a.tag.id.localeCompare(b.tag.id))
       .slice(0, 8 - gaps.length);
     placeGaps.forEach((c, i) => {
       gaps.push({
         tag: { id: c.tag.id, name: c.tag.name, namespace: c.tag.namespace, rank: i + 1 },
-        note: `${c.places.length} of the ${top3.length} places the street loves most are tagged ${c.tag.name}; ${name} is not`,
+        note: `${c.places.length} of the ${top3.length} places the street loves most ${c.places.length === 1 ? "is" : "are"} tagged ${c.tag.name}; ${name} is not`,
         because: [
           { kind: "tag", text: `Tagged ${c.tag.name}: ${listWords(c.places)}`, provenance: iLoved },
           { kind: "tag", text: `${name}'s own Qloo tags do not include ${c.tag.name}`, provenance: iVenue },
@@ -638,8 +639,8 @@ export async function readStreet(
     else if (nearby.length < 3) limits.push(`Only ${nearby.length} places within 1.2 km came back from Qloo, so this read is thin.`);
     if (allNullAffinity) limits.push("Qloo ordered the nearby places by popularity because no taste signal applied to them.");
   }
-  if (noCoords) limits.push(`${noCoords} places came back without coordinates and are not on the map.`);
-  if (tooFar) limits.push(`${tooFar} places further than 1.2 km were left out.`);
+  if (noCoords) limits.push(noCoords === 1 ? "1 place came back without coordinates and is not on the map." : `${noCoords} places came back without coordinates and are not on the map.`);
+  if (tooFar) limits.push(tooFar === 1 ? "1 place further than 1.2 km was left out." : `${tooFar} places further than 1.2 km were left out.`);
   const emptyTypes = typeGroups.filter((g) => g.res && !g.entities.length).map((g) => TYPE_PLURAL[g.type]);
   if (emptyTypes.length) limits.push(`Qloo returned no ${listWords(emptyTypes)} for this location.`);
   if (!targets.length) limits.push("Momentum was not checked because no cross domain picks came back.");
@@ -716,7 +717,7 @@ async function refreshMomentum(q: Qloo, venue: Venue, prev: StreetRead, now: Dat
   const limits = prev.limits.filter((l) => !l.startsWith("Momentum") && !/came from the cache/.test(l));
   const cache = cacheLine(kept, "");
   if (cache) limits.push(cache);
-  limits.push(...runner.limits());
+  limits.push(...runner.limits().map((l) => (l.startsWith("Momentum") ? l : `Momentum: ${l}`)));
   const freshCache = cacheLine(fresh, "Momentum: ");
   if (freshCache) limits.push(freshCache);
   limits.push(`Momentum refreshed ${fmtTime(now.toISOString())}; the rest of this read dates from ${fmtTime(prev.at)}.`);
