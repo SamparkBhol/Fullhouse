@@ -1,0 +1,186 @@
+import type { ActionKind, ApproveInput, NightPlan, Venue } from "../../../src/shared/contract.ts";
+import { api } from "../api.ts";
+import { h, replace, uid } from "../dom.ts";
+import { formatName, longDate } from "../format.ts";
+import { navigate } from "../router.ts";
+import { sessionSet } from "../store.ts";
+import { focusHeading, title } from "../ui/shell.ts";
+import { failure, loading } from "../ui/states.ts";
+import { planGroup, refreshState, withVenue, type VenueCtx } from "../venue-context.ts";
+
+interface ActionInfo {
+  kind: ActionKind;
+  title: string;
+  does: (venue: Venue, plan: NightPlan) => string;
+  available: (venue: Venue) => string | null;
+  checked: (venue: Venue) => boolean;
+}
+
+const ACTIONS: ActionInfo[] = [
+  {
+    kind: "event_page",
+    title: "Publish the event page",
+    does: (v) =>
+      `Puts a public page for this night online with the date, time, ${v.entity.name}, its address and an RSVP button that only counts. Search engines are asked not to list it.`,
+    available: () => null,
+    checked: () => true,
+  },
+  {
+    kind: "poster",
+    title: "Make the poster",
+    does: () => "Makes a printable A4 poster of this flyer for your window.",
+    available: () => null,
+    checked: () => true,
+  },
+  {
+    kind: "ics",
+    title: "Make a calendar file",
+    does: () => "Makes a calendar file that anyone can add to their phone from the event page.",
+    available: () => null,
+    checked: () => true,
+  },
+  {
+    kind: "gcal",
+    title: "Make a Google Calendar link",
+    does: () => "Makes a link that adds the night to a Google Calendar.",
+    available: () => null,
+    checked: () => true,
+  },
+  {
+    kind: "outreach",
+    title: "Draft notes to the partners",
+    does: (_v, p) =>
+      p.partners.length
+        ? `Opens a ready written note to ${p.partners.length === 1 ? "the partner" : `each of the ${p.partners.length} partners`} in your own mail app. Nothing is sent until you press send there.`
+        : "This plan has no partners, so there is nothing to draft.",
+    available: () => null,
+    checked: () => true,
+  },
+  {
+    kind: "eventbrite",
+    title: "Create the Eventbrite event",
+    does: (v) => (v.eventbrite ? `Creates and publishes the event on your Eventbrite account, ${v.eventbrite.organization}.` : "Creates the event on your Eventbrite account."),
+    available: (v) => (v.eventbrite ? null : "Not connected yet."),
+    checked: (v) => !!v.eventbrite,
+  },
+  {
+    kind: "owner_email",
+    title: "Email me the links",
+    does: (v) => (v.ownerEmail ? `Sends the links to ${v.ownerEmail}, if this server has email turned on. Only you get it.` : "Sends the links to your email."),
+    available: (v) => (v.ownerEmail ? null : "You did not give an email address when you created the venue."),
+    checked: (v) => !!v.ownerEmail,
+  },
+];
+
+export function approvePage(id: string, planId: string): Promise<void> {
+  return withVenue(id, "nights", (ctx, main) => {
+    const { plan } = planGroup(ctx.state, planId);
+    if (!plan) {
+      navigate(`/v/${encodeURIComponent(id)}/night/${encodeURIComponent(planId)}`, { replace: true });
+      return;
+    }
+    renderApprove(ctx, main, plan);
+  });
+}
+
+function renderApprove(ctx: VenueCtx, main: HTMLElement, plan: NightPlan): void {
+  const venue = ctx.state.venue;
+  title("Publish this night");
+  const boxes = new Map<ActionKind, HTMLInputElement>();
+  const emailInputs = new Map<string, HTMLInputElement>();
+
+  const rows = ACTIONS.map((a) => {
+    const id = uid("act");
+    const blocked = a.available(venue) ?? (a.kind === "outreach" && !plan.partners.length ? "No partners in this plan." : null);
+    const box = h("input", { type: "checkbox", id, checked: !blocked && a.checked(venue), disabled: !!blocked });
+    boxes.set(a.kind, box);
+    const extra: HTMLElement[] = [];
+    if (blocked) extra.push(h("p", { class: "hint action-hint" }, blocked));
+    if (a.kind === "eventbrite" && !venue.eventbrite) {
+      extra.push(h("p", { class: "action-link" }, h("a", { href: `/v/${encodeURIComponent(ctx.id)}/eventbrite` }, "Connect Eventbrite")));
+    }
+    if (a.kind === "outreach" && plan.partners.length) {
+      const fields = plan.partners.map((p) => {
+        const input = h("input", { type: "email", id: uid("pe"), autocomplete: "off", inputmode: "email" });
+        emailInputs.set(p.id, input);
+        return h("div", { class: "field" }, h("label", { for: input.id }, `Email for ${p.name}`), input);
+      });
+      extra.push(
+        h(
+          "div",
+          { class: "partner-emails" },
+          h("p", { class: "hint" }, "Optional. If you know their address, add it and the draft is addressed for you. Leave it blank to fill it in your mail app."),
+          fields,
+        ),
+      );
+    }
+    return h(
+      "li",
+      { class: "action" },
+      h("div", { class: "check" }, box, h("label", { for: id }, h("strong", null, a.title), h("span", null, a.does(venue, plan)))),
+      extra,
+    );
+  });
+
+  const message = h("div", { "aria-live": "polite" });
+  const form = h(
+    "form",
+    { class: "form", novalidate: true },
+    h("fieldset", { class: "actions-list" }, h("legend", null, "What Full House will do"), h("ul", null, rows)),
+    h(
+      "p",
+      { class: "actions" },
+      h("button", { class: "button button-big", type: "submit" }, "Publish the night"),
+      h("a", { class: "button button-quiet", href: `/v/${encodeURIComponent(ctx.id)}/night/${encodeURIComponent(plan.id)}` }, "Back to the plan"),
+    ),
+    message,
+  );
+
+  replace(
+    main,
+    h(
+      "div",
+      { class: "wrap" },
+      h("h1", null, "Publish this night"),
+      h("p", { class: "lede" }, `${formatName(plan.format)}, ${longDate(plan.date)}, ${plan.start} to ${plan.end}.`),
+      h("p", null, "Nothing leaves Full House until you press Publish the night. This is everything it will do. Untick anything you do not want."),
+      form,
+    ),
+  );
+  focusHeading();
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const actions = ACTIONS.filter((a) => boxes.get(a.kind)?.checked && !boxes.get(a.kind)?.disabled).map((a) => a.kind);
+    if (!actions.length) {
+      replace(message, h("p", { class: "form-error", role: "alert" }, "Tick at least one thing to do, or go back to the plan."));
+      return;
+    }
+    const partnerEmails: Record<string, string> = {};
+    const bad: string[] = [];
+    for (const [pid, input] of emailInputs) {
+      const v = input.value.trim();
+      if (!v) continue;
+      if (!input.checkValidity()) bad.push(plan.partners.find((p) => p.id === pid)?.name ?? "a partner");
+      else partnerEmails[pid] = v;
+    }
+    if (bad.length) {
+      replace(message, h("p", { class: "form-error", role: "alert" }, `The email for ${bad.join(" and ")} does not look complete.`));
+      return;
+    }
+    const input: ApproveInput = actions.includes("outreach") && Object.keys(partnerEmails).length ? { actions, partnerEmails } : { actions };
+    const button = form.querySelector<HTMLButtonElement>("button[type=submit]");
+    if (button) button.disabled = true;
+    replace(message, loading("Publishing the night", ACTIONS.filter((a) => actions.includes(a.kind)).map((a) => a.title)));
+    try {
+      const night = await api.approve(ctx.id, ctx.token, plan.id, input);
+      sessionSet(`taped.${night.id}`, true);
+      sessionSet(`night.${night.id}`, night);
+      await refreshState(ctx).catch(() => undefined);
+      navigate(`/v/${encodeURIComponent(ctx.id)}/nights/${encodeURIComponent(night.id)}`, { replace: true });
+    } catch (err) {
+      if (button) button.disabled = false;
+      replace(message, failure(err, () => form.requestSubmit()));
+    }
+  });
+}
