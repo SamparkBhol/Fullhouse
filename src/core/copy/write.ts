@@ -9,7 +9,7 @@ import { BANNED_WORDS, bannedIn, fixDashes, hasDash, listWords } from "./text.ts
 export type Generate = (system: string, user: string) => Promise<string>;
 
 export interface CopyBrief {
-  venue: { name: string; city: string };
+  venue: { name: string; city: string; address?: string };
   night: { format: string; label: string; day: string; start: string; end: string };
   feature: { name: string; kind: string; trend: string; reasons: string[] } | null;
   theme: string[];
@@ -21,7 +21,7 @@ export interface CopyBrief {
 
 export function buildBrief(plan: NightPlan, venue: Venue, read: StreetRead): CopyBrief {
   return {
-    venue: { name: venue.entity.name, city: venue.city },
+    venue: { name: venue.entity.name, city: venue.city, ...(venue.entity.address ? { address: venue.entity.address } : {}) },
     night: {
       format: plan.format,
       label: FORMATS[plan.format].label,
@@ -50,7 +50,7 @@ export function buildBrief(plan: NightPlan, venue: Venue, read: StreetRead): Cop
 }
 
 export function briefNames(brief: CopyBrief, plan: NightPlan, read: StreetRead): string[] {
-  const names = new Set<string>([brief.venue.name, brief.venue.city, ...brief.playlist, ...brief.theme]);
+  const names = new Set<string>([brief.venue.name, brief.venue.city, brief.venue.address ?? "", ...brief.playlist, ...brief.theme]);
   if (brief.feature) names.add(brief.feature.name);
   for (const p of brief.partners) names.add(p.name);
   for (const t of plan.themeTags) names.add(t.name);

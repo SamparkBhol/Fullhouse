@@ -20,7 +20,7 @@ import { briefNames, buildBrief } from "../copy/write.ts";
 import { tagLabel } from "../qloo/parse.ts";
 import { describeDistance, haversineM } from "../street/geo.ts";
 import { RANK_LIMIT } from "../street/read.ts";
-import { FORMATS, FORMAT_ORDER, MENU_NAMESPACES, PLAYLIST_LICENCE, type FormatDef } from "./formats.ts";
+import { FORMATS, FORMAT_ORDER, MENU_NAMESPACES, PLAYLIST_LICENCE, menuItem, type FormatDef } from "./formats.ts";
 import { nextSlotDate, parseHHMM } from "./time.ts";
 
 export const WALK_M = 1000;
@@ -70,8 +70,7 @@ function menuTags(read: StreetRead): StreetTag[] {
 }
 
 function menuText(t: StreetTag): string {
-  const label = t.namespace === "urn:tag:cuisine:qloo" ? t.name : t.name.toLowerCase();
-  return `${capFirst(label)} on the night's menu`;
+  return `Add ${menuItem(t)} to the menu for the night`;
 }
 
 function scoreCandidates(read: StreetRead, venue: Venue, cap: number | undefined, prefer: Set<NightFormat>): Candidate[] {
@@ -147,23 +146,30 @@ function pickPartners(
     notes.push("No place within a 1 km walk came back from Qloo, so this night has no partners.");
     return [];
   }
-  const themeIds = new Set([...theme.map((t) => t.id), ...read.gaps.map((g) => g.tag.id), ...read.shared.map((t) => t.id)]);
+  const themeIds = new Set(theme.map((t) => t.id));
+  const gapIds = new Set(read.gaps.map((g) => g.tag.id));
+  const sharedIds = new Set(read.shared.map((t) => t.id));
+  const names = new Map<string, string>();
+  for (const t of [...read.streetTags, ...read.shared, ...read.gaps.map((g) => g.tag)]) names.set(t.id, t.name);
   const venueCats = new Set(venue.entity.tags.filter((t) => COMPETITOR_NS.some((ns) => t.startsWith(`${ns}:`))));
   const scored = walkable.map((p) => {
-    const overlap = p.tags.filter((t) => themeIds.has(t));
-    const hint = p.tags.find((t) => def.partnerHints.some((h) => tagLabel(t).toLowerCase().includes(h)));
+    const onTheme = p.tags.find((t) => themeIds.has(t));
+    const gap = p.tags.find((t) => gapIds.has(t));
+    const shared = p.tags.find((t) => sharedIds.has(t));
+    const hint = p.tags.find((t) => COMPETITOR_NS.some((ns) => t.startsWith(`${ns}:`)) && def.partnerHints.some((h) => tagLabel(t).toLowerCase().includes(h)));
     const competitor = p.tags.some((t) => venueCats.has(t));
-    return { p, overlap, hint, competitor, score: overlap.length * 2 + (hint ? 1 : 0) };
+    const score =
+      p.tags.filter((t) => themeIds.has(t)).length * 3 + (hint ? 2 : 0) + p.tags.filter((t) => gapIds.has(t) || sharedIds.has(t)).length;
+    return { p, onTheme, gap, shared, hint, competitor, score };
   });
   const order = (a: (typeof scored)[number], b: (typeof scored)[number]) => b.score - a.score || a.p.rank - b.p.rank;
-  const matching = scored.filter((s) => s.score > 0).sort(order);
-  const nonCompeting = matching.filter((s) => !s.competitor);
-  let chosen = nonCompeting.length >= 2 ? nonCompeting : matching;
-  chosen = chosen.slice(0, MAX_PARTNERS);
+  const nonCompeting = scored.filter((s) => !s.competitor);
+  const pool = nonCompeting.length >= 2 ? nonCompeting : scored;
+  let chosen = pool.filter((s) => s.score > 0).sort(order).slice(0, MAX_PARTNERS);
   if (chosen.length < 2) {
-    const fill = scored
-      .filter((s) => !chosen.includes(s) && !s.competitor)
-      .sort((a, b) => a.p.rank - b.p.rank)
+    const fill = pool
+      .filter((s) => !chosen.includes(s))
+      .sort((a, b) => Number(a.competitor) - Number(b.competitor) || a.p.rank - b.p.rank)
       .slice(0, 2 - chosen.length);
     if (fill.length) notes.push("Few nearby places shared a tag with this night, so some partners are simply the street's top loved places.");
     chosen = [...chosen, ...fill];
@@ -173,13 +179,13 @@ function pickPartners(
     const prov = s.p.because[0]?.provenance ?? -1;
     const extra: Because[] = [];
     const walk = `${capFirst(describeDistance(s.p.distanceM))} from ${venue.entity.name}`;
-    const first = s.overlap[0];
-    if (first && prov >= 0) {
-      extra.push({ kind: "tag", text: `${walk}, tagged ${tagLabel(first)}, which fits this night's theme`, provenance: prov });
-    } else if (s.hint && prov >= 0) {
-      extra.push({ kind: "tag", text: `${walk}, tagged ${tagLabel(s.hint)}, which Full House pairs with a ${def.label}`, provenance: prov });
-    } else if (prov >= 0) {
-      extra.push({ kind: "affinity", text: walk, provenance: prov });
+    const label = (id: string) => names.get(id) ?? tagLabel(id);
+    if (prov >= 0) {
+      if (s.onTheme) extra.push({ kind: "tag", text: `${walk}, tagged ${label(s.onTheme)}, which is part of this night's theme`, provenance: prov });
+      else if (s.hint) extra.push({ kind: "tag", text: `${walk}, tagged ${label(s.hint)}, which Full House pairs with a ${def.label}`, provenance: prov });
+      else if (s.gap) extra.push({ kind: "tag", text: `${walk}, tagged ${label(s.gap)}, which is one of the gaps between the street and ${venue.entity.name}`, provenance: prov });
+      else if (s.shared) extra.push({ kind: "tag", text: `${walk}, tagged ${label(s.shared)}, which the street already likes ${venue.entity.name} for`, provenance: prov });
+      else extra.push({ kind: "affinity", text: walk, provenance: prov });
     }
     return { ...s.p, because: [...s.p.because, ...extra] };
   });
@@ -213,12 +219,17 @@ function playlistFor(read: StreetRead): EntityRef[] {
 function whyFor(c: Candidate, theme: StreetTag[], read: StreetRead, venue: Venue, playlist: EntityRef[]): Because[] {
   const why: Because[] = [];
   if (c.feature) why.push(...c.feature.because);
-  const themeGap = read.gaps.find((g) => theme.some((t) => t.id === g.tag.id));
-  if (themeGap) why.push(...themeGap.because);
-  else {
+  const carried = new Set(c.feature?.tags ?? []);
+  const relevant = theme.filter((t) => carried.has(t.id) || c.format === "tasting" || (c.format === "listening" && FORMATS.listening.themeNamespaces.includes(t.namespace)));
+  const themeGap = read.gaps.find((g) => relevant.some((t) => t.id === g.tag.id));
+  if (themeGap) {
+    for (const b of themeGap.because) {
+      if (!why.some((w) => w.kind === b.kind && w.provenance === b.provenance && w.text.includes(themeGap.tag.name))) why.push(b);
+    }
+  } else {
     const prov = streetTagsIndex(read);
-    const t = theme[0];
-    if (t && prov >= 0 && read.streetTags.some((s) => s.id === t.id)) {
+    const t = relevant[0];
+    if (t && prov >= 0 && read.streetTags.some((s) => s.id === t.id) && !why.some((w) => w.kind === "tag" && w.text.includes(t.name))) {
       why.push({ kind: "tag", text: `${t.name} ranks #${t.rank} in the street's taste profile`, provenance: prov });
     }
   }

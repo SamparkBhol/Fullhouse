@@ -88,6 +88,10 @@ export const FORMATS: Record<NightFormat, FormatDef> = {
   },
 };
 
+export function menuItem(t: { name: string; namespace: string }): string {
+  return t.namespace === "urn:tag:cuisine:qloo" ? `${t.name} food` : t.name.toLowerCase();
+}
+
 export const KIND_WORD: Record<QlooType, string> = {
   artist: "artist",
   book: "book",

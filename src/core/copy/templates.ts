@@ -1,13 +1,18 @@
 import type { NightCopy, NightPlan, Venue } from "../../shared/contract.ts";
 import { tagLabel } from "../qloo/parse.ts";
-import { FORMATS } from "../planner/formats.ts";
+import { FORMATS, MENU_NAMESPACES, menuItem } from "../planner/formats.ts";
 import { describeDate } from "../planner/time.ts";
 import { capFirst, fit, listWords } from "./text.ts";
 
 type CopyFields = Omit<NightCopy, "writtenBy">;
 
 function themeWords(plan: NightPlan): string[] {
-  return plan.themeTags.slice(0, 2).map((t) => tagLabel(t.id).toLowerCase());
+  const carried = new Set(plan.feature?.tags ?? []);
+  const own = FORMATS[plan.format].themeNamespaces;
+  return plan.themeTags
+    .filter((t) => carried.has(t.id) || (plan.format === "listening" && own.includes(t.namespace)) || plan.format === "tasting")
+    .slice(0, 2)
+    .map((t) => tagLabel(t.id).toLowerCase());
 }
 
 function pitch(plan: NightPlan, venue: Venue, day: string): CopyFields["partnerPitch"] {
@@ -131,8 +136,9 @@ export function templateCopy(plan: NightPlan, venue: Venue): NightCopy {
       break;
     }
     case "tasting": {
-      const t = theme[0] ?? "street favourites";
-      const menu = plan.menuIdeas.slice(0, 3).map((m) => m.text.toLowerCase());
+      const menuTags = plan.themeTags.filter((x) => MENU_NAMESPACES.includes(x.namespace));
+      const t = menuTags[0] ? menuItem(menuTags[0]).replace(/ food$/, "") : "street favourites";
+      const menu = menuTags.slice(0, 3).map(menuItem);
       const menuLine = menu.length ? ` On the menu: ${listWords(menu)}.` : "";
       c = {
         eventTitle: fit([`${capFirst(t)} tasting night at ${v}`, `${capFirst(t)} tasting night`, `Tasting night at ${v}`], 60),
