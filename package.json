@@ -15,7 +15,7 @@
     "build": "vite build --config web/vite.config.ts",
     "dev": "bash scripts/dev.sh",
     "e2e": "bash scripts/e2e.sh",
-    "probe": "node --no-warnings --experimental-strip-types scripts/probe.ts",
+    "probe": "node --no-warnings --experimental-strip-types scripts/probe/index.ts",
     "bench": "node --no-warnings --experimental-strip-types scripts/bench.ts"
   },
   "dependencies": {
