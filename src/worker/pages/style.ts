@@ -2,7 +2,6 @@ import { sha256base64 } from "../tokens.ts";
 
 export const FONT_PATH = "/e/_/archivo-wdth.woff2";
 
-// The one stylesheet for the worker rendered public pages.
 export const PAGE_CSS = [
   `@font-face{font-family:"Archivo Variable";font-style:normal;font-display:swap;font-weight:100 900;font-stretch:62% 125%;src:url(${FONT_PATH}) format("woff2-variations"),url(${FONT_PATH}) format("woff2")}`,
   ":root{--street:#33506E;--fascia:#243A53;--chalk:#F3F5F8;--mist:#B9C7D7;--paper:#F6D8DB;--ink:#1D3150;--lit:#FFC24A;--stop:#FFB3A6;",

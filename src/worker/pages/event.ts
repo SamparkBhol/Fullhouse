@@ -28,6 +28,10 @@ export interface PublicNight {
   published: { page: boolean; poster: boolean; ics: boolean };
 }
 
+export function titleAt(n: Pick<PublicNight, "title" | "venueName">): string {
+  return n.title.toLowerCase().includes(n.venueName.toLowerCase()) ? n.title : `${n.title} at ${n.venueName}`;
+}
+
 export function eventUrl(origin: string, slug: string): string {
   return `${origin}/e/${slug}`;
 }
@@ -81,7 +85,8 @@ export function isPast(n: Pick<PublicNight, "date" | "start" | "end" | "tz">, no
 }
 
 export function calendarDetails(n: PublicNight, origin: string): string {
-  return `${n.description.trim()}\n\nPicked with Qloo taste data.\n${eventUrl(origin, n.slug)}`;
+  const link = n.published.page ? `\n${eventUrl(origin, n.slug)}` : "";
+  return `${n.description.trim()}\n\nPicked with Qloo taste data.${link}`;
 }
 
 function fascia(n: PublicNight): string {
@@ -119,7 +124,7 @@ export function renderEventPage(n: PublicNight, origin: string, now: Date): stri
       : "";
   const address = [n.address, n.city].filter(Boolean).join(", ");
   return (
-    head(`${n.title} at ${n.venueName}`, desc, url) +
+    head(titleAt(n), desc, url) +
     `<body>${fascia(n)}<main class="sheet">` +
     `<article class="flyer">` +
     `<p class="when">${esc(when)}</p>` +
@@ -131,7 +136,7 @@ export function renderEventPage(n: PublicNight, origin: string, now: Date): stri
     `</article>` +
     `<section class="rsvp" id="rsvp" aria-label="Who is going">${rsvp}</section>` +
     `<section aria-labelledby="why"><h2 id="why">Why this night, here</h2>${why}` +
-    `<p class="limits">Picked with Qloo taste data for the streets around ${esc(n.venueName)}. These are patterns for the area, not facts about any one person, and they say nothing about who will come. <a href="/#how">How this works</a></p></section>` +
+    `<p class="limits">Picked with Qloo taste data for the streets around ${esc(n.venueName)}. These are patterns for the area, not facts about any one person, and they say nothing about who will come. <a href="/how">How this works</a></p></section>` +
     calendar +
     `<footer>${n.published.poster ? `<a href="/e/${esc(n.slug)}/poster">Printable poster</a>. ` : ""}Made with Full House for ${esc(n.venueName)}.</footer>` +
     `</main></body></html>`
@@ -144,13 +149,18 @@ export function renderPoster(n: PublicNight, origin: string): string {
   const when = `${longDate(n.date)}, ${n.start} to ${n.end}`;
   const reason = n.why[0] ?? `Picked from what the streets around ${n.venueName} are into right now.`;
   let qr = "";
-  try {
-    qr = `<div class="p-qr">${qrSvg(url, `QR code for ${shortUrl}`)}</div>`;
-  } catch {
-    qr = "";
+  if (n.published.page) {
+    try {
+      qr = `<div class="p-qr">${qrSvg(url, `QR code for ${shortUrl}`)}</div>`;
+    } catch {
+      qr = "";
+    }
   }
+  const foot = n.published.page
+    ? `<div><p class="p-url">${esc(shortUrl)}</p><p class="p-src">Picked with Qloo taste data. Scan the code or type the link to say you are coming.</p></div>${qr}`
+    : `<div><p class="p-src">Picked with Qloo taste data.</p></div>`;
   return (
-    head(`Poster: ${n.title}`, `${n.title} at ${n.venueName}, ${when}`, `${url}/poster`) +
+    head(`Poster: ${n.title}`, `${titleAt(n)}, ${when}`, `${url}/poster`) +
     `<body><div class="print-bar"><button id="print" type="button">Print the poster</button><span>A4 portrait. Turn off headers and footers in the print dialog.</span></div>` +
     `<main class="poster">` +
     `<p class="when">${esc(when)}</p>` +
@@ -158,7 +168,7 @@ export function renderPoster(n: PublicNight, origin: string): string {
     (n.posterSub ? `<p class="p-sub">${esc(n.posterSub)}</p>` : "") +
     `<p class="p-where"><strong>${esc(n.venueName)}</strong>${n.address ? `<br>${esc(n.address)}` : ""}</p>` +
     `<p class="p-why">${esc(reason)}</p>` +
-    `<div class="p-foot"><div><p class="p-url">${esc(shortUrl)}</p><p class="p-src">Picked with Qloo taste data. Scan the code or type the link to say you are coming.</p></div>${qr}</div>` +
+    `<div class="p-foot">${foot}</div>` +
     `</main><script>${PRINT_SCRIPT}</script></body></html>`
   );
 }
@@ -170,10 +180,10 @@ export function renderIcs(n: PublicNight, origin: string, now: Date): string {
     start: w.start,
     end: w.end,
     stamp: now,
-    summary: `${n.title} at ${n.venueName}`,
+    summary: titleAt(n),
     description: calendarDetails(n, origin),
     location: placeLine(n),
-    url: eventUrl(origin, n.slug),
+    ...(n.published.page ? { url: eventUrl(origin, n.slug) } : {}),
     geo: { lat: n.lat, lng: n.lng },
   });
 }

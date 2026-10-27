@@ -76,11 +76,23 @@ function send<T>(out: Out<T>, status = 200): Response {
 async function readBody(c: Ctx): Promise<unknown> {
   const type = c.req.header("content-type") ?? "";
   if (!/^application\/json\b/i.test(type)) throw new HttpError(415, "unsupported_media_type", "Send JSON with content-type application/json.");
+  let text: string;
   try {
-    return await c.req.json();
+    text = await c.req.text();
+  } catch (err) {
+    if (isBodyLimit(err)) throw err;
+    throw new HttpError(400, "invalid_body", "The body could not be read.");
+  }
+  try {
+    return JSON.parse(text) as unknown;
   } catch {
     throw new HttpError(400, "invalid_json", "The body is not valid JSON.");
   }
+}
+
+// Hono's bodyLimit only answers 413 when its own error reaches the app error handler.
+function isBodyLimit(err: unknown): boolean {
+  return err instanceof Error && err.name === "BodyLimitError";
 }
 
 function secretOf(env: Env): string {
@@ -135,6 +147,7 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
   const app = new Hono<AppEnv>();
 
   app.onError(async (err, c) => {
+    if (isBodyLimit(err)) return apiError(413, "body_too_large", "Bodies are capped at 64 KB.");
     if (err instanceof HttpError) {
       const res = apiError(err.status, err.code, err.detail);
       const retry = (err as HttpError & { retryAfter?: number }).retryAfter;
@@ -264,9 +277,16 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
   app.all("/api/*", () => apiError(404, "not_found", "No such API route."));
 
   app.post("/mcp", async (c) => {
+    let text: string;
+    try {
+      text = await c.req.text();
+    } catch (err) {
+      if (isBodyLimit(err)) throw err;
+      return json({ jsonrpc: "2.0", error: { code: -32700, message: "Parse error" }, id: null }, 400);
+    }
     let parsed: unknown;
     try {
-      parsed = JSON.parse(await c.req.text());
+      parsed = JSON.parse(text);
     } catch {
       return json({ jsonrpc: "2.0", error: { code: -32700, message: "Parse error" }, id: null }, 400);
     }

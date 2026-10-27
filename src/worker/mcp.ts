@@ -151,7 +151,7 @@ export function buildMcpServer(ports: McpPorts): McpServer {
         ...ownerArgs,
         plan_id: z.string().regex(NIGHT_ID_RE),
         actions: z.array(z.enum(ACTIONS)).min(1).max(ACTIONS.length),
-        partner_emails: z.record(z.string().max(80), z.string().max(254)).optional().describe("Partner place id to the address the owner typed"),
+        partner_emails: z.record(z.string().regex(/^[A-Za-z0-9:_-]{1,80}$/), z.string().max(254)).optional().describe("Partner place id to the address the owner typed"),
       }),
       outputSchema: z.object({ night: loose({ id: z.string(), actions: z.array(loose({ kind: z.string(), ok: z.boolean() })) }) }),
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },

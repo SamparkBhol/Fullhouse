@@ -52,7 +52,7 @@ export const ApproveSchema = z.object({
     .min(1)
     .max(ACTIONS.length)
     .transform((a) => [...new Set(a)]),
-  partnerEmails: z.record(z.string().max(80), email).optional(),
+  partnerEmails: z.record(z.string().regex(/^[A-Za-z0-9:_-]{1,80}$/), email).optional(),
 });
 
 export const ResultSchema = z.object({
