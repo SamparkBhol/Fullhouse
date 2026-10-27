@@ -1,0 +1,25 @@
+{
+  "name": "fullhouse",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Full House: the agent that fills a small venue's quiet night, every week. Built on Qloo's taste graph.",
+  "license": "MIT",
+  "engines": { "node": ">=22.18" },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm run test"
+  },
+  "dependencies": {
+    "hono": "4.12.5",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260929.1",
+    "@types/node": "22.20.4",
+    "typescript": "6.0.3",
+    "vitest": "5.0.2",
+    "wrangler": "4.144.0"
+  }
+}

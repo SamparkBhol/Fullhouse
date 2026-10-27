@@ -1,0 +1,8 @@
+node_modules
+web/dist
+.wrangler
+.dev.vars
+*.log
+.tmp
+test-results
+playwright-report
