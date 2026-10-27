@@ -119,7 +119,6 @@ export interface Rising extends EntityRef {
   trend: Trend;
   trendNote?: string;
   because: Because[];
-  tags?: string[];
 }
 
 export interface Gap {
@@ -210,8 +209,6 @@ export interface NightPlan {
 export interface PlanResponse {
   plan: NightPlan;
   alternatives: NightPlan[];
-  input?: PlanInput;
-  refine?: { method: "tool" | "json" | "keywords"; request: string };
 }
 
 export type ActionKind =
@@ -234,7 +231,6 @@ export interface ActionResult {
   url?: string;
   label: string;
   detail: string;
-  links?: { label: string; url: string }[];
 }
 
 export interface Night extends NightPlan {
@@ -251,7 +247,6 @@ export interface VenueState {
   proposals: NightPlan[];
   nights: Night[];
   nextAlarm?: string;
-  baseline?: Baseline;
 }
 
 export type VerifyStatus = "found_nearby" | "found_far" | "not_found";
