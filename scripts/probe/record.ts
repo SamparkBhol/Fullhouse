@@ -1,8 +1,10 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { provenanceParams, type ArrayStyle } from "../../src/core/qloo/request.ts";
+import { provenanceParams } from "../../src/core/qloo/index.ts";
 import type { Failure, ProbeAnswer } from "./client.ts";
 import type { CallGroup, CallSpec } from "./plan.ts";
+
+export type ArrayStyle = "comma" | "repeat";
 
 export interface CallRecord {
   scope: string;

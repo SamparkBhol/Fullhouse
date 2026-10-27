@@ -17,9 +17,9 @@ import { checkClaims } from "../copy/claims.ts";
 import { templateCopy } from "../copy/templates.ts";
 import { capFirst, listWords } from "../copy/text.ts";
 import { briefNames, buildBrief } from "../copy/write.ts";
-import { tagLabel } from "../qloo/parse.ts";
+import { tagLabel } from "../qloo/tags.ts";
 import { describeDistance, haversineM } from "../street/geo.ts";
-import { RANK_LIMIT } from "../street/read.ts";
+import { RANK_LIMIT } from "../street/steps/limits.ts";
 import { FORMATS, FORMAT_ORDER, MENU_NAMESPACES, PLAYLIST_LICENCE, menuItem, type FormatDef } from "./formats.ts";
 import { nextSlotDate, parseHHMM } from "./time.ts";
 
@@ -57,7 +57,23 @@ export function provIndex(read: StreetRead, calls: string[]): number {
 }
 
 function streetTagsIndex(read: StreetRead): number {
-  return provIndex(read, ["street_tags_open", "street_tags"]);
+  return provIndex(read, ["street_tags"]);
+}
+
+// Shared tags come from compare (the venue against nearby places) or from the street and audience tag reads.
+function sharedBecause(read: StreetRead, venue: Venue): Because | null {
+  const streetIds = new Set(read.streetTags.map((t) => t.id));
+  const fromCompare = read.shared.find((t) => !streetIds.has(t.id));
+  const iCompare = provIndex(read, ["compare"]);
+  if (fromCompare && iCompare >= 0) {
+    return { kind: "compare", text: `${venue.entity.name} and the nearby places its audience loves share ${fromCompare.name}`, provenance: iCompare };
+  }
+  const fromTags = read.shared.find((t) => streetIds.has(t.id));
+  const iStreet = streetTagsIndex(read);
+  if (fromTags && iStreet >= 0) {
+    return { kind: "tag", text: `The street and ${venue.entity.name}'s audience both carry ${fromTags.name}`, provenance: iStreet };
+  }
+  return null;
 }
 
 function fitsPeople(def: FormatDef, cap: number | undefined): number {
@@ -233,20 +249,17 @@ function whyFor(c: Candidate, theme: StreetTag[], read: StreetRead, venue: Venue
       why.push({ kind: "tag", text: `${t.name} ranks #${t.rank} in the street's taste profile`, provenance: prov });
     }
   }
-  const iCompare = provIndex(read, ["compare"]);
-  const shared = read.shared[0];
-  if (shared && iCompare >= 0) {
-    why.push({ kind: "compare", text: `${venue.entity.name}'s audience and the places the street loves most share ${shared.name}`, provenance: iCompare });
-  }
+  const shared = sharedBecause(read, venue);
+  if (shared) why.push(shared);
   const layer = read.heat[0];
   const top = layer?.cells[0];
   if (layer && top) {
     const d = haversineM(read.center, { lat: top.lat, lng: top.lng });
-    why.push({ kind: "heatmap", text: `The strongest heat cell for the street's top tastes sits ${describeDistance(d)} from ${venue.entity.name}`, provenance: layer.provenance });
+    why.push({ kind: "heatmap", text: `The strongest cell on the street heatmap sits ${describeDistance(d)} from ${venue.entity.name}`, provenance: layer.provenance });
   }
   const iArtist = provIndex(read, ["insights_artist"]);
   if (playlist.length && iArtist >= 0) {
-    why.push({ kind: "affinity", text: `The playlist is the top ${playlist.length} artists for the taste of people around ${venue.entity.name}`, provenance: iArtist });
+    why.push({ kind: "affinity", text: `The playlist is the top ${playlist.length} artists Qloo picked for ${venue.entity.name} and its area`, provenance: iArtist });
   }
   return why;
 }

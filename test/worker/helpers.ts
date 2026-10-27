@@ -94,7 +94,7 @@ export function fakePlan(id: string, venueId: string, input: PlanInput, origin: 
 }
 
 export interface FakeCoreLog {
-  reads: Array<{ venueId: string; momentumOnly: boolean; hadPrevious: boolean }>;
+  reads: Array<{ venueId: string; hadPrevious: boolean }>;
   plans: Array<{ input: PlanInput; origin: NightPlan["origin"] }>;
   copies: number;
 }
@@ -105,8 +105,8 @@ export function fakeCore(log: FakeCoreLog = { reads: [], plans: [], copies: 0 })
     REFINE_TOOL,
     parseRefineFallback,
     applyRefine,
-    async readStreet(_q: Qloo, venue: Venue, opts?: { previous?: StreetRead; momentumOnly?: boolean }) {
-      log.reads.push({ venueId: venue.id, momentumOnly: Boolean(opts?.momentumOnly), hadPrevious: Boolean(opts?.previous) });
+    async readStreet(_q: Qloo, venue: Venue, opts?: { previous?: StreetRead }) {
+      log.reads.push({ venueId: venue.id, hadPrevious: Boolean(opts?.previous) });
       return fakeRead(venue.id);
     },
     planNights(read, venue, input, now, origin, newId): PlanResponse {

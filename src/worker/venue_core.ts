@@ -25,7 +25,7 @@ import { ownerToken, ownerUrl, seal, unseal, type Sealed } from "./tokens.ts";
 import { longDate } from "./zones.ts";
 
 export interface CoreFns extends RefineCore {
-  readStreet(q: Qloo, venue: Venue, opts?: { previous?: StreetRead; momentumOnly?: boolean }): Promise<StreetRead>;
+  readStreet(q: Qloo, venue: Venue, opts?: { previous?: StreetRead }): Promise<StreetRead>;
   planNights(read: StreetRead, venue: Venue, input: PlanInput, now: Date, origin: NightPlan["origin"], newId: () => string): PlanResponse;
   writeCopy(plan: NightPlan, venue: Venue, read: StreetRead, generate: Generate | null): Promise<NightPlan>;
   runBaseline(q: Qloo, venue: Venue, read: StreetRead, plan: NightPlan, generate: Generate, model: string): Promise<Baseline>;
@@ -147,12 +147,10 @@ export class VenueCore implements VenueApi {
     }
   }
 
-  private async freshRead(q: Qloo, venue: Venue, momentumOnly = false): Promise<StreetRead> {
+  // The previous read lets the street read report how each pick moved since then.
+  private async freshRead(q: Qloo, venue: Venue): Promise<StreetRead> {
     const previous = await this.store.get<StreetRead>("read");
-    const opts: { previous?: StreetRead; momentumOnly?: boolean } = {};
-    if (previous) opts.previous = previous;
-    if (momentumOnly && previous) opts.momentumOnly = true;
-    const read = await this.deps.core.readStreet(q, venue, opts);
+    const read = await this.deps.core.readStreet(q, venue, previous ? { previous } : {});
     await this.store.put("read", read);
     return read;
   }
@@ -438,7 +436,7 @@ export class VenueCore implements VenueApi {
     try {
       const q = this.deps.qloo();
       if (q) {
-        const read = await this.freshRead(q, venue, true);
+        const read = await this.freshRead(q, venue);
         const input = mondayInput(venue, (await this.nights()).map((r) => r.night));
         const response = this.deps.core.planNights(read, venue, input, this.deps.now(), "monday", this.deps.newId);
         const plan = await this.withCopy(response.plan, venue, read);

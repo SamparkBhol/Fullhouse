@@ -1,4 +1,4 @@
-import { parseTags } from "../../../src/core/qloo/parse.ts";
+import { parseTags } from "../../../src/core/qloo/index.ts";
 import { recordsFor, type ProbeContext } from "../context.ts";
 import { errorText, namespaceLine, namespaces, shared, status, tagIds } from "../lens.ts";
 import type { CallRecord } from "../record.ts";

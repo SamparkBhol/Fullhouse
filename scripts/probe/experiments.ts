@@ -1,5 +1,5 @@
 import type { QlooType } from "../../src/shared/contract.ts";
-import { TYPE_URN, isoDate, locationFilter, locationSignal, trendWindow, wktPoint, type ArrayStyle, type Params } from "../../src/core/qloo/request.ts";
+import { TYPE_URN, isoDate, locationFilter, locationSignal, trendWindow, wktPoint, type Params } from "../../src/core/qloo/index.ts";
 import { HEAT_RADIUS_M, LOVED_RADIUS_M } from "./config.ts";
 import {
   PLACE,
@@ -13,6 +13,7 @@ import {
   type FollowUp,
   type ResolvedVenue,
 } from "./plan.ts";
+import type { ArrayStyle } from "./record.ts";
 
 type Make = (call: string, path: string, params: Params, question: string, arrays?: ArrayStyle) => CallSpec;
 
@@ -56,7 +57,7 @@ function placeExperiments(x: Make, v: ResolvedVenue): CallSpec[] {
     x("loved_filter_query", "/v2/insights", { "filter.type": PLACE, "filter.location.query": v.area, ...sig, take: "30" }, `Does filter.location.query=${v.area} keep places as close as the POINT and radius filter?`),
     x("loved_signal_query", "/v2/insights", lovedParams(v, { "signal.location.query": v.area }), "Does signal.location.query reorder places the way the POINT signal does?"),
     x("loved_no_signal", "/v2/insights", lovedParams(v, {}), "Without any signal, is affinity null and the order popularity?"),
-    x("loved_signal_radius", "/v2/insights", lovedParams(v, locationSignal(v.lat, v.lng, LOVED_RADIUS_M)), "Does signal.location.radius change the ranking?"),
+    x("loved_signal_radius", "/v2/insights", lovedParams(v, { ...locationSignal(v.lat, v.lng), "signal.location.radius": String(LOVED_RADIUS_M) }), "Does signal.location.radius change the ranking?"),
     x("loved_entity_signal", "/v2/insights", { ...lovedParams(v, { "signal.interests.entities": v.id }), "feature.explainability": "true" }, "With the venue as signal, what keys does explainability use?"),
   ];
 }

@@ -1,13 +1,14 @@
-import { errorMessage } from "../../src/core/qloo/client.ts";
 import {
+  errorMessage,
+  explainSummary,
+  parseCompare,
   parseDemographics,
   parseEntities,
   parseHeatmap,
   parseTags,
   parseTrending,
   resultsOf,
-  topExplainability,
-} from "../../src/core/qloo/parse.ts";
+} from "../../src/core/qloo/index.ts";
 import type { ProbeContext } from "./context.ts";
 import { explainLayout } from "./lens.ts";
 import { APP_MAX_HEAT_CELLS } from "./plan.ts";
@@ -41,11 +42,11 @@ function auditAnswer(rec: CallRecord, t: Tally): void {
     note(t, "hits without coordinates after parsing", parsed.filter((e) => e.lat === null).length);
   } else if (rec.path === "/v2/analysis/compare") {
     t.raw += lengthAt(body, "tags") + lengthAt(body, "a") + lengthAt(body, "b");
-    t.parsed += parseTags(body).length;
-    note(t, "per side tags in results.a and results.b that parseTags never reads", lengthAt(body, "a") + lengthAt(body, "b"));
+    const compared = parseCompare(body);
+    t.parsed += compared.shared.length + compared.a.length + compared.b.length;
   } else if (rec.path === "/v2/trending") {
     t.raw += lengthAt(body, "trending");
-    t.parsed += parseTrending(body).points.length;
+    t.parsed += parseTrending(body).length;
   } else if (type === "urn:tag") {
     const tags = parseTags(body);
     t.raw += lengthAt(body, "tags");
@@ -66,7 +67,7 @@ function auditAnswer(rec: CallRecord, t: Tally): void {
     t.parsed += entities.length;
     const layout = explainLayout(rec);
     note(t, "results with explainability that parse into no rows", layout.explained - entities.filter((e) => e.explain.length > 0).length);
-    note(t, "responses whose top level explainability topExplainability cannot read", layout.top.length && !topExplainability(body).length ? 1 : 0);
+    note(t, "responses whose top level explainability explainSummary cannot read", layout.top.length && !explainSummary(body).length ? 1 : 0);
   }
 }
 
@@ -85,7 +86,7 @@ export function auditSection(ctx: ProbeContext): string[] {
     else auditError(rec, t);
     tallies.set(key, t);
   }
-  const out = ["PARSER AUDIT", "", "The app's parsers from src/core/qloo/parse.ts and client.ts run against every live answer. Raw is what the body holds, parsed is what the app would keep.", ""];
+  const out = ["PARSER AUDIT", "", "The app's parsers from src/core/qloo run against every live answer. Raw is what the body holds, parsed is what the app would keep.", ""];
   for (const [key, t] of [...tallies.entries()].sort(([a], [b]) => a.localeCompare(b))) {
     const flags = [...t.notes.entries()].map(([text, n]) => `${n} ${text}`);
     if (!flags.length && t.raw === t.parsed) continue;

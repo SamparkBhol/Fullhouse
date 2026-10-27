@@ -1,4 +1,4 @@
-import { parseEntities } from "../../../src/core/qloo/parse.ts";
+import { parseEntities } from "../../../src/core/qloo/index.ts";
 import { recordsFor, type ProbeContext } from "../context.ts";
 import { answered, rankOf, rawEntity } from "../derive.ts";
 import { errorText, names } from "../lens.ts";

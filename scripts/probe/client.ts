@@ -1,7 +1,8 @@
-import { QLOO_BASE_URL, buildUrl, type ArrayStyle, type Params } from "../../src/core/qloo/request.ts";
+import { QLOO_BASE_URL, buildUrl, cleanParams, type Params } from "../../src/core/qloo/index.ts";
 import { limiter } from "../../src/core/street/limit.ts";
 import type { DiskCache } from "./cache.ts";
 import type { Ledger } from "./ledger.ts";
+import type { ArrayStyle } from "./record.ts";
 
 export type Failure = "timeout" | "network" | "cap" | "offline" | "not_json";
 
@@ -44,6 +45,14 @@ const pause = (ms: number) => new Promise<void>((done) => setTimeout(done, ms));
 
 function retryable(status: number): boolean {
   return status === 429 || status >= 500;
+}
+
+// The app always joins arrays with commas; the repeated key form is kept only to rerun that experiment.
+function probeUrl(baseUrl: string, path: string, params: Params, arrays: ArrayStyle): string {
+  if (arrays === "comma") return buildUrl(baseUrl, path, params);
+  const sp = new URLSearchParams();
+  for (const [key, values] of cleanParams(params)) for (const v of values) sp.append(key, v);
+  return `${baseUrl.replace(/\/+$/, "")}${path}?${sp}`;
 }
 
 function backoffMs(attempt: number, retryAfter: string | null): number {
@@ -102,7 +111,7 @@ export function createProbeClient(opts: ClientOptions): ProbeClient {
   }
 
   async function get(path: string, params: Params, arrays: ArrayStyle = "comma"): Promise<ProbeAnswer> {
-    const url = buildUrl(baseUrl, path, params, arrays);
+    const url = probeUrl(baseUrl, path, params, arrays);
     const hit = await opts.cache.read(url);
     if (hit) return { url, status: hit.status, ms: hit.ms, at: hit.at, cached: true, attempts: 0, retried: hit.retried ?? [], body: hit.body };
     if (opts.offline) return { url, status: 0, ms: 0, at: new Date().toISOString(), cached: false, attempts: 0, retried: [], body: null, failure: "offline" };

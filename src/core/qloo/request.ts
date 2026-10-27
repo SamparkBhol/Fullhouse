@@ -1,128 +1,57 @@
-import type { QlooType } from "../../shared/contract.ts";
+import { parseWktPoint } from "./location.ts";
 
 export const QLOO_BASE_URL = "https://hackathon.api.qloo.com";
 
 export type Params = Record<string, string | string[]>;
-export type ArrayStyle = "comma" | "repeat";
 
-export const TYPE_URN: Record<QlooType, string> = {
-  place: "urn:entity:place",
-  artist: "urn:entity:artist",
-  book: "urn:entity:book",
-  movie: "urn:entity:movie",
-  tv_show: "urn:entity:tv_show",
-  podcast: "urn:entity:podcast",
-  videogame: "urn:entity:videogame",
-  brand: "urn:entity:brand",
-  person: "urn:entity:person",
-  destination: "urn:entity:destination",
-};
+const LAT_LON = /^\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*$/;
+const WKT = /^\s*(POINT|POLYGON|MULTIPOLYGON)\s*\(/i;
+const SECRET_PARAM = /key|token|secret|password/i;
 
-// The developer guide spells it video_game once; the OpenAPI enum and the schema page use videogame.
-export const TYPE_URN_ALTERNATES: Partial<Record<QlooType, string[]>> = {
-  videogame: ["urn:entity:video_game"],
-};
-
-const URN_TO_TYPE: Record<string, QlooType> = {
-  "urn:entity:place": "place",
-  "urn:entity:artist": "artist",
-  "urn:entity:book": "book",
-  "urn:entity:movie": "movie",
-  "urn:entity:tv_show": "tv_show",
-  "urn:entity:podcast": "podcast",
-  "urn:entity:videogame": "videogame",
-  "urn:entity:video_game": "videogame",
-  "urn:entity:brand": "brand",
-  "urn:entity:person": "person",
-  "urn:entity:actor": "person",
-  "urn:entity:author": "person",
-  "urn:entity:director": "person",
-  "urn:entity:destination": "destination",
-};
-
-export function typeFromUrn(urn: unknown): QlooType | null {
-  if (typeof urn !== "string") return null;
-  const lower = urn.toLowerCase();
-  if (URN_TO_TYPE[lower]) return URN_TO_TYPE[lower] ?? null;
-  const parts = lower.split(":");
-  if (parts.length > 3) return URN_TO_TYPE[parts.slice(0, 3).join(":")] ?? null;
-  return null;
+function one(params: Params, key: string): string | undefined {
+  const v = params[key];
+  return typeof v === "string" ? v : undefined;
 }
 
-function fmtCoord(n: number): string {
-  return String(Math.round(n * 1e6) / 1e6);
-}
-
-export function checkLatLng(lat: number, lng: number): void {
-  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
-    throw new RangeError(`Invalid coordinates lat=${lat} lng=${lng}`);
+function insightsProblem(params: Params): string | null {
+  for (const key of ["filter.location", "signal.location"]) {
+    const loc = one(params, key);
+    if (loc === undefined) continue;
+    if (LAT_LON.test(loc)) return `${key} on insights takes WKT or a locality id, not a lat,lon pair`;
+    if (/^\s*POINT/i.test(loc) && !parseWktPoint(loc)) return `${key} POINT must be WKT with longitude first`;
   }
-}
-
-export function wktPoint(lat: number, lng: number): string {
-  checkLatLng(lat, lng);
-  return `POINT(${fmtCoord(lng)} ${fmtCoord(lat)})`;
-}
-
-export function parseWktPoint(wkt: string): { lat: number; lng: number } | null {
-  const m = /^\s*POINT\s*\(\s*(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s*\)\s*$/i.exec(wkt);
-  if (!m) return null;
-  const lng = Number(m[1]);
-  const lat = Number(m[2]);
-  if (Math.abs(lng) > 180 || Math.abs(lat) > 90) return null;
-  return { lat, lng };
-}
-
-export const MAX_RADIUS_M = 800000;
-
-export function clampRadius(radiusM: number): number {
-  if (!Number.isFinite(radiusM)) throw new RangeError("Radius must be a number of meters");
-  return Math.min(MAX_RADIUS_M, Math.max(1, Math.round(radiusM)));
-}
-
-export function locationFilter(lat: number, lng: number, radiusM: number): Params {
-  return {
-    "filter.location": wktPoint(lat, lng),
-    "filter.location.radius": String(clampRadius(radiusM)),
-  };
-}
-
-// Qloo recommends leaving signal.location.radius out so its density discovery picks the cell size.
-export function locationSignal(lat: number, lng: number, radiusM?: number): Params {
-  const out: Params = { "signal.location": wktPoint(lat, lng) };
-  if (radiusM !== undefined) out["signal.location.radius"] = String(clampRadius(radiusM));
-  return out;
-}
-
-export function searchNear(lat: number, lng: number, miles: number): Record<string, string> {
-  checkLatLng(lat, lng);
-  const r = Math.min(100, Math.max(0, miles));
-  return { "filter.location": `${fmtCoord(lat)},${fmtCoord(lng)}`, "filter.radius": String(r) };
-}
-
-export function checkParams(params: Params): string | null {
-  const loc = params["filter.location"];
-  if (typeof loc === "string" && /^\s*POINT/i.test(loc)) {
-    if (!parseWktPoint(loc)) return "filter.location POINT must be WKT with longitude first";
-    if (params["filter.radius"] === undefined && params["filter.location.radius"] === undefined) {
-      return "filter.location POINT needs filter.location.radius or nothing matches";
-    }
+  const filter = one(params, "filter.location");
+  if (filter && /^\s*POINT/i.test(filter) && params["filter.location.radius"] === undefined) {
+    return "filter.location POINT needs filter.location.radius or only the place on that point matches";
   }
-  const sig = params["signal.location"];
-  if (typeof sig === "string" && /^\s*POINT/i.test(sig) && !parseWktPoint(sig)) {
-    return "signal.location POINT must be WKT with longitude first";
-  }
-  if (params["signal.location.radius"] !== undefined && !(typeof sig === "string" && /^\s*POINT/i.test(sig))) {
+  if (params["signal.location.radius"] !== undefined && !/^\s*POINT/i.test(one(params, "signal.location") ?? "")) {
     return "signal.location.radius only applies to a POINT";
   }
-  const take = params["take"];
-  if (typeof take === "string" && (!/^\d+$/.test(take) || Number(take) < 1 || Number(take) > 50)) {
-    return "take must be between 1 and 50";
-  }
   return null;
 }
 
-const SECRET_PARAM = /key|token|secret|password/i;
+function searchProblem(params: Params): string | null {
+  const loc = one(params, "filter.location");
+  if (loc !== undefined && WKT.test(loc)) return "filter.location on /search takes lat,lon, not WKT";
+  const radius = one(params, "filter.radius");
+  if (radius !== undefined && !(Number(radius) >= 0 && Number(radius) <= 100)) return "filter.radius on /search is 0 to 100 miles";
+  return null;
+}
+
+function trendingProblem(params: Params): string | null {
+  const ids = params["signal.interests.entities"];
+  const count = Array.isArray(ids) ? ids.length : typeof ids === "string" ? ids.split(",").length : 0;
+  return count === 1 ? null : "trending takes exactly one entity in signal.interests.entities";
+}
+
+export function checkParams(path: string, params: Params): string | null {
+  const take = one(params, "take");
+  if (take !== undefined && (!/^\d+$/.test(take) || Number(take) < 1 || Number(take) > 50)) return "take must be between 1 and 50";
+  if (path === "/v2/insights") return insightsProblem(params);
+  if (path === "/search") return searchProblem(params);
+  if (path === "/v2/trending") return trendingProblem(params);
+  return null;
+}
 
 export function cleanParams(params: Params): Array<[string, string[]]> {
   const out: Array<[string, string[]]> = [];
@@ -138,21 +67,19 @@ export function cleanParams(params: Params): Array<[string, string[]]> {
   return out;
 }
 
-export function buildQuery(params: Params, arrays: ArrayStyle = "comma"): string {
+// Arrays go as one comma joined value; repeating the key is refused with HTTP 400.
+export function buildQuery(params: Params): string {
   const sp = new URLSearchParams();
-  for (const [key, values] of cleanParams(params)) {
-    if (arrays === "repeat") for (const v of values) sp.append(key, v);
-    else sp.append(key, values.join(","));
-  }
+  for (const [key, values] of cleanParams(params)) sp.append(key, values.join(","));
   return sp.toString();
 }
 
-export function buildUrl(baseUrl: string, path: string, params: Params, arrays: ArrayStyle = "comma"): string {
+export function buildUrl(baseUrl: string, path: string, params: Params): string {
   if (!path.startsWith("/") || path.startsWith("//") || /[?#\\]/.test(path)) {
     throw new RangeError(`Invalid Qloo path ${path}`);
   }
   const base = baseUrl.replace(/\/+$/, "");
-  const qs = buildQuery(params, arrays);
+  const qs = buildQuery(params);
   return qs ? `${base}${path}?${qs}` : `${base}${path}`;
 }
 
@@ -160,14 +87,4 @@ export function provenanceParams(params: Params): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [key, values] of cleanParams(params)) out[key] = values.join(",");
   return out;
-}
-
-export function isoDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
-
-export function trendWindow(now: Date, weeks = 8): { start: string; end: string } {
-  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const start = new Date(end.getTime() - weeks * 7 * 86400000);
-  return { start: isoDate(start), end: isoDate(end) };
 }

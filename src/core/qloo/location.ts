@@ -1,5 +1,3 @@
-import type { Params } from "./request.ts";
-
 export const MAX_RADIUS_M = 800000;
 export const MAX_SEARCH_MILES = 100;
 
@@ -34,17 +32,17 @@ export function clampRadius(radiusM: number): number {
 }
 
 // A POINT without a radius matches only the place sitting on that exact point.
-export function locationFilter(lat: number, lng: number, radiusM: number): Params {
+export function locationFilter(lat: number, lng: number, radiusM: number): Record<string, string> {
   return { "filter.location": wktPoint(lat, lng), "filter.location.radius": String(clampRadius(radiusM)) };
 }
 
 // signal.location.radius is left out: it overrides Qloo's density discovery and changed nothing useful.
-export function locationSignal(lat: number, lng: number): Params {
+export function locationSignal(lat: number, lng: number): Record<string, string> {
   return { "signal.location": wktPoint(lat, lng) };
 }
 
 // /search is the opposite of insights: "lat,lon" only, radius in miles.
-export function searchNear(lat: number, lng: number, miles: number): Params {
+export function searchNear(lat: number, lng: number, miles: number): Record<string, string> {
   checkLatLng(lat, lng);
   const r = Math.min(MAX_SEARCH_MILES, Math.max(0, miles));
   return { "filter.location": `${fmtCoord(lat)},${fmtCoord(lng)}`, "filter.radius": String(r) };

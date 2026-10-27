@@ -38,14 +38,14 @@ describe("VenueAgent core", () => {
     expect(log.plans.map((p) => p.origin)).toEqual(["owner", "owner"]);
   });
 
-  it("the Monday run refreshes momentum only, plans the quiet slot, emails the owner and re-arms, without publishing", async () => {
+  it("the Monday run rereads against last week's read, plans the quiet slot, emails the owner and re-arms, without publishing", async () => {
     const mail = fakeFetch(() => ({ body: { id: "m1" } }));
     const { venue, store, log } = setup({ fetch: mail, resend: { key: "re_x", from: "Full House <a@b.example>" } });
     await venue.init("abcdefghijkm", INPUT, CANDIDATE, "https://x.example");
     await venue.read();
     const out = await venue.monday();
     expect(out).toMatchObject({ ok: true, value: { planned: true, emailed: true } });
-    expect(log.reads.at(-1)).toEqual({ venueId: "abcdefghijkm", momentumOnly: true, hadPrevious: true });
+    expect(log.reads.at(-1)).toEqual({ venueId: "abcdefghijkm", hadPrevious: true });
     expect(log.plans.at(-1)).toMatchObject({ origin: "monday", input: { weekday: 4, start: "19:00", durationMin: 180, maxPeople: 40 } });
     expect(store.alarm).toBeGreaterThan(new Date("2026-10-25T10:00:00Z").getTime());
     const state = await venue.state();

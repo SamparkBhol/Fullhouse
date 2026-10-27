@@ -1,4 +1,4 @@
-import { parseHeatmap, resultsOf } from "../../../src/core/qloo/parse.ts";
+import { parseHeatmap, resultsOf } from "../../../src/core/qloo/index.ts";
 import { haversineM } from "../../../src/core/street/geo.ts";
 import { recordsFor, type ProbeContext } from "../context.ts";
 import { centerOf, errorText, keysOf, status } from "../lens.ts";

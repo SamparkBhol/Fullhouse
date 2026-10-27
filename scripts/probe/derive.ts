@@ -1,4 +1,4 @@
-import { countResults, num, parseEntities, parseTags, resultsOf, type QEntity } from "../../src/core/qloo/parse.ts";
+import { countResults, num, parseEntities, parseTags, resultsOf, type QEntity } from "../../src/core/qloo/index.ts";
 import { haversineM } from "../../src/core/street/geo.ts";
 import { LOVED_RADIUS_M, MATCH_RADIUS_KM } from "./config.ts";
 import { GAME_URNS, urnFor, type CityLocalities, type FollowUp, type Locality, type ResolvedVenue, type TrendTarget } from "./plan.ts";

@@ -5,10 +5,10 @@ import {
   locationSignal,
   searchNear,
   trendWindow,
-  type ArrayStyle,
   type Params,
-} from "../../src/core/qloo/request.ts";
+} from "../../src/core/qloo/index.ts";
 import { CITY_RADIUS_MILES, HEAT_RADIUS_M, LOVED_RADIUS_M, TREND_WEEKS } from "./config.ts";
+import type { ArrayStyle } from "./record.ts";
 import { NAME_ONLY_SEARCH, UNTYPED_SEARCH, citySlug, type ProbeVenue } from "./venues.ts";
 
 export type CallGroup = "city" | "global" | "resolve" | "app" | "experiment";
@@ -63,7 +63,7 @@ export interface FollowUp {
   trendTargets: TrendTarget[];
 }
 
-// These two mirror src/core/street/read.ts, which node cannot load with strip types because of its parameter properties.
+// The app's settings when the probe ran, kept as they were so reruns still match the cached answers.
 export const APP_MAX_HEAT_CELLS = 400;
 export const APP_STREET_TAG_TYPES = [
   "urn:tag:genre:media",

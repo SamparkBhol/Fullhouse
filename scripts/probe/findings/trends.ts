@@ -1,11 +1,11 @@
-import { parseTrending } from "../../../src/core/qloo/parse.ts";
+import { parseTrending } from "../../../src/core/qloo/index.ts";
 import { recordsFor, type ProbeContext } from "../context.ts";
 import { errorText, status } from "../lens.ts";
 import type { CallRecord } from "../record.ts";
 
 function seriesLine(rec: CallRecord): string {
   if (rec.status !== 200) return `${status(rec)} (${errorText(rec)})`;
-  const { points } = parseTrending(rec.body);
+  const points = parseTrending(rec.body);
   if (!points.length) return "0 points";
   const ranks = new Set(points.map((p) => p.rank));
   const pcts = new Set(points.map((p) => p.percentile));

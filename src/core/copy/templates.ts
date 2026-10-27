@@ -1,5 +1,5 @@
 import type { NightCopy, NightPlan, Venue } from "../../shared/contract.ts";
-import { tagLabel } from "../qloo/parse.ts";
+import { tagLabel } from "../qloo/tags.ts";
 import { FORMATS, MENU_NAMESPACES, menuItem } from "../planner/formats.ts";
 import { describeDate } from "../planner/time.ts";
 import { capFirst, fit, listWords } from "./text.ts";

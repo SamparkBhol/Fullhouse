@@ -1,5 +1,4 @@
-import { countResults, parseEntities, parseTags } from "../../src/core/qloo/parse.ts";
-import { parseWktPoint } from "../../src/core/qloo/request.ts";
+import { countResults, parseEntities, parseTags, parseWktPoint } from "../../src/core/qloo/index.ts";
 import { haversineM } from "../../src/core/street/geo.ts";
 import type { Point } from "./plan.ts";
 import type { CallRecord } from "./record.ts";

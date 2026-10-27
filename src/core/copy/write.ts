@@ -1,5 +1,5 @@
 import type { NightCopy, NightPlan, StreetRead, Venue } from "../../shared/contract.ts";
-import { tagLabel } from "../qloo/parse.ts";
+import { tagLabel } from "../qloo/tags.ts";
 import { FORMATS, KIND_WORD } from "../planner/formats.ts";
 import { describeDate } from "../planner/time.ts";
 import { describeDistance } from "../street/geo.ts";

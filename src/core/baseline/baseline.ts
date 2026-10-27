@@ -1,9 +1,11 @@
 import type { Baseline, BaselineName, NightPlan, StreetRead, Venue, VerifyStatus } from "../../shared/contract.ts";
 import { findNames, normalizeName } from "../copy/claims.ts";
 import { extractJson, type Generate } from "../copy/write.ts";
-import { QlooError, type Qloo } from "../qloo/client.ts";
-import { parseEntities, type QEntity } from "../qloo/parse.ts";
-import { TYPE_URN, searchNear } from "../qloo/request.ts";
+import type { Qloo } from "../qloo/client.ts";
+import { QlooError } from "../qloo/errors.ts";
+import { parseEntities, type QEntity } from "../qloo/entities.ts";
+import { searchNear } from "../qloo/location.ts";
+import { TYPE_URN } from "../qloo/urns.ts";
 import { describeDistance, haversineM } from "../street/geo.ts";
 import { weekdayName } from "../planner/time.ts";
 
