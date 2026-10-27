@@ -43,7 +43,7 @@ function isGenericPhrase(normalized: string): boolean {
   return normalized.split(" ").every((w) => GENERIC.has(w) || /^\d+$/.test(w));
 }
 
-const CONNECTORS = new Set(["of", "the", "and", "de", "la", "le", "du", "von", "van", "der", "del", "da", "di", "&", "y", "et"]);
+const CONNECTORS = new Set(["of", "the", "de", "la", "le", "du", "von", "van", "der", "del", "da", "di"]);
 
 function isCapitalised(word: string): boolean {
   return /^[\p{Lu}\p{Lt}][\p{L}\p{N}'’.-]*$/u.test(word);
@@ -92,6 +92,14 @@ export function findNames(text: string): Found[] {
   return out;
 }
 
+function trimGeneric(text: string): string {
+  const words = text.split(/\s+/).filter(Boolean);
+  const generic = (w: string) => isGenericPhrase(normalizeName(w));
+  while (words.length > 1 && generic(words[0] ?? "") && !(normalizeName(words[0] ?? "") === "the" && !generic(words[1] ?? ""))) words.shift();
+  while (words.length > 1 && generic(words[words.length - 1] ?? "")) words.pop();
+  return words.join(" ");
+}
+
 export function checkClaims(text: string, allowedNames: string[]): { ok: boolean; unverified: string[] } {
   const allowed = allowedNames
     .filter((n) => typeof n === "string")
@@ -109,10 +117,11 @@ export function checkClaims(text: string, allowedNames: string[]): { ok: boolean
     rest = rest.trim().replace(/\s+/g, " ");
     if (isGenericPhrase(rest)) continue;
     if (allowed.some((a) => a.includes(rest) && rest.length >= 3)) continue;
-    const key = normalizeName(found.text);
+    const shown = trimGeneric(found.text);
+    const key = normalizeName(shown);
     if (seen.has(key)) continue;
     seen.add(key);
-    unverified.push(found.text);
+    unverified.push(shown);
   }
   return { ok: unverified.length === 0, unverified };
 }

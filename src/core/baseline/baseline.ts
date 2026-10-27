@@ -44,15 +44,11 @@ function cleanList(v: unknown, max: number): string[] {
 }
 
 export async function extractNames(text: string, generate: Generate): Promise<{ places: string[]; artists: string[]; other: string[]; method: "model" | "pattern" }> {
-  try {
-    const raw = await generate(EXTRACT_SYSTEM, text.slice(0, 6000));
-    const obj = extractJson(raw);
-    if (obj && typeof obj === "object" && !Array.isArray(obj)) {
-      const o = obj as Record<string, unknown>;
-      return { places: cleanList(o.places, MAX_PLACES), artists: cleanList(o.artists, MAX_ARTISTS), other: cleanList(o.other, MAX_OTHER), method: "model" };
-    }
-  } catch {
-    // Falls through to the pattern extraction below.
+  const raw = await generate(EXTRACT_SYSTEM, text.slice(0, 6000)).catch(() => "");
+  const obj = extractJson(raw);
+  if (obj && typeof obj === "object" && !Array.isArray(obj)) {
+    const o = obj as Record<string, unknown>;
+    return { places: cleanList(o.places, MAX_PLACES), artists: cleanList(o.artists, MAX_ARTISTS), other: cleanList(o.other, MAX_OTHER), method: "model" };
   }
   const found = findNames(text).filter((f) => f.multi).map((f) => f.text);
   return { places: [], artists: [], other: cleanList(found, MAX_PLACES + MAX_OTHER), method: "pattern" };
