@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": 400,
+    "message": "filter.location must be in the form lat,lon",
+    "reason": "Bad Request",
+    "request_id": "4c2f9a1e-0d3b-4e5f-8a6b-7c8d9e0f1a2b"
+  }
+}

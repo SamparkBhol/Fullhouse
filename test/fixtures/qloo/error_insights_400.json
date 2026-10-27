@@ -1,0 +1,3 @@
+{
+  "errors": [{ "message": "take must be an integer value between 1 and 50", "path": "take" }]
+}

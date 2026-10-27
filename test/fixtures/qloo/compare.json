@@ -1,37 +1,52 @@
 {
-  "duration": 0.42,
+  "duration": 27,
   "results": {
     "tags": [
       {
-        "tag_id": "urn:tag:style:qloo:athletic",
-        "name": "Athletic",
+        "tag_id": "urn:tag:genre:place",
+        "name": "Place",
         "type": "urn:tag",
-        "subtype": "urn:tag:style:qloo",
-        "popularity": 0.91,
+        "subtype": "urn:tag:genre:place",
+        "entity_id": "7F0A3B21-0000-4C11-9D22-3E44F55A6601",
+        "popularity": 1,
         "query": {
-          "score": 0.729
+          "score": 0.7310585786300049,
+          "a.signal.interests.entities": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "name": "Cafe Lumen", "subtype": "urn:entity:place", "disambiguation": "12 Grand St Brooklyn, NY 11211" }],
+          "b.signal.interests.entities": [
+            { "entity_id": "A1B2C3D4-1111-4A2B-9C3D-0E1F2A3B4C11", "name": "Blue Hour Wine Bar", "subtype": "urn:entity:place", "disambiguation": "40 Grand St Brooklyn, NY 11211" },
+            { "entity_id": "A1B2C3D4-2222-4A2B-9C3D-0E1F2A3B4C12", "name": "Kettle Books", "subtype": "urn:entity:place", "disambiguation": "7 Roebling St Brooklyn, NY 11211" }
+          ]
         }
       },
       {
-        "tag_id": "urn:tag:genre:brand:fashion:activewear",
-        "name": "Activewear",
+        "tag_id": "urn:tag:offerings:place:coffee",
+        "name": "Coffee",
         "type": "urn:tag",
-        "subtype": "urn:tag:genre:brand",
-        "popularity": 0.88,
+        "subtype": "urn:tag:offerings:place",
+        "entity_id": "7F0A3B21-0000-4C11-9D22-3E44F55A6602",
+        "popularity": 0.99871,
         "query": {
-          "score": 0.654
-        }
-      },
-      {
-        "tag_id": "urn:tag:adjective:qloo:sustainable",
-        "name": "Sustainable",
-        "type": "urn:tag",
-        "subtype": "urn:tag:adjective:qloo",
-        "popularity": 0.76,
-        "query": {
-          "score": 0.512
+          "score": 0.7310585786300049,
+          "a.signal.interests.entities": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "name": "Cafe Lumen", "subtype": "urn:entity:place", "disambiguation": "12 Grand St Brooklyn, NY 11211" }],
+          "b.signal.interests.entities": [{ "entity_id": "A1B2C3D4-2222-4A2B-9C3D-0E1F2A3B4C12", "name": "Kettle Books", "subtype": "urn:entity:place", "disambiguation": "7 Roebling St Brooklyn, NY 11211" }]
         }
       }
-    ]
+    ],
+    "a": [
+      { "tag_id": "urn:tag:genre:place", "name": "Place", "type": "urn:tag", "subtype": "urn:tag:genre:place", "entity_id": "7F0A3B21-0000-4C11-9D22-3E44F55A6601", "popularity": 1, "query": { "count": "1" } },
+      { "tag_id": "urn:tag:genre:place:cafe", "name": "Cafe", "type": "urn:tag", "subtype": "urn:tag:genre:place", "entity_id": "7F0A3B21-0000-4C11-9D22-3E44F55A6603", "popularity": 0.99921, "query": { "count": "1" } },
+      { "tag_id": "urn:tag:offerings:place:coffee", "name": "Coffee", "type": "urn:tag", "subtype": "urn:tag:offerings:place", "entity_id": "7F0A3B21-0000-4C11-9D22-3E44F55A6602", "popularity": 0.99871, "query": { "count": "1" } }
+    ],
+    "b": [
+      { "tag_id": "urn:tag:genre:place", "name": "Place", "type": "urn:tag", "subtype": "urn:tag:genre:place", "entity_id": "7F0A3B21-0000-4C11-9D22-3E44F55A6601", "popularity": 1, "query": { "count": "3" } },
+      { "tag_id": "urn:tag:offerings:place:wine", "name": "Wine", "type": "urn:tag", "subtype": "urn:tag:offerings:place", "entity_id": "7F0A3B21-0000-4C11-9D22-3E44F55A6604", "popularity": 0.99702, "query": { "count": "2" } },
+      { "tag_id": "urn:tag:amenity:qloo:hair_dryer", "name": "Hair dryer", "type": "urn:tag", "subtype": "urn:tag:amenity:qloo", "entity_id": "7F0A3B21-0000-4C11-9D22-3E44F55A6605", "popularity": 0.81233, "query": { "count": "1" } },
+      { "tag_id": "urn:tag:good_for:qloo:live_music", "name": "Live music", "type": "urn:tag", "subtype": "urn:tag:good_for:qloo", "entity_id": "7F0A3B21-0000-4C11-9D22-3E44F55A6606", "popularity": 0.98812, "query": { "count": "1" } },
+      { "tag_id": "urn:tag:genre:place:bar", "name": "Bar", "type": "urn:tag", "subtype": "urn:tag:genre:place", "entity_id": "7F0A3B21-0000-4C11-9D22-3E44F55A6607", "popularity": 0.99993, "query": { "count": "1" } },
+      { "tag_id": "urn:tag:category:place:bar", "name": "Bar", "type": "urn:tag", "subtype": "urn:tag:category:place", "entity_id": "7F0A3B21-0000-4C11-9D22-3E44F55A6608", "popularity": 0.99993, "query": { "count": "1" } },
+      { "tag_id": "urn:tag:event:place:date_night", "name": "Date Night", "type": "urn:tag", "subtype": "urn:tag:event:place", "entity_id": "7F0A3B21-0000-4C11-9D22-3E44F55A6609", "popularity": 0.97011, "query": { "count": "1" } },
+      { "tag_id": "urn:tag:offerings:place:coffee", "name": "Coffee", "type": "urn:tag", "subtype": "urn:tag:offerings:place", "entity_id": "7F0A3B21-0000-4C11-9D22-3E44F55A6602", "popularity": 0.99871, "query": { "count": "1" } }
+    ],
+    "matchEntities": []
   }
 }

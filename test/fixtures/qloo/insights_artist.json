@@ -3,62 +3,63 @@
   "results": {
     "entities": [
       {
-        "entity_id": "BC212422-0726-4219-9B65-BC7535C596E1",
+        "name": "Alice Coltrane",
+        "entity_id": "B7C8D9E0-1111-4F2A-8B3C-4D5E6F7A8B21",
         "type": "urn:entity",
         "subtype": "urn:entity:artist",
-        "name": "Neil Young",
-        "popularity": 0.9993218875142961,
-        "disambiguation": "Neil Young",
-        "properties": {
-          "short_description": "Canadian-American singer-songwriter known for his distinctive guitar work and deeply personal lyrics.",
-          "date_of_birth": "1945-11-12",
-          "place_of_birth": "Toronto, Ontario, Canada",
-          "image": {
-            "url": "https://images.qloo.com/i/BC212422-0726-4219-9B65-BC7535C596E1-420x-auto.jpg"
-          }
-        },
+        "popularity": 0.9603,
+        "disambiguation": "Alice Coltrane",
         "tags": [
-          {
-            "id": "urn:tag:genre:music:rock",
-            "name": "Rock",
-            "type": "urn:tag:genre:music"
-          },
-          {
-            "id": "urn:tag:genre:music:folk_rock",
-            "name": "Folk Rock",
-            "type": "urn:tag:genre:music"
-          }
+          { "id": "urn:tag:genre:music:jazz", "name": "Jazz", "type": "urn:tag:genre:music", "weight": null },
+          { "id": "urn:tag:influenced_by:qloo:john_coltrane", "name": "John Coltrane", "type": "urn:tag:influenced_by:qloo", "weight": null }
         ],
-        "external": {
-          "spotify": [
-            {
-              "id": "6v8FB84lnmJs434UJf2Mrm"
-            }
-          ]
-        },
+        "external": { "spotify": [{ "id": "sp-alice", "verified": true, "monthly_listeners": 1200000 }] },
+        "properties": { "short_descriptions": [{ "value": "Harpist and composer", "languages": ["en"] }], "image": { "url": "https://images.example/alice.jpg" } },
         "query": {
-          "affinity": 0.88,
-          "explainability": {
-            "signal.interests.entities": {
-              "18B098FD-3D84-4609-BFF3-ADF9A0B00E40": 0.72,
-              "FCE8B172-4795-43E4-B222-3B550DC05FD9": 0.28
-            }
-          }
+          "affinity": 0.9817,
+          "measurements": { "audience_growth": 0 },
+          "explainability": { "signal.interests.entities": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "score": 1 }] }
+        }
+      },
+      {
+        "name": "Sade",
+        "entity_id": "B7C8D9E0-2222-4F2A-8B3C-4D5E6F7A8B22",
+        "type": "urn:entity",
+        "subtype": "urn:entity:artist",
+        "popularity": 0.9911,
+        "tags": [{ "id": "urn:tag:genre:music:soul", "name": "Soul", "type": "urn:tag:genre:music", "weight": null }],
+        "properties": { "image": { "url": "https://images.example/sade.jpg" } },
+        "query": {
+          "affinity": 0.9644,
+          "measurements": { "audience_growth": 0 },
+          "explainability": { "signal.interests.entities": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "score": 1 }] }
+        }
+      },
+      {
+        "name": "Khruangbin",
+        "entity_id": "B7C8D9E0-3333-4F2A-8B3C-4D5E6F7A8B23",
+        "type": "urn:entity",
+        "subtype": "urn:entity:artist",
+        "popularity": 0.9722,
+        "tags": [{ "id": "urn:tag:genre:music:psychedelic_rock", "name": "Psychedelic Rock", "type": "urn:tag:genre:music", "weight": null }],
+        "properties": {},
+        "query": {
+          "affinity": 0.9402,
+          "measurements": { "audience_growth": 0 },
+          "explainability": { "signal.interests.entities": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "score": 1 }] }
         }
       }
     ]
   },
   "query": {
     "explainability": {
-      "top_3": {
-        "18B098FD-3D84-4609-BFF3-ADF9A0B00E40": 0.66,
-        "FCE8B172-4795-43E4-B222-3B550DC05FD9": 0.34
-      },
-      "all": {
-        "18B098FD-3D84-4609-BFF3-ADF9A0B00E40": 0.61,
-        "FCE8B172-4795-43E4-B222-3B550DC05FD9": 0.39
+      "signal.interests.entities": {
+        "effect_on_top3_recs": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "avg_score": 1 }],
+        "effect_on_top5_recs": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "avg_score": 1 }],
+        "effect_on_top10_recs": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "avg_score": 1 }],
+        "effect_on_all_recs": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "avg_score": 1 }]
       }
-    }
-  },
-  "duration": 102
+    },
+    "geospatial": { "panel_size": { "context": 6812004420, "target": 98207711 } }
+  }
 }

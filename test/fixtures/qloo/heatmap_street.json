@@ -1,0 +1,10 @@
+{
+  "success": true,
+  "results": {
+    "heatmap": [
+      { "location": { "latitude": 40.72015, "longitude": -73.95858, "geohash": "dr5rtfv" }, "query": { "affinity": 0.97402, "affinity_rank": 0.998112, "popularity": 0.81244, "tag_affinity": 0.97402, "tag_affinity_rank": 0.998112 } },
+      { "location": { "latitude": 40.72564, "longitude": -73.94896, "geohash": "dr5rtgq" }, "query": { "affinity": 0.88017, "affinity_rank": 0.962041, "popularity": 0.60713, "tag_affinity": 0.88017, "tag_affinity_rank": 0.962041 } },
+      { "location": { "latitude": 40.71328, "longitude": -73.96821, "geohash": "dr5rtc2" }, "query": { "affinity": 0.24226, "affinity_rank": 0.651303, "popularity": 0.00626, "tag_affinity": 0.24226, "tag_affinity_rank": 0.651303 } }
+    ]
+  }
+}

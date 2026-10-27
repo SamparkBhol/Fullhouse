@@ -3,54 +3,25 @@
   "results": {
     "entities": [
       {
-        "entity_id": "A2DEF825-7285-40C8-A39F-1E9BC86E6F6E",
+        "name": "The Overstory",
+        "entity_id": "C1D2E3F4-1111-4A5B-8C6D-7E8F9A0B1C31",
         "type": "urn:entity",
         "subtype": "urn:entity:book",
-        "name": "The Catcher in the Rye",
-        "disambiguation": "1951, J.D. Salinger",
-        "popularity": 0.9997517986100722,
-        "properties": {
-          "title": "The Catcher in the Rye",
-          "description": "It's Christmas time and Holden Caulfield has just been expelled from yet another school...",
-          "short_description": "Holden Caulfield, expelled from school, wanders New York City, grappling with alienation and a desire to protect innocence.",
-          "format": "Paperback",
-          "isbn13": "9780316769174",
-          "language": "English",
-          "page_count": 234,
-          "publication_date": "1951-07-16",
-          "publication_year": 1951,
-          "publisher": "Back Bay Books",
-          "image": {
-            "url": "https://images.qloo.com/i/A2DEF825-7285-40C8-A39F-1E9BC86E6F6E-420x-auto.jpg"
-          }
-        },
+        "popularity": 0.9134,
+        "disambiguation": "Richard Powers",
         "tags": [
-          {
-            "id": "urn:tag:genre:media:classics",
-            "name": "Classics",
-            "type": "urn:tag:genre:media"
-          },
-          {
-            "id": "urn:tag:genre:media:young_adult",
-            "name": "Young Adult",
-            "type": "urn:tag:genre:media"
-          },
-          {
-            "id": "urn:tag:genre:media:banned_books",
-            "name": "Banned Books",
-            "type": "urn:tag:genre:media"
-          },
-          {
-            "id": "urn:tag:genre:media:high_school",
-            "name": "High School",
-            "type": "urn:tag:genre:media"
-          }
+          { "id": "urn:tag:genre:media:literary_fiction", "name": "Literary Fiction", "type": "urn:tag:genre:media", "weight": null },
+          { "id": "urn:tag:genre:media:documentary", "name": "Documentary", "type": "urn:tag:genre:media", "weight": null }
         ],
+        "external": { "goodreads": [{ "id": "gr-overstory" }] },
+        "properties": { "publication_year": 2018, "image": { "url": "https://images.example/overstory.jpg" } },
         "query": {
-          "affinity": 0.9631669272078096
+          "affinity": 0.9338,
+          "measurements": { "audience_growth": 0 },
+          "explainability": { "signal.interests.entities": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "score": 1 }] }
         }
       }
     ]
   },
-  "duration": 29
+  "query": { "geospatial": { "panel_size": { "context": 6812004420, "target": 98207711 } } }
 }

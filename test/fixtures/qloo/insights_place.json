@@ -3,197 +3,122 @@
   "results": {
     "entities": [
       {
-        "name": "Catch NYC",
-        "entity_id": "8119141A-D38C-428E-819D-CAA5027120C2",
+        "name": "Blue Hour Wine Bar",
+        "entity_id": "A1B2C3D4-1111-4A2B-9C3D-0E1F2A3B4C11",
         "type": "urn:entity",
         "subtype": "urn:entity:place",
-        "popularity": 0.9971,
-        "disambiguation": "21 9th Ave, New York, NY 10014",
-        "properties": {
-          "address": "21 9th Ave, New York, NY 10014",
-          "geocode": {
-            "name": "New York",
-            "admin1_region": "New York",
-            "admin2_region": "New York County",
-            "country_code": "US",
-            "metro": "New York City",
-            "neighborhood": "Meatpacking District"
-          },
-          "lat": 40.7404,
-          "lon": -74.0059,
-          "phone": "+1 212 392 5978",
-          "website": "https://catchrestaurants.com/catchnyc/",
-          "menu_url": "https://catchrestaurants.com/catchnyc/menu",
-          "business_rating": 4.4,
-          "price_level": 3,
-          "currency": "usd",
-          "is_closed": false,
-          "description": "Seafood centred rooftop restaurant with a sceney crowd.",
-          "image": {
-            "url": "https://images.qloo.com/i/8119141A-D38C-428E-819D-CAA5027120C2-420x-auto.jpg"
-          },
-          "hours": {
-            "monday": "17:00-00:00",
-            "sunday": "11:00-00:00"
-          }
-        },
-        "external": {
-          "resy": [
-            {
-              "id": "catch-nyc",
-              "rating": 4.6,
-              "rating_count": 1830,
-              "party_size_min": 1,
-              "party_size_max": 8
-            }
-          ],
-          "tripadvisor": [
-            {
-              "id": "d1234567",
-              "rating": 4.0,
-              "rating_count": 2210
-            }
-          ]
-        },
+        "popularity": 0.9412,
+        "disambiguation": "40 Grand St Brooklyn, NY 11211",
+        "location": { "lat": 40.7223, "lon": -73.9568, "geohash": "dr5rtg2k1x7m" },
         "tags": [
-          {
-            "id": "urn:tag:genre:place:restaurant:seafood",
-            "name": "Seafood",
-            "type": "urn:tag:genre:place"
-          },
-          {
-            "id": "urn:tag:amenity:place:rooftop_bar",
-            "name": "Rooftop Bar",
-            "type": "urn:tag:amenity:place"
-          },
-          {
-            "id": "urn:tag:ambience:qloo:lively",
-            "name": "Lively",
-            "type": "urn:tag:ambience:qloo"
-          },
-          {
-            "id": "urn:tag:good_for:qloo:special_occasions",
-            "name": "Special Occasions",
-            "type": "urn:tag:good_for:qloo"
-          }
+          { "id": "urn:tag:genre:place:wine_bar", "name": "Wine Bar", "type": "urn:tag:genre:place", "weight": null },
+          { "id": "urn:tag:specialty_dish:place:natural_wine", "name": "Natural Wine", "type": "urn:tag:specialty_dish:place", "weight": null },
+          { "id": "urn:tag:good_for:qloo:live_music", "name": "Live music", "type": "urn:tag:good_for:qloo", "weight": null },
+          { "id": "urn:tag:ambience:qloo:intimate", "name": "Intimate", "type": "urn:tag:ambience:qloo", "weight": null }
         ],
+        "references": null,
+        "external": { "tripadvisor": [{ "id": "9921034", "rating": 4.5, "rating_count": 88 }] },
+        "properties": {
+          "address": "40 Grand St Brooklyn, NY 11211",
+          "ambience_description": "Low light, records on the wall and a short natural wine list.",
+          "business_rating": 4.7,
+          "image": { "url": "https://images.example/blue-hour.jpg" },
+          "live_music": true,
+          "price_level": 2,
+          "website": "https://bluehour.example"
+        },
         "query": {
-          "affinity": 0.97,
-          "distance": 1240.5,
-          "measurements": {
-            "audience_growth": 0.012
-          },
-          "explainability": {
-            "signal.interests.entities": {
-              "FCE8B172-4795-43E4-B222-3B550DC05FD9": 1.0
-            }
-          }
+          "affinity": 0.9681,
+          "distance": 151.4,
+          "measurements": { "audience_growth": 0.42 },
+          "explainability": { "signal.interests.entities": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "score": 1 }] }
         }
       },
       {
-        "name": "L'Artusi",
-        "entity_id": "SYNTHETIC-0000-0000-0000-000000000002",
+        "name": "Kettle Books",
+        "entity_id": "A1B2C3D4-2222-4A2B-9C3D-0E1F2A3B4C12",
         "type": "urn:entity",
         "subtype": "urn:entity:place",
-        "popularity": 0.994,
-        "properties": {
-          "address": "228 W 10th St, New York, NY 10014",
-          "geocode": {
-            "name": "New York",
-            "admin1_region": "New York",
-            "country_code": "US",
-            "metro": "New York City",
-            "neighborhood": "West Village"
-          },
-          "business_rating": 4.6,
-          "price_level": 3
-        },
-        "external": {
-          "michelin": [
-            {
-              "id": "l-artusi",
-              "award": "Bib Gourmand"
-            }
-          ]
-        },
+        "popularity": 0.8813,
+        "disambiguation": "7 Roebling St Brooklyn, NY 11211",
+        "location": { "lat": 40.7192, "lon": -73.9596, "geohash": "dr5rtfuq0c2z" },
         "tags": [
-          {
-            "id": "urn:tag:genre:place:restaurant:italian",
-            "name": "Italian",
-            "type": "urn:tag:genre:place"
-          },
-          {
-            "id": "urn:tag:ambience:qloo:intimate",
-            "name": "Intimate",
-            "type": "urn:tag:ambience:qloo"
-          }
+          { "id": "urn:tag:genre:place:book_store", "name": "Book Store", "type": "urn:tag:genre:place", "weight": null },
+          { "id": "urn:tag:ambience:qloo:cozy", "name": "Cozy", "type": "urn:tag:ambience:qloo", "weight": null }
         ],
+        "properties": { "address": "7 Roebling St Brooklyn, NY 11211", "business_rating": null, "price_level": null },
         "query": {
-          "affinity": 0.95,
-          "distance": 1817.0
+          "affinity": 0.9513,
+          "distance": 212.9,
+          "measurements": { "audience_growth": 0 },
+          "explainability": { "signal.interests.entities": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "score": 1 }] }
         }
       },
       {
-        "name": "Roberta's",
-        "entity_id": "SYNTHETIC-0000-0000-0000-000000000003",
+        "name": "Sora Ramen",
+        "entity_id": "A1B2C3D4-3333-4A2B-9C3D-0E1F2A3B4C13",
         "type": "urn:entity",
         "subtype": "urn:entity:place",
-        "popularity": 0.991,
-        "properties": {
-          "address": "261 Moore St, Brooklyn, NY 11206",
-          "geocode": {
-            "name": "New York",
-            "admin1_region": "New York",
-            "admin2_region": "Kings County",
-            "country_code": "US",
-            "metro": "New York City",
-            "neighborhood": "Bushwick"
-          },
-          "business_rating": 4.5,
-          "price_level": 2
-        },
+        "popularity": 0.9077,
+        "disambiguation": "201 Havemeyer St Brooklyn, NY 11211",
+        "location": { "lat": 40.7241, "lon": -73.9533, "geohash": "dr5rtgm3b8sd" },
         "tags": [
-          {
-            "id": "urn:tag:genre:place:restaurant:pizza",
-            "name": "Pizza",
-            "type": "urn:tag:genre:place"
-          }
+          { "id": "urn:tag:genre:place:restaurant:japanese", "name": "Japanese Restaurant", "type": "urn:tag:genre:place", "weight": null },
+          { "id": "urn:tag:specialty_dish:place:ramen", "name": "Ramen", "type": "urn:tag:specialty_dish:place", "weight": null },
+          { "id": "urn:tag:specialty_dish:place:natural_wine", "name": "Natural Wine", "type": "urn:tag:specialty_dish:place", "weight": null }
         ],
+        "properties": { "address": "201 Havemeyer St Brooklyn, NY 11211" },
         "query": {
-          "affinity": 0.93,
-          "distance": 6150.2
+          "affinity": 0.9442,
+          "distance": 524.6,
+          "measurements": { "audience_growth": -0.8 },
+          "explainability": { "signal.interests.entities": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "score": 1 }] }
+        }
+      },
+      {
+        "name": "Daybreak Cafe",
+        "entity_id": "A1B2C3D4-4444-4A2B-9C3D-0E1F2A3B4C14",
+        "type": "urn:entity",
+        "subtype": "urn:entity:place",
+        "popularity": 0.6901,
+        "disambiguation": "3 Grand St Brooklyn, NY 11211",
+        "location": { "lat": 40.7203, "lon": -73.9589, "geohash": "dr5rtfvb7w1p" },
+        "tags": [{ "id": "urn:tag:genre:place:cafe", "name": "Cafe", "type": "urn:tag:genre:place", "weight": null }],
+        "properties": { "address": "3 Grand St Brooklyn, NY 11211" },
+        "query": {
+          "affinity": 0.9321,
+          "distance": 93.2,
+          "measurements": { "audience_growth": 0 },
+          "explainability": { "signal.interests.entities": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "score": 1 }] }
+        }
+      },
+      {
+        "name": "Grand Street Cinema",
+        "entity_id": "A1B2C3D4-5555-4A2B-9C3D-0E1F2A3B4C15",
+        "type": "urn:entity",
+        "subtype": "urn:entity:place",
+        "popularity": 0.8455,
+        "disambiguation": "120 Grand St Brooklyn, NY 11249",
+        "location": { "lat": 40.7151, "lon": -73.9621, "geohash": "dr5rtcp9e6zn" },
+        "tags": [{ "id": "urn:tag:genre:place:movie_theater", "name": "Movie Theater", "type": "urn:tag:genre:place", "weight": null }],
+        "properties": { "address": "120 Grand St Brooklyn, NY 11249", "website": "https://grandstreetcinema.example" },
+        "query": {
+          "affinity": 0.9174,
+          "distance": 742.8,
+          "measurements": { "audience_growth": 0.11 },
+          "explainability": { "signal.interests.entities": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "score": 1 }] }
         }
       }
     ]
   },
   "query": {
-    "locality": {
-      "signal": {
-        "entity_id": "81E61924-6CEE-4AB4-93D3-282A5C784AB8",
-        "name": "New York",
-        "subtype": "urn:entity:locality",
-        "location": {
-          "lat": 40.66320611815103,
-          "lng": -73.93889084762313
-        },
-        "popularity": 1,
-        "disambiguation": "New York, New York, United States of America"
-      }
-    },
     "explainability": {
-      "top_3": {
-        "FCE8B172-4795-43E4-B222-3B550DC05FD9": 1.0
-      },
-      "top_5": {
-        "FCE8B172-4795-43E4-B222-3B550DC05FD9": 1.0
-      },
-      "top_10": {
-        "FCE8B172-4795-43E4-B222-3B550DC05FD9": 1.0
-      },
-      "all": {
-        "FCE8B172-4795-43E4-B222-3B550DC05FD9": 1.0
+      "signal.interests.entities": {
+        "effect_on_top3_recs": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "avg_score": 1 }],
+        "effect_on_top5_recs": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "avg_score": 1 }],
+        "effect_on_top10_recs": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "avg_score": 1 }],
+        "effect_on_all_recs": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "avg_score": 1 }]
       }
     }
-  },
-  "duration": 88
+  }
 }

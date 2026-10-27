@@ -1,0 +1,64 @@
+{
+  "results": [
+    {
+      "name": "Cafe Lumen Lisboa",
+      "entity_id": "5A1C9E2B-3D4F-4A6B-8C7D-9E0F1A2B3C04",
+      "types": ["urn:entity:place"],
+      "popularity": 0.7731,
+      "disambiguation": "Rua da Rosa 41, 1200-385 Lisboa",
+      "location": { "lat": 38.7129, "lon": -9.1449 },
+      "tags": [
+        { "name": "Cafe", "tag_id": "urn:tag:genre:place:cafe", "type": "urn:tag:genre:place", "value": "urn:tag:genre:place:cafe" }
+      ],
+      "properties": {
+        "address": "Rua da Rosa 41, 1200-385 Lisboa",
+        "akas": [{ "language": "pt", "value": "Lumen Lisboa" }],
+        "geocode": { "name": "Bairro Alto", "city": "Lisbon", "admin1_region": "Lisboa", "country_code": "PT", "country": "Portugal" },
+        "external": { "google_place": { "id": "gp-lisboa-41", "place_id": "gp-lisboa-41" } },
+        "is_closed": false
+      }
+    },
+    {
+      "name": "Cafe Lumen",
+      "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01",
+      "types": ["urn:entity:place"],
+      "popularity": 0.9124,
+      "disambiguation": "12 Grand St Brooklyn, NY 11211",
+      "location": { "lat": 40.721, "lon": -73.958 },
+      "tags": [
+        { "name": "Cafe", "tag_id": "urn:tag:genre:place:cafe", "type": "urn:tag:genre:place", "value": "urn:tag:genre:place:cafe" },
+        { "name": "Cozy", "tag_id": "urn:tag:ambience:qloo:cozy", "type": "urn:tag:ambience:qloo", "value": "urn:tag:ambience:qloo:cozy" }
+      ],
+      "properties": {
+        "address": "12 Grand St Brooklyn, NY 11211",
+        "akas": [],
+        "business_rating": 4.6,
+        "description": "Neighbourhood cafe with a small stage and late opening on Fridays.",
+        "external": { "tripadvisor": { "id": "8812301", "rating": 4.5, "rating_count": 212 } },
+        "geocode": {
+          "name": "Williamsburg",
+          "city": "New York",
+          "admin1_region": "New York",
+          "admin2_region": "Kings County",
+          "country_code": "US",
+          "country": "United States",
+          "metro": "New York"
+        },
+        "hours": { "thursday": [{ "closed": false, "opens": "T08:00:00", "closes": "T22:00:00" }] },
+        "image": { "url": "https://images.example/cafe-lumen.jpg" },
+        "is_closed": false,
+        "neighborhood": "Williamsburg",
+        "website": "https://cafelumen.example"
+      }
+    },
+    {
+      "name": "Lumen Bakery",
+      "entity_id": "5A1C9E2B-3D4F-4A6B-8C7D-9E0F1A2B3C05",
+      "types": ["urn:entity:place"],
+      "popularity": 0.4012,
+      "disambiguation": "88 Bedford Ave Brooklyn, NY 11249",
+      "tags": [],
+      "properties": { "address": "88 Bedford Ave Brooklyn, NY 11249" }
+    }
+  ]
+}

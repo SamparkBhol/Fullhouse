@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "results": {
+    "tags": [
+      { "tag_id": "urn:tag:genre:music:jazz", "name": "Jazz", "types": ["urn:entity:artist"], "subtype": "urn:tag:genre:music", "tag_value": "urn:tag:genre:music:jazz", "popularity": 0.9812, "query": { "affinity": 0.99994 } },
+      { "tag_id": "urn:tag:ambience:qloo:intimate", "name": "Intimate", "types": ["urn:entity:place"], "subtype": "urn:tag:ambience:qloo", "tag_value": "urn:tag:ambience:qloo:intimate", "popularity": 0.9991, "query": { "affinity": 0.99981 } },
+      { "tag_id": "urn:tag:genre:media:documentary", "name": "Documentary", "types": ["urn:entity:movie", "urn:entity:tv_show"], "subtype": "urn:tag:genre:media", "tag_value": "urn:tag:genre:media:documentary", "popularity": 0.9644, "query": { "affinity": 0.99963 } },
+      { "tag_id": "urn:tag:specialty_dish:place:natural_wine", "name": "Natural Wine", "types": ["urn:entity:place"], "subtype": "urn:tag:specialty_dish:place", "tag_value": "urn:tag:specialty_dish:place:natural_wine", "popularity": 0.9402, "query": { "affinity": 0.99911 } },
+      { "tag_id": "urn:tag:specialty_dish:place:ramen", "name": "Ramen", "types": ["urn:entity:place"], "subtype": "urn:tag:specialty_dish:place", "tag_value": "urn:tag:specialty_dish:place:ramen", "popularity": 0.9518, "query": { "affinity": 0.99874 } },
+      { "tag_id": "urn:tag:genre:music:soul", "name": " Soul", "types": ["urn:entity:artist"], "subtype": "urn:tag:genre:music", "tag_value": "urn:tag:genre:music:soul", "popularity": 0.9733, "query": { "affinity": 0.99702 } },
+      { "tag_id": "urn:tag:ambience:qloo:cozy", "name": "Cozy", "types": ["urn:entity:place"], "subtype": "urn:tag:ambience:qloo", "tag_value": "urn:tag:ambience:qloo:cozy", "popularity": 0.9985, "query": { "affinity": 0.99655 } },
+      { "tag_id": "urn:tag:genre:place:wine_bar", "name": "Wine Bar", "types": ["urn:entity:place"], "subtype": "urn:tag:genre:place", "tag_value": "urn:tag:genre:place:wine_bar", "popularity": 0.9201, "query": { "affinity": 0.99431 } },
+      { "tag_id": "urn:tag:genre:media:science_fiction", "name": "Science Fiction", "types": ["urn:entity:movie", "urn:entity:book"], "subtype": "urn:tag:genre:media", "tag_value": "urn:tag:genre:media:science_fiction", "popularity": 0.9877, "query": { "affinity": 0.98907 } }
+    ]
+  },
+  "query": { "geospatial": { "panel_size": { "context": 6812004420, "target": 98207711 } } }
+}

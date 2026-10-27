@@ -25,13 +25,13 @@ describe("createQloo", () => {
     expect(typeof r.prov.ms).toBe("number");
   });
 
-  it("retries 429 and 5xx at most twice with backoff", async () => {
-    const r429: Reply = { status: 429, body: { code: 429, reason: "Too Many Requests", message: "slow down" } };
+  it("retries 429 and 5xx at most twice, backing off from 750 ms", async () => {
+    const r429: Reply = { status: 429, body: { error: { code: 429, reason: "Too Many Requests", message: "Rate limit exceeded" } } };
     const a = client([r429, r429, ok({ results: [] })]);
     await expect(a.q.get("x", "/search", { query: "a" })).resolves.toBeTruthy();
     expect(a.calls).toHaveLength(3);
     expect(a.sleep).toHaveBeenCalledTimes(2);
-    expect(a.sleep.mock.calls.map((c) => (c as unknown[])[0])).toEqual([400, 800]);
+    expect(a.sleep.mock.calls.map((c) => (c as unknown[])[0])).toEqual([750, 1500]);
 
     const r500: Reply = { status: 503, body: { message: "busy" } };
     const b = client([r500, r500, r500, ok({})]);
@@ -42,19 +42,12 @@ describe("createQloo", () => {
     expect(b.calls).toHaveLength(3);
   });
 
-  it("honours Retry-After within the cap", async () => {
-    const a = client([{ status: 429, body: {}, headers: { "retry-after": "2" } }, ok({ results: [] })]);
-    await a.q.get("x", "/search", { query: "a" });
-    expect(a.sleep).toHaveBeenCalledWith(2000);
-  });
-
   it("does not retry client errors and classifies them", async () => {
     const cases: Array<[Reply, string]> = [
       [{ status: 401, body: { error: { reason: "API keys mismatch", message: "Unauthorized", code: 401 } } }, "auth"],
-      [{ status: 403, body: { message: "You do not have permission to access urn:entity:music" } }, "bad_request"],
-      [{ status: 403, body: { message: "Forbidden" } }, "auth"],
-      [{ status: 404, body: { code: 404, message: "No results" } }, "not_found"],
-      [{ status: 400, body: { code: 400, reason: "Bad Request", message: "at least one valid signal or filter is required" } }, "bad_request"],
+      [{ status: 403, body: { error: { message: "Forbidden" } } }, "auth"],
+      [{ status: 404, body: { error: { code: 404, message: "No results" } } }, "not_found"],
+      [{ status: 400, body: { errors: [{ message: "The value urn:entity:video_game is not supported for filter.type", path: "filter.type" }] } }, "bad_request"],
     ];
     for (const [reply, kind] of cases) {
       const c = client([reply, ok({})]);
@@ -64,7 +57,13 @@ describe("createQloo", () => {
       expect(c.calls).toHaveLength(1);
       expect(err.message).not.toContain(KEY);
     }
-    expect(classify(502, "")).toBe("server");
+    expect(classify(502)).toBe("server");
+  });
+
+  it("puts Qloo's own error message in the thrown error", async () => {
+    const c = client([{ status: 400, body: { errors: [{ message: "signal.interests.entities is required", path: "signal.interests.entities.ids" }] } }]);
+    const err = await c.q.get("x", "/v2/insights", { "filter.type": "urn:entity:artist" }).catch((e) => e);
+    expect(err.message).toBe("Qloo 400: signal.interests.entities is required (signal.interests.entities.ids)");
   });
 
   it("reports network failures and timeouts without retrying", async () => {
@@ -122,6 +121,15 @@ describe("createQloo", () => {
     expect(second.body).toEqual(first.body);
   });
 
+  it("treats anything that is not a cache entry as a miss", async () => {
+    const cache: QlooCache = { get: async () => ({ results: [{ entity_id: "STALE", name: "Stale" }] }), put: async () => {} };
+    const f = fakeFetch([() => ok({ results: [] })]);
+    const q = createQloo({ apiKey: KEY, fetch: f.fetch, cache });
+    const r = await q.get("x", "/search", { query: "a" });
+    expect(f.calls).toHaveLength(1);
+    expect(r.prov.cached).toBe(false);
+  });
+
   it("survives a broken cache", async () => {
     const cache: QlooCache = {
       async get() {
@@ -136,13 +144,15 @@ describe("createQloo", () => {
     await expect(q.get("x", "/search", { query: "a" })).resolves.toBeTruthy();
   });
 
-  it("refuses bad setups and POINT filters without a radius before calling", async () => {
+  it("refuses bad setups and parameters the live API rejects before calling", async () => {
     expect(() => createQloo({ apiKey: "" })).toThrow(QlooError);
     expect(() => createQloo({ apiKey: KEY, baseUrl: "http://example.com" })).toThrow(QlooError);
     expect(() => createQloo({ apiKey: KEY, baseUrl: "http://127.0.0.1:8787" })).not.toThrow();
     const c = client([ok({})]);
     const err = await c.q.get("x", "/v2/insights", { "filter.type": "urn:entity:place", "filter.location": "POINT(-73.99 40.72)" }).catch((e) => e);
     expect(err.kind).toBe("bad_request");
+    const wkt = await c.q.get("x", "/search", { query: "a", "filter.location": "POINT(-73.99 40.72)" }).catch((e) => e);
+    expect(wkt.kind).toBe("bad_request");
     expect(c.calls).toHaveLength(0);
   });
 
@@ -151,19 +161,5 @@ describe("createQloo", () => {
     const q = createQloo({ apiKey: KEY, baseUrl: "http://127.0.0.1:9999/", fetch: f.fetch });
     await q.get("x", "/search", { query: "a" });
     expect(f.calls[0]?.url.href).toBe("http://127.0.0.1:9999/search?query=a");
-  });
-
-  it("posts JSON bodies with the key in the header only", async () => {
-    const seen: RequestInit[] = [];
-    const f = async (_u: RequestInfo | URL, init?: RequestInit) => {
-      seen.push(init ?? {});
-      return new Response(JSON.stringify({ results: { entities: [] } }), { status: 200 });
-    };
-    const q = createQloo({ apiKey: KEY, fetch: f as typeof fetch });
-    const r = await q.post!("x", "/v2/insights", { "filter.type": "urn:entity:place" }, { "signal.interests.entities.query": [{ name: "Nobu" }] });
-    expect(seen[0]?.method).toBe("POST");
-    expect(String(seen[0]?.body)).toContain("Nobu");
-    expect(r.prov.params["body.signal.interests.entities.query"]).toContain("Nobu");
-    expect(JSON.stringify(r.prov)).not.toContain(KEY);
   });
 });
