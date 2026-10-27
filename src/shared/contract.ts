@@ -119,6 +119,7 @@ export interface Rising extends EntityRef {
   trend: Trend;
   trendNote?: string;
   because: Because[];
+  tags?: string[];
 }
 
 export interface Gap {
