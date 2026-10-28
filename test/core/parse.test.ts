@@ -42,12 +42,15 @@ describe("entity parsing", () => {
     expect(bakery).toMatchObject({ lat: null, lng: null });
   });
 
-  it("reads insights places: subtype, distance, audience growth and per result explainability", () => {
-    const [first, , third] = parseEntities(fixture("insights_place"));
-    expect(first).toMatchObject({ type: "place", affinity: 0.9681, distanceM: 176.2, audienceGrowth: 0.42, lat: 40.7223, lng: -73.9568 });
+  it("reads insights places: subtype, distance, opening hours and per result explainability", () => {
+    const [first, second, third] = parseEntities(fixture("insights_place"));
+    expect(first).toMatchObject({ type: "place", typeName: "place", affinity: 0.9681, distanceM: 176.2, closed: false, lat: 40.7223, lng: -73.9568 });
+    expect(first?.hours?.thursday).toEqual([{ opens: "17:00", closes: "23:30" }]);
+    expect(first?.hours?.monday).toEqual([{ closed: true }]);
+    expect(second?.hours?.thursday).toEqual([{ opens: "10:00", closes: "21:00" }]);
+    expect(third?.hours).toBeUndefined();
     expect(first?.explain).toEqual([{ entityId: VENUE_ID, score: 1 }]);
     expect(first?.tags[0]).toEqual({ id: "urn:tag:genre:place:wine_bar", name: "Wine Bar", namespace: "urn:tag:genre:place", score: null, popularity: null });
-    expect(third?.audienceGrowth).toBe(-0.8);
   });
 
   it("keeps a missing affinity as null and needs an id and a name", () => {
@@ -107,7 +110,7 @@ describe("other insights modes", () => {
     const cells = parseHeatmap(fixture("heatmap_venue"));
     expect(cells).toHaveLength(5);
     expect(cells[0]).toEqual({ geohash: "dr5rtg0", lat: 40.72152, lng: -73.95721, affinity: 1, affinityRank: 1, popularity: 0.98214 });
-    expect(cells[4]).toMatchObject({ affinityRank: 0, popularity: 0 });
+    expect(cells[4]).toMatchObject({ affinity: 0, affinityRank: 0.350806, popularity: 0 });
   });
 
   it("reads compare's shared tags, each side's own tags and the string counts", () => {

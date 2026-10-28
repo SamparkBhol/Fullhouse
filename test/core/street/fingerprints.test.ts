@@ -48,8 +48,11 @@ describe("venueFingerprint", () => {
       ["Cozy", 1],
       ["Espresso", 2],
       ["Documentary", 3],
-      ["Working", 4],
-      ["indie", 5],
+      ["Cafe", 4],
+      ["Working", 5],
+      ["Jazz", 6],
+      ["Natural Wine", 7],
+      ["indie", 8],
     ]);
     expect(limits).toEqual([]);
   });

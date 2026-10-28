@@ -1,8 +1,7 @@
 import type { Demographics } from "../../../shared/contract.ts";
-import { listWords } from "../../copy/text.ts";
+import { listWords, possessive } from "../../../shared/words.ts";
 import { parseDemographics, type QDemo } from "../../qloo/demographics.ts";
 import type { Runner } from "../runner.ts";
-import { possessive } from "../words.ts";
 import type { ReadContext } from "./resolve.ts";
 
 const AGE_LABEL: Record<string, string> = {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { LovedPlace } from "../../../src/shared/contract.ts";
 import { lovedPlaces } from "../../../src/core/street/steps/loved_places.ts";
-import { PARTNERS_COMPARED, compareStep } from "../../../src/core/street/steps/compare.ts";
+import { PARTNERS_COMPARED, compareStep, comparedPlaces } from "../../../src/core/street/steps/compare.ts";
 import { streetFingerprint } from "../../../src/core/street/steps/street_tags.ts";
 import { venueFingerprint } from "../../../src/core/street/steps/venue_tags.ts";
 import { VENUE_ID, fixture } from "../../fixtures/street.ts";
@@ -55,7 +55,7 @@ describe("compareStep", () => {
   it("falls back to the street and audience overlap when compare fails, and shows no gap", async () => {
     const { run, ctx, input } = await inputs([answer(isCompare, { errors: [{ message: "boom" }] }, 400)]);
     const out = await compareStep(run, ctx, input);
-    expect(out.shared.map((t) => t.name)).toEqual(["Documentary", "Cozy"]);
+    expect(out.shared.map((t) => t.name)).toEqual(["Jazz", "Documentary", "Natural Wine", "Cozy"]);
     expect(out.gaps).toEqual([]);
     expect(run.notes()).toEqual(["Venue versus nearby places comparison failed (Qloo rejected the request), so that part of the read is missing."]);
   });
@@ -72,7 +72,15 @@ describe("compareStep", () => {
     body.results.b = body.results.a;
     const { run, ctx, input } = await inputs([answer(isCompare, body)]);
     expect((await compareStep(run, ctx, input)).limits).toEqual([
-      "No tag missing from Cafe Lumen is shared by two or more of the places nearby that its audience loves, so this read shows no gap.",
+      "No tag missing from Cafe Lumen is shared by two or more of Blue Hour Wine Bar, Kettle Books, Sora Ramen, Daybreak Cafe and Grand Street Cinema, the places nearby its audience loves that were compared, so this read shows no gap.",
     ]);
+  });
+
+  it("compares only places that host people when at least three of them came back", () => {
+    const place = (id: string, tag: string, url?: string) => ({ id, name: id, type: "place" as const, lat: 0, lng: 0, distanceM: 1, rank: 1, tags: [tag], because: [], ...(url ? { url } : {}) });
+    const alley = place("Alley", "urn:tag:genre:place:tourist_attraction");
+    const hosts = ["Bar", "Cinema", "Shop"].map((n) => place(n, `urn:tag:genre:place:${n.toLowerCase()}`, `https://${n}.example`));
+    expect(comparedPlaces([alley, ...hosts]).map((p) => p.id)).toEqual(["Bar", "Cinema", "Shop"]);
+    expect(comparedPlaces([alley, ...hosts.slice(0, 2)]).map((p) => p.id)).toEqual(["Alley", "Bar", "Cinema"]);
   });
 });

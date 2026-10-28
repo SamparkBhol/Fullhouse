@@ -5,7 +5,10 @@
       { "tag_id": "urn:tag:ambience:qloo:cozy", "name": "Cozy", "types": ["urn:entity:place"], "subtype": "urn:tag:ambience:qloo", "tag_value": "urn:tag:ambience:qloo:cozy", "popularity": 0.9985, "query": { "affinity": 0.99812 } },
       { "tag_id": "urn:tag:specialty_dish:place:espresso", "name": "Espresso", "types": ["urn:entity:place"], "subtype": "urn:tag:specialty_dish:place", "tag_value": "urn:tag:specialty_dish:place:espresso", "popularity": 0.9911, "query": { "affinity": 0.95127 } },
       { "tag_id": "urn:tag:genre:media:documentary", "name": "Documentary", "types": ["urn:entity:movie", "urn:entity:tv_show"], "subtype": "urn:tag:genre:media", "tag_value": "urn:tag:genre:media:documentary", "popularity": 0.9644, "query": { "affinity": 0.91402 } },
+      { "tag_id": "urn:tag:genre:place:cafe", "name": "Cafe", "types": ["urn:entity:place"], "subtype": "urn:tag:genre:place", "tag_value": "urn:tag:genre:place:cafe", "popularity": 0.9811, "query": { "affinity": 0.88104 } },
       { "tag_id": "urn:tag:good_for:qloo:working", "name": "Working", "types": ["urn:entity:place"], "subtype": "urn:tag:good_for:qloo", "tag_value": "urn:tag:good_for:qloo:working", "popularity": 0.9312, "query": { "affinity": 0.72085 } },
+      { "tag_id": "urn:tag:genre:music:jazz", "name": "Jazz", "types": ["urn:entity:artist"], "subtype": "urn:tag:genre:music", "tag_value": "urn:tag:genre:music:jazz", "popularity": 0.9408, "query": { "affinity": 0.66218 } },
+      { "tag_id": "urn:tag:specialty_dish:place:natural_wine", "name": "Natural Wine", "types": ["urn:entity:place"], "subtype": "urn:tag:specialty_dish:place", "tag_value": "urn:tag:specialty_dish:place:natural_wine", "popularity": 0.9021, "query": { "affinity": 0.60511 } },
       { "tag_id": "urn:tag:genre:music:indie", "name": " indie", "types": ["urn:entity:artist"], "subtype": "urn:tag:genre:music", "tag_value": "urn:tag:genre:music:indie", "popularity": 0.9502, "query": { "affinity": 0.51933 } }
     ]
   }

@@ -1,5 +1,6 @@
 import type { Rising, StreetRead } from "../../../shared/contract.ts";
-import { fmtDay, TYPE_PLURAL } from "../words.ts";
+import { TYPE_PLURAL } from "../../../shared/words.ts";
+import { fmtDay } from "../words.ts";
 import type { ReadContext } from "./resolve.ts";
 
 // Qloo's weekly trending series held flat on the hackathon host, so this step makes no call and never labels a

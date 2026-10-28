@@ -1,73 +1,128 @@
-import type { QlooType, Rising } from "../../../shared/contract.ts";
-import { capFirst, listWords } from "../../copy/text.ts";
+import type { EntityRef, LovedPlace, QlooType, Rising } from "../../../shared/contract.ts";
+import { TYPE_PLURAL, TYPE_SINGULAR, capFirst, listWords, plural } from "../../../shared/words.ts";
 import { parseEntities, type QEntity } from "../../qloo/entities.ts";
+import { explainSummary, type ExplainRow } from "../../qloo/explain.ts";
 import { locationSignal } from "../../qloo/location.ts";
 import { TYPE_URN } from "../../qloo/urns.ts";
-import { rankBecause, tiedToVenue } from "../because.ts";
+import { sameId } from "../../qloo/values.ts";
+import { parseWarnings } from "../../qloo/warnings.ts";
+import { tiedToVenue } from "../because.ts";
+import { canHost } from "../hosts.ts";
 import { rankBy } from "../rank.ts";
 import type { Runner } from "../runner.ts";
-import { TYPE_PLURAL, TYPE_SINGULAR, plural } from "../words.ts";
+import { share } from "../words.ts";
 import type { ReadContext } from "./resolve.ts";
 
 // Video games are left out: one title tops most venues, so they add little for a night.
 // bias.trends is never sent: books and video games refuse it with HTTP 400 and it changed nothing for the rest.
 export const CROSS_TYPES: QlooType[] = ["artist", "book", "movie", "tv_show", "podcast"];
 const PICKS_PER_TYPE = 10;
+export const ANCHORS = 2;
+
+export interface CrossInput {
+  loved: LovedPlace[];
+  exclude: EntityRef[];
+}
 
 interface PickList {
   type: QlooType;
   ref: number;
   entities: QEntity[];
   tied: boolean;
+  summary: ExplainRow[];
+  ignored: string[];
+}
+
+// Two loved places that host people go in beside the venue, so explainability can say per pick whose crowd carried it.
+export function anchorsFor(loved: LovedPlace[]): LovedPlace[] {
+  return loved.filter(canHost).slice(0, ANCHORS);
 }
 
 // The venue entity plus its point is what makes the picks specific; a point alone returns the same global stars everywhere.
-async function pickList(run: Runner, ctx: ReadContext, type: QlooType): Promise<PickList | null> {
+async function pickList(run: Runner, ctx: ReadContext, type: QlooType, anchors: LovedPlace[], exclude: EntityRef[]): Promise<PickList | null> {
   const params = {
     "filter.type": TYPE_URN[type],
-    "signal.interests.entities": ctx.entityId,
+    "signal.interests.entities": [ctx.entityId, ...anchors.map((a) => a.id)],
     ...locationSignal(ctx.center.lat, ctx.center.lng),
     "feature.explainability": "true",
+    ...(exclude.length ? { "filter.exclude.entities": exclude.map((e) => e.id) } : {}),
     take: String(PICKS_PER_TYPE),
   };
   const got = await run.call(`insights_${type}`, "/v2/insights", params, capFirst(`${TYPE_SINGULAR[type]} picks`));
   if (!got) return null;
   const entities = rankBy(parseEntities(got.body), (e) => e.affinity);
-  return { type, ref: got.ref, entities, tied: entities.some((e) => tiedToVenue(e, ctx)) };
+  const warnings = parseWarnings(got.body);
+  const venueDropped = warnings.notFound.some((id) => sameId(id, ctx.entityId));
+  return {
+    type,
+    ref: got.ref,
+    entities,
+    tied: !venueDropped && entities.some((e) => tiedToVenue(e, ctx)),
+    summary: explainSummary(got.body, "effect_on_top10_recs"),
+    ignored: warnings.notFound.filter((id) => !sameId(id, ctx.entityId)),
+  };
 }
 
-function toRising(e: QEntity, rank: number, list: PickList, ctx: ReadContext): Rising {
+type Names = Map<string, string>;
+
+function nameOf(names: Names, id: string): string {
+  return names.get(id.toUpperCase()) ?? "an input";
+}
+
+function shares(rows: ExplainRow[], names: Names): string {
+  return listWords(rows.map((r) => `${nameOf(names, r.entityId)} ${share(r.score)}`));
+}
+
+function listLine(list: PickList, ctx: ReadContext, anchors: LovedPlace[], names: Names): string {
   const of = plural(list.entities.length, TYPE_SINGULAR[list.type], TYPE_PLURAL[list.type]);
-  // Every result in a list shares this line, so a screen can say it once; the rank itself is Rising.rank.
-  // Without the venue in the signal the scores sit level, so the order is not presented as a ranking.
-  const reason = rankBecause(
-    { ranked: `Ranked among ${of} for people who like ${ctx.name} and the streets around it`, area: `One of ${of} Qloo returned for the area around ${ctx.name}` },
-    e,
-    list.tied,
-    ctx,
-    list.ref,
-  );
+  if (!list.tied) return `One of ${of} Qloo returned for the area around ${ctx.name}`;
+  const used = anchors.filter((a) => !list.ignored.some((id) => sameId(id, a.id)));
+  const who = `people who like ${listWords([ctx.name, ...used.map((a) => a.name)])}`;
+  const top = anchors.length && list.summary.length > 1 ? `. Across the top 10, Qloo's explainability share is ${shares(list.summary, names)}` : "";
+  return `Ranked among ${of} for ${who}, read with the streets around it${top}`;
+}
+
+function toRising(e: QEntity, rank: number, list: PickList, line: string, names: Names, ctx: ReadContext): Rising {
+  const explained = e.explain.length > 1;
   const r: Rising = {
     id: e.id,
     name: e.name,
     type: list.type,
     rank,
     trend: "unknown",
-    because: [reason],
+    because: [{ kind: tiedToVenue(e, ctx) ? "explainability" : "affinity", text: line, provenance: list.ref }],
     tags: e.tags.map((t) => t.id),
+    venueSignal: list.tied,
   };
+  // Every result shares the list line, so a screen can say it once; this line is the pick's own receipt.
+  if (explained) r.explain = e.explain.map((x) => ({ entityId: x.entityId, share: x.score }));
+  if (explained) r.because.push({ kind: "explainability", text: `Qloo's explainability share for this one: ${shares(e.explain, names)}`, provenance: list.ref });
   if (e.image) r.image = e.image;
   if (e.url) r.url = e.url;
   return r;
 }
 
-export async function crossDomain(run: Runner, ctx: ReadContext): Promise<{ rising: Rising[]; limits: string[] }> {
-  const lists = (await Promise.all(CROSS_TYPES.map((t) => pickList(run, ctx, t)))).filter((l): l is PickList => l !== null);
-  const rising = lists.flatMap((l) => l.entities.map((e, i) => toRising(e, i + 1, l, ctx)));
+function crossLimits(lists: PickList[], ctx: ReadContext, names: Names): string[] {
   const empty = lists.filter((l) => !l.entities.length).map((l) => TYPE_PLURAL[l.type]);
   const areaOnly = lists.filter((l) => l.entities.length && !l.tied).map((l) => TYPE_PLURAL[l.type]);
   const limits: string[] = [];
   if (empty.length) limits.push(`Qloo returned no ${listWords(empty)} for ${ctx.name}.`);
-  if (areaOnly.length) limits.push(`Qloo did not use ${ctx.name} itself for the ${listWords(areaOnly)}, so those picks reflect the area only.`);
-  return { rising, limits };
+  if (areaOnly.length) limits.push(`Qloo did not use ${ctx.name} itself for the ${listWords(areaOnly)}, so those picks reflect the area only and are not ranked.`);
+  const ignored = new Map<string, string[]>();
+  for (const l of lists) for (const id of l.ignored) ignored.set(nameOf(names, id), [...(ignored.get(nameOf(names, id)) ?? []), TYPE_PLURAL[l.type]]);
+  for (const [name, types] of ignored) limits.push(`Qloo could not use ${name} for the ${listWords(types)}, so those lists lean on the others.`);
+  return limits;
+}
+
+export async function crossDomain(run: Runner, ctx: ReadContext, input: CrossInput): Promise<{ rising: Rising[]; anchors: LovedPlace[]; limits: string[] }> {
+  const anchors = anchorsFor(input.loved);
+  const names: Names = new Map([[ctx.entityId.toUpperCase(), ctx.name], ...anchors.map((a): [string, string] => [a.id.toUpperCase(), a.name])]);
+  const lists = (await Promise.all(CROSS_TYPES.map((t) => pickList(run, ctx, t, anchors, input.exclude)))).filter((l): l is PickList => l !== null);
+  const rising = lists.flatMap((l) => {
+    const line = listLine(l, ctx, anchors, names);
+    return l.entities.map((e, i) => toRising(e, i + 1, l, line, names, ctx));
+  });
+  const limits = crossLimits(lists, ctx, names);
+  if (input.exclude.length) limits.push(`Left out because you ran them: ${listWords(input.exclude.map((e) => e.name))}.`);
+  return { rising, anchors, limits };
 }

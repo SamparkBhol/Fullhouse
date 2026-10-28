@@ -37,14 +37,14 @@ describe("readStreet", () => {
       "venue_tags",
       "loved_places",
       "heat_venue",
+      "demographics",
+      "compare",
+      "heat_street",
       "insights_artist",
       "insights_book",
       "insights_movie",
       "insights_tv_show",
       "insights_podcast",
-      "demographics",
-      "compare",
-      "heat_street",
     ]);
     for (const c of calls) {
       expect(c.headers["x-api-key"]).toBe(KEY);
@@ -55,7 +55,7 @@ describe("readStreet", () => {
     expect(JSON.stringify(read)).not.toContain(KEY);
 
     const artist = paramsOf(calls, (p) => p.get("filter.type") === "urn:entity:artist");
-    expect(artist?.get("signal.interests.entities")).toBe(VENUE_ID);
+    expect(artist?.get("signal.interests.entities")).toBe(`${VENUE_ID},A1B2C3D4-1111-4A2B-9C3D-0E1F2A3B4C11,A1B2C3D4-5555-4A2B-9C3D-0E1F2A3B4C15`);
     expect(artist?.get("signal.location")).toBe("POINT(-73.958 40.721)");
     expect(paramsOf(calls, (p) => p.get("filter.type") === "urn:demographics")?.has("signal.location")).toBe(false);
     expect(paramsOf(calls, (p) => p.has("b.signal.interests.entities"))?.get("b.signal.interests.entities")?.split(",")).toHaveLength(5);
@@ -80,25 +80,26 @@ describe("readStreet", () => {
     ]);
     expect(read.lovedPlaces[0]?.because.map((b) => b.text)).toEqual([
       "Ranked among 5 places within 1.2 km for people who like Cafe Lumen",
-      "Tagged Intimate, like the street around Cafe Lumen",
+      "Tagged Natural Wine, which the street around Cafe Lumen and its audience both carry",
     ]);
+    expect(read.lovedPlaces[0]?.hours?.thursday).toEqual([{ opens: "17:00", closes: "23:30" }]);
 
     expect([...new Set(read.rising.map((r) => r.type))]).toEqual(["artist", "book", "movie", "podcast"]);
     expect(read.rising.every((r) => r.trend === "unknown" && r.trendNote === undefined)).toBe(true);
     const alice = read.rising.find((r) => r.name === "Alice Coltrane")!;
     expect(alice.because.map((b) => b.kind)).toEqual(["explainability", "tag"]);
-    expect(alice.because[1]?.text).toBe("Tagged Jazz, like the street around Cafe Lumen");
+    expect(alice.because[1]?.text).toBe("Tagged Jazz, which the street around Cafe Lumen and its audience both carry");
 
     expect(read.heat.map((h) => [h.label, h.cells.length])).toEqual([
       ["Where the taste for Cafe Lumen runs strongest", 5],
-      ["Where Jazz, Intimate and Documentary run strongest", 3],
+      ["Where places like Cafe Lumen run strongest", 3],
     ]);
     expect(read.demographics?.summary).toMatch(/^People who like Cafe Lumen on Qloo over index on the 25 to 29 and 30 to 34 age groups, leaning female\./);
 
     expect(read.limits).toEqual([
       "Qloo scores the street's taste tags almost level, so they are shown as a set, not a ranking.",
       "Qloo returned no TV shows for Cafe Lumen.",
-      "Qloo did not use Cafe Lumen itself for the podcasts, so those picks reflect the area only.",
+      "Qloo did not use Cafe Lumen itself for the podcasts, so those picks reflect the area only and are not ranked.",
       FIRST_READ_LIMIT,
       RANK_LIMIT,
       AGGREGATE_LIMIT,
@@ -115,7 +116,7 @@ describe("readStreet", () => {
     const read = await readStreet(setup([broken]).q, VENUE);
     expect(read.limits[0]).toBe("Venue versus nearby places comparison failed (Qloo server error), so that part of the read is missing.");
     expect(read.provenance.some((p) => p.call === "compare")).toBe(false);
-    expect(read.shared.map((t) => t.name)).toEqual(["Documentary", "Cozy"]);
+    expect(read.shared.map((t) => t.name)).toEqual(["Jazz", "Documentary", "Natural Wine", "Cozy"]);
     expect(read.gaps).toEqual([]);
     expect(read.lovedPlaces).toHaveLength(5);
     expectValidProvenance(read);
@@ -167,6 +168,14 @@ describe("readStreet", () => {
     expect(second.calls).toHaveLength(0);
     expect(read.provenance.every((p) => p.cached)).toBe(true);
     expect(read.limits.at(-1)).toBe("12 of 12 Qloo calls came from the cache, fetched 2026-10-25 09:00 UTC.");
+  });
+
+  it("sends the features of recent nights as exclusions", async () => {
+    const { q, calls } = setup();
+    const read = await readStreet(q, VENUE, { exclude: [{ id: "FILM-9", name: "Paterson", type: "movie" }] });
+    const media = calls.filter((c) => /^urn:entity:(artist|book|movie|tv_show|podcast)$/.test(c.url.searchParams.get("filter.type") ?? ""));
+    expect(media.every((c) => c.url.searchParams.get("filter.exclude.entities") === "FILM-9")).toBe(true);
+    expect(read.limits).toContain("Left out because you ran them: Paterson.");
   });
 
   it("notes how each pick moved since last week's read without claiming a trend", async () => {

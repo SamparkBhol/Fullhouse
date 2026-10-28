@@ -1,8 +1,7 @@
 import type { Gap, LovedPlace } from "../../../shared/contract.ts";
-import { listWords } from "../../copy/text.ts";
+import { listWords, possessive } from "../../../shared/words.ts";
 import type { CompareRead, SideTag } from "../../qloo/compare.ts";
 import { isNamespaceRoot, type QTag } from "../../qloo/tags.ts";
-import { possessive } from "../words.ts";
 import type { ReadContext } from "./resolve.ts";
 
 export const MAX_GAPS = 6;

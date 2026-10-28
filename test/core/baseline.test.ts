@@ -1,14 +1,23 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { EXTRACT_SYSTEM, PLAIN_SYSTEM, baselineAsk, createQloo, planNights, readStreet, runBaseline, sameName, summarise } from "../../src/core/index.ts";
+import { EXTRACT_SYSTEM, PLAIN_SYSTEM, baselineAsk, createQloo, extractNames, planNights, readStreet, runBaseline, sameName, summarise, verifyArtist, verifyPlace } from "../../src/core/index.ts";
 import type { NightPlan, StreetRead } from "../../src/shared/contract.ts";
-import { NOW, VENUE, fakeFetch, streetRoute, type Route } from "../fixtures/street.ts";
+import { NOW, VENUE, VENUE_ID, fakeFetch, streetRoute, type Route } from "../fixtures/street.ts";
 
 let read: StreetRead;
 let plan: NightPlan;
 
 const PLAIN = "Try a vinyl night! Feature Norah Jones. Partner with Blue Hour Wine Bar, Sora Ramen and The Velvet Spoon.";
 
+// Full House's own names come back by id, the way /entities answers.
+const entitiesRoute: Route = (url) => {
+  if (url.pathname !== "/entities") return undefined;
+  const ids = (url.searchParams.get("entity_ids") ?? "").split(",");
+  const known = [...read.lovedPlaces, ...read.rising];
+  return { status: 200, body: { results: ids.flatMap((id) => known.filter((k) => k.id === id).slice(0, 1).map((k) => ({ entity_id: k.id, name: k.name, types: [`urn:entity:${k.type}`] }))) } };
+};
+
 const searchRoute: Route = (url) => {
+  if (url.pathname === "/entities") return entitiesRoute(url);
   if (url.pathname !== "/search") return undefined;
   const q = url.searchParams.get("query") ?? "";
   const types = url.searchParams.get("types");
@@ -68,15 +77,26 @@ describe("runBaseline", () => {
     expect(b.plainNames[1]?.note).toMatch(/^Sora Ramen is about \d+\.\d km away$/);
     expect(summarise(b.plainNames)).toEqual({ found_nearby: 2, found_far: 1, not_found: 1 });
 
-    expect(b.fullHouseNames[0]).toMatchObject({ name: "Alice Coltrane", kind: "artist", status: "found_nearby" });
+    expect(b.fullHouseNames[0]).toMatchObject({ name: "Alice Coltrane", kind: "artist", status: "found_nearby", tied: true, tieNote: "1st among the artists Qloo returned for people who like Cafe Lumen" });
     expect(b.fullHouseNames.slice(1).map((n) => n.name)).toEqual(plan.partners.map((p) => p.name));
+    expect(b.fullHouseNames.slice(1).every((n) => n.tied && /^\d+(st|nd|rd|th) of 5 places nearby people who like Cafe Lumen love$/.test(n.tieNote ?? ""))).toBe(true);
+    expect(b.fullHouseNames[1]?.note).toMatch(/^Checked by Qloo id as .+, about \d+ m away$/);
+    expect(b.plainNames[0]).toMatchObject({ tied: false, tieNote: "Not among the 5 places nearby Qloo ties to Cafe Lumen's audience" });
+    expect(f.calls.filter((c) => c.url.pathname === "/entities")).toHaveLength(1);
     expect(b.method).toContain("is not proof that a place does not exist");
     expect(b.method).toContain("within 10 miles");
 
     const placeSearch = f.calls.find((c) => c.url.searchParams.get("query") === "Blue Hour Wine Bar")!.url.searchParams;
     expect(placeSearch.get("filter.location")).toBe("40.721,-73.958");
     expect(placeSearch.get("filter.radius")).toBe("10");
-    expect(f.calls.length).toBeLessThanOrEqual(12);
+    expect(f.calls.length).toBeLessThanOrEqual(10);
+  });
+
+  it("leaves out the name the plain model gave the night itself", async () => {
+    const generate = async (system: string) =>
+      system === PLAIN_SYSTEM ? "Thursday Night Lit with Kettle Books." : JSON.stringify({ places: [], artists: [], other: ["Thursday Night Lit", "The Overstory"], events: ["Thursday Night Lit"] });
+    const names = await extractNames("Thursday Night Lit with Kettle Books.", generate, VENUE);
+    expect(names.other).toEqual(["The Overstory"]);
   });
 
   it("says when a check could not run instead of calling it missing", async () => {
@@ -102,6 +122,37 @@ describe("runBaseline", () => {
     const q = createQloo({ apiKey: "k", fetch: f.fetch });
     const generate = async (system: string) => (system === PLAIN_SYSTEM ? PLAIN : '{"places": ["Sora Ramen"]}');
     await expect(runBaseline(q, VENUE, read, plan, generate, "m")).rejects.toMatchObject({ kind: "auth" });
+  });
+});
+
+describe("verifyPlace", () => {
+  it("says so when a plain model offers the venue itself as a partner", async () => {
+    const own = fakeFetch([
+      () => ({ status: 200, body: { results: [{ entity_id: VENUE_ID, name: "Cafe Lumen", types: ["urn:entity:place"], location: { lat: VENUE.entity.lat, lon: VENUE.entity.lng } }] } }),
+    ]);
+    const checked = await verifyPlace(createQloo({ apiKey: "k", fetch: own.fetch }), "Cafe Lumen", VENUE);
+    expect(checked).toEqual({ name: { name: "Cafe Lumen", kind: "place", status: "found_nearby", note: "This is Cafe Lumen itself, so it cannot be a partner" }, id: VENUE_ID });
+  });
+
+  it("does not count a place Qloo lists as permanently closed", async () => {
+    const shut = { entity_id: "SHUT-1", name: "Soho Bikes", types: ["urn:entity:place"], location: { lat: 40.7215, lng: -73.958 }, properties: { address: "26 Berwick St", is_closed: true } };
+    const closed = fakeFetch([() => ({ status: 200, body: { results: [shut] } })]);
+    const checked = await verifyPlace(createQloo({ apiKey: "k", fetch: closed.fetch }), "Soho Bikes", VENUE);
+    expect(checked.name).toEqual({ name: "Soho Bikes", kind: "place", status: "not_found", closed: true, note: "In Qloo as permanently closed: Soho Bikes, 26 Berwick St" });
+  });
+});
+
+describe("verifyArtist", () => {
+  it("searches the whole catalog when the artist search misses, and names the type it found", async () => {
+    const author = fakeFetch([
+      (url) =>
+        url.searchParams.get("types") === "urn:entity:artist"
+          ? { status: 200, body: { results: [{ entity_id: "ART-2", name: "Jenny Lewis", types: ["urn:entity:artist"] }] } }
+          : { status: 200, body: { results: [{ entity_id: "AUTH-1", name: "Jennifer Egan", types: ["urn:entity:author"] }] } },
+    ]);
+    const checked = await verifyArtist(createQloo({ apiKey: "k", fetch: author.fetch }), "Jennifer Egan", VENUE);
+    expect(checked.name).toEqual({ name: "Jennifer Egan", kind: "artist", status: "found_nearby", note: "In Qloo's catalog as Jennifer Egan (author); distance does not apply" });
+    expect(author.calls.map((c) => c.url.searchParams.get("types"))).toEqual(["urn:entity:artist", null]);
   });
 });
 

@@ -9,6 +9,7 @@ export * from "./cache.ts";
 export * from "./client.ts";
 export * from "./tags.ts";
 export * from "./explain.ts";
+export * from "./warnings.ts";
 export * from "./entities.ts";
 export * from "./heatmap.ts";
 export * from "./compare.ts";

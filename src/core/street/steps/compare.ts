@@ -1,6 +1,8 @@
 import type { Gap, LovedPlace, StreetTag } from "../../../shared/contract.ts";
+import { listWords } from "../../../shared/words.ts";
 import { parseCompare, type CompareRead } from "../../qloo/compare.ts";
 import type { QTag } from "../../qloo/tags.ts";
+import { canHost } from "../hosts.ts";
 import { renumber, tagKeys, uniqueBy } from "../rank.ts";
 import type { Runner } from "../runner.ts";
 import type { Fingerprint } from "./fingerprint.ts";
@@ -9,6 +11,7 @@ import type { ReadContext } from "./resolve.ts";
 
 // With three places nearly every partner tag is carried once; five lets a gap be one the street shares.
 export const PARTNERS_COMPARED = 5;
+const MIN_HOSTS = 3;
 const MAX_SHARED = 10;
 
 export interface CompareInput {
@@ -42,16 +45,22 @@ async function runCompare(run: Runner, ctx: ReadContext, partners: LovedPlace[])
   return got ? { read: parseCompare(got.body), ref: got.ref } : null;
 }
 
+// Landmarks and alleys cannot carry a gap a venue could act on, so the comparison uses places that host people.
+export function comparedPlaces(places: LovedPlace[]): LovedPlace[] {
+  const hosts = places.filter(canHost);
+  return (hosts.length >= MIN_HOSTS ? hosts : places).slice(0, PARTNERS_COMPARED);
+}
+
 export async function compareStep(run: Runner, ctx: ReadContext, input: CompareInput): Promise<CompareOutput> {
-  const partners = input.partners.slice(0, PARTNERS_COMPARED);
+  const partners = comparedPlaces(input.partners);
   const compared = await runCompare(run, ctx, partners);
   const shared = sharedTags(compared?.read ?? null, input.street, input.audience);
   const gaps = compared ? partnerGaps(compared.read, partners, ctx, compared.ref) : [];
   const limits: string[] = [];
   if (!partners.length) limits.push(`${ctx.name} was not compared with nearby places because none came back, so this read shows no gap.`);
   else if (compared && !gaps.length) {
-    const by = partners.length > 1 ? "shared by two or more of the places" : "on the one place";
-    limits.push(`No tag missing from ${ctx.name} is ${by} nearby that its audience loves, so this read shows no gap.`);
+    const by = partners.length > 1 ? "shared by two or more of" : "on";
+    limits.push(`No tag missing from ${ctx.name} is ${by} ${listWords(partners.map((p) => p.name))}, the places nearby its audience loves that were compared, so this read shows no gap.`);
   }
   return { shared, gaps, limits };
 }

@@ -1,10 +1,9 @@
 import type { HeatCell, HeatLayer, StreetTag } from "../../../shared/contract.ts";
-import { listWords } from "../../copy/text.ts";
+import { listWords, plural, possessive } from "../../../shared/words.ts";
 import { parseHeatmap } from "../../qloo/heatmap.ts";
 import { locationFilter } from "../../qloo/location.ts";
 import type { Params } from "../../qloo/request.ts";
 import type { Runner } from "../runner.ts";
-import { plural, possessive } from "../words.ts";
 import type { ReadContext } from "./resolve.ts";
 
 export const HEAT_RADIUS_M = 2000;
@@ -15,13 +14,17 @@ function round(n: number): number {
   return Math.round(n * 10000) / 10000;
 }
 
+// Qloo answers affinity 0 and popularity 0 for a square it has no data for, sometimes with a non zero
+// affinity_rank, so those two fields decide that a square has no read.
 export function heatCells(body: unknown): { cells: HeatCell[]; dropped: number } {
   const cells: HeatCell[] = [];
   for (const c of parseHeatmap(body)) {
     if (c.affinityRank === null || c.popularity === null) continue;
-    cells.push({ geohash: c.geohash, lat: c.lat, lng: c.lng, affinityRank: round(c.affinityRank), popularity: round(c.popularity) });
+    const cell: HeatCell = { geohash: c.geohash, lat: c.lat, lng: c.lng, affinityRank: round(c.affinityRank), popularity: round(c.popularity) };
+    if (c.affinity === 0 && c.popularity === 0) cell.noRead = true;
+    cells.push(cell);
   }
-  cells.sort((a, b) => b.affinityRank - a.affinityRank || a.geohash.localeCompare(b.geohash));
+  cells.sort((a, b) => Number(Boolean(a.noRead)) - Number(Boolean(b.noRead)) || b.affinityRank - a.affinityRank || a.geohash.localeCompare(b.geohash));
   return { cells: cells.slice(0, MAX_HEAT_CELLS), dropped: Math.max(0, cells.length - MAX_HEAT_CELLS) };
 }
 
@@ -54,15 +57,15 @@ export function venueHeat(run: Runner, ctx: ReadContext): Promise<{ layer: HeatL
   });
 }
 
-// Street tags as signal compress affinity_rank to about 0.6 to 1, so this layer is the weaker of the two.
-export async function streetHeat(run: Runner, ctx: ReadContext, top: StreetTag[]): Promise<{ layer: HeatLayer | null; limits: string[] }> {
-  if (!top.length) return { layer: null, limits: [] };
-  const names = listWords(top.map((t) => t.name));
+// The venue's own place concepts as signal answer whether that kind of place does well on this block or the
+// next one over. Concept tags compress affinity_rank to about 0.6 to 1, so this layer is the weaker of the two.
+export async function conceptHeat(run: Runner, ctx: ReadContext, concepts: StreetTag[]): Promise<{ layer: HeatLayer | null; limits: string[] }> {
+  if (!concepts.length) return { layer: null, limits: [] };
   return heatLayer(run, ctx, {
     call: "heat_street",
-    label: "Street heatmap",
-    signal: { "signal.interests.tags": top.map((t) => t.id), "operator.signal.interests.tags": "union" },
-    title: `Where ${names} run strongest`,
-    subject: names,
+    label: "Concept heatmap",
+    signal: { "signal.interests.tags": concepts.map((t) => t.id), "operator.signal.interests.tags": "union" },
+    title: `Where places like ${ctx.name} run strongest`,
+    subject: `places tagged ${listWords(concepts.map((t) => t.name))}`,
   });
 }

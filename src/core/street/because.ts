@@ -5,8 +5,8 @@ import type { Fingerprint } from "./steps/fingerprint.ts";
 import type { ReadContext } from "./steps/resolve.ts";
 import { sharesStreetTagLine } from "./words.ts";
 
-// With the venue as the only entity signal every explained result scores 1 for it, so the useful fact is
-// whether Qloo used the venue at all. An answer where nothing is explained means the venue part was dropped.
+// An explained result lists the venue among the signal entities when Qloo used the venue for it.
+// An answer where nothing is explained means the venue part was dropped.
 export function tiedToVenue(e: QEntity, ctx: ReadContext): boolean {
   return e.explain.some((r) => sameId(r.entityId, ctx.entityId));
 }
@@ -17,13 +17,28 @@ export function rankBecause(text: { ranked: string; area: string }, e: QEntity, 
   return { kind: tiedToVenue(e, ctx) ? "explainability" : "affinity", text: listTied ? text.ranked : text.area, provenance: ref };
 }
 
-export function streetTagBecause(tagIds: string[], street: Fingerprint | null, venueName: string): Because[] {
-  if (!street) return [];
+// Ambience tags and book formats sit near level on every place and book, so they explain nothing.
+const SAYS_NOTHING_NS = new Set(["urn:tag:ambience:qloo"]);
+const FORMAT_NAMES = /^(audiobook|e ?book|hardcover|paperback|mass market|kindle)/i;
+
+function explains(tag: { id: string; name: string; namespace: string }): boolean {
+  return !SAYS_NOTHING_NS.has(tag.namespace) && !FORMAT_NAMES.test(tag.name.trim());
+}
+
+// Only a tag both the street and the venue's own audience carry is worth naming as a reason.
+export function streetTagBecause(tagIds: string[], street: Fingerprint | null, audience: Fingerprint | null, venueName: string): Because[] {
+  if (!street || !audience) return [];
   const ids = new Set(tagIds);
-  const hit = street.tags.find((s) => ids.has(s.id));
+  const own = new Set(audience.tags.map((t) => t.id));
+  const hit = street.tags.find((s) => ids.has(s.id) && own.has(s.id) && explains(s));
   return hit ? [{ kind: "tag", text: sharesStreetTagLine(hit.name, venueName), provenance: street.ref }] : [];
 }
 
-export function withStreetTags<T extends { tags?: string[]; because: Because[] }>(items: T[], street: Fingerprint | null, venueName: string): T[] {
-  return items.map((item) => ({ ...item, because: [...item.because, ...streetTagBecause(item.tags ?? [], street, venueName)] }));
+export function withStreetTags<T extends { tags?: string[]; because: Because[] }>(
+  items: T[],
+  street: Fingerprint | null,
+  audience: Fingerprint | null,
+  venueName: string,
+): T[] {
+  return items.map((item) => ({ ...item, because: [...item.because, ...streetTagBecause(item.tags ?? [], street, audience, venueName)] }));
 }

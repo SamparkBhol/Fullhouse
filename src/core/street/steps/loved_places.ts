@@ -3,11 +3,12 @@ import { parseEntities, type QEntity } from "../../qloo/entities.ts";
 import { locationFilter } from "../../qloo/location.ts";
 import { TYPE_URN } from "../../qloo/urns.ts";
 import { sameId } from "../../qloo/values.ts";
+import { parseWarnings } from "../../qloo/warnings.ts";
 import { rankBecause, tiedToVenue } from "../because.ts";
-import { haversineM } from "../geo.ts";
+import { haversineM } from "../../../shared/geo.ts";
 import { rankBy } from "../rank.ts";
 import type { Runner } from "../runner.ts";
-import { plural, possessive } from "../words.ts";
+import { plural, possessive } from "../../../shared/words.ts";
 import type { ReadContext } from "./resolve.ts";
 
 export const LOVED_RADIUS_M = 1200;
@@ -45,6 +46,7 @@ function toPlace(e: QEntity, rank: number, n: number, tied: boolean, ctx: ReadCo
   if (address) p.address = address;
   if (e.image) p.image = e.image;
   if (e.url) p.url = e.url;
+  if (e.hours) p.hours = e.hours;
   return p;
 }
 
@@ -73,11 +75,12 @@ export async function lovedPlaces(run: Runner, ctx: ReadContext): Promise<{ love
   );
   if (!got) return { loved: null, limits: [] };
   const all = rankBy(
-    parseEntities(got.body).filter((e) => !sameId(e.id, ctx.entityId)),
+    parseEntities(got.body).filter((e) => !sameId(e.id, ctx.entityId) && !e.closed),
     (e) => e.affinity,
   );
   const mapped = all.filter((e) => e.lat !== null && e.lng !== null);
-  const tied = mapped.some((e) => tiedToVenue(e, ctx));
+  const venueDropped = parseWarnings(got.body).notFound.some((id) => sameId(id, ctx.entityId));
+  const tied = !venueDropped && mapped.some((e) => tiedToVenue(e, ctx));
   const places = mapped.map((e, i) => toPlace(e, i + 1, mapped.length, tied, ctx, got.ref));
   return { loved: { places, ref: got.ref }, limits: placeLimits(mapped.length, all.length - mapped.length, tied, ctx) };
 }

@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
 import type { StreetTag } from "../../../src/shared/contract.ts";
-import { MAX_HEAT_CELLS, heatCells, streetHeat, venueHeat } from "../../../src/core/street/steps/heat.ts";
+import { MAX_HEAT_CELLS, conceptHeat, heatCells, venueHeat } from "../../../src/core/street/steps/heat.ts";
 import { VENUE_ID, fixture } from "../../fixtures/street.ts";
 import { answer, stepSetup } from "./helpers.ts";
 
 const isHeat = (p: URLSearchParams) => p.get("filter.type") === "urn:heatmap";
-const TOP: StreetTag[] = [
-  { id: "urn:tag:genre:music:jazz", name: "Jazz", namespace: "urn:tag:genre:music", rank: 1 },
-  { id: "urn:tag:ambience:qloo:intimate", name: "Intimate", namespace: "urn:tag:ambience:qloo", rank: 2 },
+const CONCEPTS: StreetTag[] = [
+  { id: "urn:tag:genre:place:cafe", name: "Cafe", namespace: "urn:tag:genre:place", rank: 1 },
+  { id: "urn:tag:genre:place:book_store", name: "Book store", namespace: "urn:tag:genre:place", rank: 2 },
 ];
 
-function cell(geohash: string, rank: number | null, popularity: number | null = 0.5) {
-  return { location: { latitude: 40.72, longitude: -73.95, geohash }, query: { affinity: rank, affinity_rank: rank, popularity } };
+function cell(geohash: string, rank: number | null, popularity: number | null = 0.5, affinity: number | null = rank) {
+  return { location: { latitude: 40.72, longitude: -73.95, geohash }, query: { affinity, affinity_rank: rank, popularity } };
 }
 
 describe("heatCells", () => {
@@ -24,6 +24,14 @@ describe("heatCells", () => {
       ],
       dropped: 0,
     });
+  });
+
+  it("marks a square with no affinity and no popularity as no read, whatever its rank says, and puts it last", () => {
+    const body = { results: { heatmap: [cell("empty", 0.64, 0, 0), cell("real", 0.2, 0.3)] } };
+    expect(heatCells(body).cells).toEqual([
+      { geohash: "real", lat: 40.72, lng: -73.95, affinityRank: 0.2, popularity: 0.3 },
+      { geohash: "empty", lat: 40.72, lng: -73.95, affinityRank: 0.64, popularity: 0, noRead: true },
+    ]);
   });
 
   it("caps a city sized answer and counts what it left off", () => {
@@ -45,7 +53,7 @@ describe("venueHeat", () => {
       "signal.interests.entities": VENUE_ID,
     });
     expect(layer?.label).toBe("Where the taste for Cafe Lumen runs strongest");
-    expect(layer?.cells.map((c) => c.affinityRank)).toEqual([1, 0.8745, 0.4129, 0.303, 0]);
+    expect(layer?.cells.map((c) => [c.affinityRank, c.noRead ?? false])).toEqual([[1, false], [0.8745, false], [0.4129, false], [0.303, false], [0.3508, true]]);
     expect(limits).toEqual([]);
   });
 
@@ -55,21 +63,21 @@ describe("venueHeat", () => {
   });
 });
 
-describe("streetHeat", () => {
-  it("uses the top street tags as one union signal", async () => {
+describe("conceptHeat", () => {
+  it("uses the venue's own place concepts as one union signal", async () => {
     const { run, ctx, calls } = stepSetup();
-    const { layer } = await streetHeat(run, ctx, TOP);
+    const { layer } = await conceptHeat(run, ctx, CONCEPTS);
     const p = calls[0]!.url.searchParams;
-    expect(p.get("signal.interests.tags")).toBe("urn:tag:genre:music:jazz,urn:tag:ambience:qloo:intimate");
+    expect(p.get("signal.interests.tags")).toBe("urn:tag:genre:place:cafe,urn:tag:genre:place:book_store");
     expect(p.get("operator.signal.interests.tags")).toBe("union");
     expect(p.has("signal.interests.entities")).toBe(false);
-    expect(layer?.label).toBe("Where Jazz and Intimate run strongest");
+    expect(layer?.label).toBe("Where places like Cafe Lumen run strongest");
     expect(layer?.cells).toHaveLength(fixture("heatmap_street").results.heatmap.length);
   });
 
-  it("makes no call without street tags", async () => {
+  it("makes no call without concept tags", async () => {
     const { run, ctx, calls } = stepSetup();
-    expect(await streetHeat(run, ctx, [])).toEqual({ layer: null, limits: [] });
+    expect(await conceptHeat(run, ctx, [])).toEqual({ layer: null, limits: [] });
     expect(calls).toHaveLength(0);
   });
 });

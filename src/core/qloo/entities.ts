@@ -9,6 +9,7 @@ export interface QEntity {
   id: string;
   name: string;
   type: QlooType | null;
+  typeName?: string;
   popularity: number | null;
   affinity: number | null;
   distanceM: number | null;
@@ -21,7 +22,43 @@ export interface QEntity {
   areaNames: string[];
   tags: QTag[];
   explain: ExplainRow[];
-  audienceGrowth: number | null;
+  closed: boolean;
+  hours?: WeekHours;
+}
+
+export interface OpenSpan {
+  opens?: string;
+  closes?: string;
+  closed?: boolean;
+}
+
+export type WeekHours = Record<string, OpenSpan[]>;
+
+const WEEKDAY_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+// Qloo writes times as "T10:00:00"; only HH:MM is kept.
+function clock(v: unknown): string | undefined {
+  const m = /T?(\d{2}):(\d{2})/.exec(str(v) ?? "");
+  return m ? `${m[1]}:${m[2]}` : undefined;
+}
+
+function parseHours(raw: unknown): WeekHours | undefined {
+  const days = obj(raw);
+  const out: WeekHours = {};
+  for (const day of WEEKDAY_KEYS) {
+    const spans = list(days[day]).map((s): OpenSpan => {
+      const span: OpenSpan = {};
+      const o = obj(s);
+      if (o.closed === true) span.closed = true;
+      const opens = clock(o.opens);
+      const closes = clock(o.closes);
+      if (opens) span.opens = opens;
+      if (closes) span.closes = closes;
+      return span;
+    });
+    if (spans.length) out[day] = spans;
+  }
+  return Object.keys(out).length ? out : undefined;
 }
 
 // Insights names the type in subtype; /search and /entities list it in types[].
@@ -31,6 +68,12 @@ function entityType(raw: Record<string, unknown>): QlooType | null {
     if (t) return t;
   }
   return null;
+}
+
+// The last part of the entity urn, such as "author", which typeFromUrn folds into person.
+function typeName(raw: Record<string, unknown>): string | undefined {
+  const urn = [raw.subtype, ...list(raw.types)].map(str).find((u) => u?.startsWith("urn:entity:"));
+  return urn ? urn.slice("urn:entity:".length).replace(/_/g, " ") : undefined;
 }
 
 function coords(raw: Record<string, unknown>): { lat: number | null; lng: number | null } {
@@ -65,8 +108,12 @@ export function parseEntity(raw: unknown): QEntity | null {
     areaNames: areaNames(props),
     tags: parseTagList(list(raw.tags)),
     explain: parseExplain(q.explainability),
-    audienceGrowth: num(obj(q.measurements).audience_growth),
+    closed: props.is_closed === true,
   };
+  const hours = parseHours(props.hours);
+  if (hours) e.hours = hours;
+  const kind = typeName(raw);
+  if (kind) e.typeName = kind;
   const address = str(props.address);
   if (address) e.address = address;
   const disambiguation = str(raw.disambiguation);

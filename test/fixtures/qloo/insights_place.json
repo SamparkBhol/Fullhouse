@@ -9,29 +9,122 @@
         "subtype": "urn:entity:place",
         "popularity": 0.9412,
         "disambiguation": "40 Grand St Brooklyn, NY 11211",
-        "location": { "lat": 40.7223, "lon": -73.9568, "geohash": "dr5rtg2k1x7m" },
+        "location": {
+          "lat": 40.7223,
+          "lon": -73.9568,
+          "geohash": "dr5rtg2k1x7m"
+        },
         "tags": [
-          { "id": "urn:tag:genre:place:wine_bar", "name": "Wine Bar", "type": "urn:tag:genre:place", "weight": null },
-          { "id": "urn:tag:specialty_dish:place:natural_wine", "name": "Natural Wine", "type": "urn:tag:specialty_dish:place", "weight": null },
-          { "id": "urn:tag:good_for:qloo:live_music", "name": "Live music", "type": "urn:tag:good_for:qloo", "weight": null },
-          { "id": "urn:tag:ambience:qloo:intimate", "name": "Intimate", "type": "urn:tag:ambience:qloo", "weight": null }
+          {
+            "id": "urn:tag:genre:place:wine_bar",
+            "name": "Wine Bar",
+            "type": "urn:tag:genre:place",
+            "weight": null
+          },
+          {
+            "id": "urn:tag:specialty_dish:place:natural_wine",
+            "name": "Natural Wine",
+            "type": "urn:tag:specialty_dish:place",
+            "weight": null
+          },
+          {
+            "id": "urn:tag:good_for:qloo:live_music",
+            "name": "Live music",
+            "type": "urn:tag:good_for:qloo",
+            "weight": null
+          },
+          {
+            "id": "urn:tag:ambience:qloo:intimate",
+            "name": "Intimate",
+            "type": "urn:tag:ambience:qloo",
+            "weight": null
+          }
         ],
         "references": null,
-        "external": { "tripadvisor": [{ "id": "9921034", "rating": 4.5, "rating_count": 88 }] },
+        "external": {
+          "tripadvisor": [
+            {
+              "id": "9921034",
+              "rating": 4.5,
+              "rating_count": 88
+            }
+          ]
+        },
         "properties": {
           "address": "40 Grand St Brooklyn, NY 11211",
           "ambience_description": "Low light, records on the wall and a short natural wine list.",
           "business_rating": 4.7,
-          "image": { "url": "https://images.example/blue-hour.jpg" },
+          "image": {
+            "url": "https://images.example/blue-hour.jpg"
+          },
           "live_music": true,
           "price_level": 2,
-          "website": "https://bluehour.example"
+          "website": "https://bluehour.example",
+          "is_closed": false,
+          "hours": {
+            "sunday": [
+              {
+                "closed": false,
+                "opens": "T17:00:00",
+                "closes": "T23:30:00"
+              }
+            ],
+            "monday": [
+              {
+                "closed": true
+              }
+            ],
+            "tuesday": [
+              {
+                "closed": false,
+                "opens": "T17:00:00",
+                "closes": "T23:30:00"
+              }
+            ],
+            "wednesday": [
+              {
+                "closed": false,
+                "opens": "T17:00:00",
+                "closes": "T23:30:00"
+              }
+            ],
+            "thursday": [
+              {
+                "closed": false,
+                "opens": "T17:00:00",
+                "closes": "T23:30:00"
+              }
+            ],
+            "friday": [
+              {
+                "closed": false,
+                "opens": "T17:00:00",
+                "closes": "T23:30:00"
+              }
+            ],
+            "saturday": [
+              {
+                "closed": false,
+                "opens": "T17:00:00",
+                "closes": "T23:30:00"
+              }
+            ]
+          }
         },
         "query": {
           "affinity": 0.9681,
           "distance": 176.2,
-          "measurements": { "audience_growth": 0.42 },
-          "explainability": { "signal.interests.entities": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "score": 1 }] }
+          "measurements": {
+            "audience_growth": 0.42
+          },
+          "explainability": {
+            "signal.interests.entities": [
+              {
+                "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01",
+                "score": 1
+              }
+            ]
+          }
         }
       },
       {
@@ -41,17 +134,60 @@
         "subtype": "urn:entity:place",
         "popularity": 0.8813,
         "disambiguation": "7 Roebling St Brooklyn, NY 11211",
-        "location": { "lat": 40.7192, "lon": -73.9596, "geohash": "dr5rtfuq0c2z" },
+        "location": {
+          "lat": 40.7192,
+          "lon": -73.9596,
+          "geohash": "dr5rtfuq0c2z"
+        },
         "tags": [
-          { "id": "urn:tag:genre:place:book_store", "name": "Book Store", "type": "urn:tag:genre:place", "weight": null },
-          { "id": "urn:tag:ambience:qloo:cozy", "name": "Cozy", "type": "urn:tag:ambience:qloo", "weight": null }
+          {
+            "id": "urn:tag:genre:place:book_store",
+            "name": "Book Store",
+            "type": "urn:tag:genre:place",
+            "weight": null
+          },
+          {
+            "id": "urn:tag:ambience:qloo:cozy",
+            "name": "Cozy",
+            "type": "urn:tag:ambience:qloo",
+            "weight": null
+          }
         ],
-        "properties": { "address": "7 Roebling St Brooklyn, NY 11211", "business_rating": null, "price_level": null },
+        "properties": {
+          "address": "7 Roebling St Brooklyn, NY 11211",
+          "business_rating": null,
+          "price_level": null,
+          "hours": {
+            "thursday": [
+              {
+                "closed": false,
+                "opens": "T10:00:00",
+                "closes": "T21:00:00"
+              }
+            ],
+            "friday": [
+              {
+                "closed": false,
+                "opens": "T10:00:00",
+                "closes": "T20:00:00"
+              }
+            ]
+          }
+        },
         "query": {
           "affinity": 0.9513,
           "distance": 241.0,
-          "measurements": { "audience_growth": 0 },
-          "explainability": { "signal.interests.entities": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "score": 1 }] }
+          "measurements": {
+            "audience_growth": 0
+          },
+          "explainability": {
+            "signal.interests.entities": [
+              {
+                "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01",
+                "score": 1
+              }
+            ]
+          }
         }
       },
       {
@@ -61,18 +197,48 @@
         "subtype": "urn:entity:place",
         "popularity": 0.9077,
         "disambiguation": "201 Havemeyer St Brooklyn, NY 11211",
-        "location": { "lat": 40.7241, "lon": -73.9533, "geohash": "dr5rtgm3b8sd" },
+        "location": {
+          "lat": 40.7241,
+          "lon": -73.9533,
+          "geohash": "dr5rtgm3b8sd"
+        },
         "tags": [
-          { "id": "urn:tag:genre:place:restaurant:japanese", "name": "Japanese Restaurant", "type": "urn:tag:genre:place", "weight": null },
-          { "id": "urn:tag:specialty_dish:place:ramen", "name": "Ramen", "type": "urn:tag:specialty_dish:place", "weight": null },
-          { "id": "urn:tag:specialty_dish:place:natural_wine", "name": "Natural Wine", "type": "urn:tag:specialty_dish:place", "weight": null }
+          {
+            "id": "urn:tag:genre:place:restaurant:japanese",
+            "name": "Japanese Restaurant",
+            "type": "urn:tag:genre:place",
+            "weight": null
+          },
+          {
+            "id": "urn:tag:specialty_dish:place:ramen",
+            "name": "Ramen",
+            "type": "urn:tag:specialty_dish:place",
+            "weight": null
+          },
+          {
+            "id": "urn:tag:specialty_dish:place:natural_wine",
+            "name": "Natural Wine",
+            "type": "urn:tag:specialty_dish:place",
+            "weight": null
+          }
         ],
-        "properties": { "address": "201 Havemeyer St Brooklyn, NY 11211" },
+        "properties": {
+          "address": "201 Havemeyer St Brooklyn, NY 11211"
+        },
         "query": {
           "affinity": 0.9442,
           "distance": 524.9,
-          "measurements": { "audience_growth": -0.8 },
-          "explainability": { "signal.interests.entities": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "score": 1 }] }
+          "measurements": {
+            "audience_growth": -0.8
+          },
+          "explainability": {
+            "signal.interests.entities": [
+              {
+                "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01",
+                "score": 1
+              }
+            ]
+          }
         }
       },
       {
@@ -82,14 +248,36 @@
         "subtype": "urn:entity:place",
         "popularity": 0.6901,
         "disambiguation": "3 Grand St Brooklyn, NY 11211",
-        "location": { "lat": 40.7203, "lon": -73.9589, "geohash": "dr5rtfvb7w1p" },
-        "tags": [{ "id": "urn:tag:genre:place:cafe", "name": "Cafe", "type": "urn:tag:genre:place", "weight": null }],
-        "properties": { "address": "3 Grand St Brooklyn, NY 11211" },
+        "location": {
+          "lat": 40.7203,
+          "lon": -73.9589,
+          "geohash": "dr5rtfvb7w1p"
+        },
+        "tags": [
+          {
+            "id": "urn:tag:genre:place:cafe",
+            "name": "Cafe",
+            "type": "urn:tag:genre:place",
+            "weight": null
+          }
+        ],
+        "properties": {
+          "address": "3 Grand St Brooklyn, NY 11211"
+        },
         "query": {
           "affinity": 0.9321,
           "distance": 108.5,
-          "measurements": { "audience_growth": 0 },
-          "explainability": { "signal.interests.entities": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "score": 1 }] }
+          "measurements": {
+            "audience_growth": 0
+          },
+          "explainability": {
+            "signal.interests.entities": [
+              {
+                "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01",
+                "score": 1
+              }
+            ]
+          }
         }
       },
       {
@@ -99,14 +287,37 @@
         "subtype": "urn:entity:place",
         "popularity": 0.8455,
         "disambiguation": "120 Grand St Brooklyn, NY 11249",
-        "location": { "lat": 40.7151, "lon": -73.9621, "geohash": "dr5rtcp9e6zn" },
-        "tags": [{ "id": "urn:tag:genre:place:movie_theater", "name": "Movie Theater", "type": "urn:tag:genre:place", "weight": null }],
-        "properties": { "address": "120 Grand St Brooklyn, NY 11249", "website": "https://grandstreetcinema.example" },
+        "location": {
+          "lat": 40.7151,
+          "lon": -73.9621,
+          "geohash": "dr5rtcp9e6zn"
+        },
+        "tags": [
+          {
+            "id": "urn:tag:genre:place:movie_theater",
+            "name": "Movie Theater",
+            "type": "urn:tag:genre:place",
+            "weight": null
+          }
+        ],
+        "properties": {
+          "address": "120 Grand St Brooklyn, NY 11249",
+          "website": "https://grandstreetcinema.example"
+        },
         "query": {
           "affinity": 0.9174,
           "distance": 741.7,
-          "measurements": { "audience_growth": 0.11 },
-          "explainability": { "signal.interests.entities": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "score": 1 }] }
+          "measurements": {
+            "audience_growth": 0.11
+          },
+          "explainability": {
+            "signal.interests.entities": [
+              {
+                "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01",
+                "score": 1
+              }
+            ]
+          }
         }
       }
     ]
@@ -114,10 +325,30 @@
   "query": {
     "explainability": {
       "signal.interests.entities": {
-        "effect_on_top3_recs": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "avg_score": 1 }],
-        "effect_on_top5_recs": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "avg_score": 1 }],
-        "effect_on_top10_recs": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "avg_score": 1 }],
-        "effect_on_all_recs": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "avg_score": 1 }]
+        "effect_on_top3_recs": [
+          {
+            "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01",
+            "avg_score": 1
+          }
+        ],
+        "effect_on_top5_recs": [
+          {
+            "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01",
+            "avg_score": 1
+          }
+        ],
+        "effect_on_top10_recs": [
+          {
+            "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01",
+            "avg_score": 1
+          }
+        ],
+        "effect_on_all_recs": [
+          {
+            "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01",
+            "avg_score": 1
+          }
+        ]
       }
     }
   }
