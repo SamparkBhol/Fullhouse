@@ -1,6 +1,6 @@
 import { expect, test } from "../support/test.ts";
 
-test("an owner finds the venue on Qloo, sets the quiet night and gets the owner link", async ({ page }) => {
+test("an owner finds the venue on Qloo, sets the quiet night, gets the owner link and reaches a first plan in one press", async ({ page }) => {
   await page.goto("/start");
   await page.getByRole("button", { name: "Look it up" }).click();
   await expect(page.getByRole("alert")).toHaveText("Type both the venue name and the city.");
@@ -21,18 +21,19 @@ test("an owner finds the venue on Qloo, sets the quiet night and gets the owner 
   await expect(page.locator(".picked-name")).toHaveText("Larkspur Books");
   await page.getByLabel("Thursday").check();
   await page.getByLabel("How many people fit").fill("35");
-  await page.getByLabel("Time zone").selectOption("Europe/London");
+  await expect(page.getByLabel("Time zone")).toHaveValue("Europe/London");
+  await expect(page.getByText("From the venue's address. Change it if it is wrong.")).toBeVisible();
+  await expect(page.getByLabel("Your email")).toHaveCount(0);
   await page.getByRole("button", { name: "Create my venue" }).click();
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Larkspur Books is on Full House");
   const link = await page.getByLabel("Owner link", { exact: true }).inputValue();
   expect(link).toMatch(/\/v\/[^/#]+#t=.{20,}$/);
 
-  await page.getByRole("link", { name: "Open my venue" }).click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Your nights");
+  await page.getByRole("button", { name: "Read the street and plan Thursday" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/^A night for Thursday \d+ \w+$/);
   await expect(page.locator(".venue-name")).toHaveText("Larkspur Books");
   await expect(page.locator(".venue-meta")).toContainText("Leeds");
-  await expect(page.getByRole("button", { name: "Read the street" })).toBeVisible();
 });
 
 test("a venue page without the owner link asks for it", async ({ page }) => {

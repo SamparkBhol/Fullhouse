@@ -1,5 +1,5 @@
-import { parseHeatmap, resultsOf } from "../../../src/core/qloo/index.ts";
-import { haversineM } from "../../../src/core/street/geo.ts";
+import { list, num, obj, parseHeatmap, resultsOf } from "../../../src/core/qloo/index.ts";
+import { haversineM } from "../../../src/shared/geo.ts";
 import { recordsFor, type ProbeContext } from "../context.ts";
 import { centerOf, errorText, keysOf, status } from "../lens.ts";
 import type { CallRecord } from "../record.ts";
@@ -20,11 +20,12 @@ function heatLine(name: string, rec: CallRecord | undefined): string {
 function compareLine(rec: CallRecord | undefined): string {
   if (!rec) return "not asked";
   if (rec.status !== 200) return `${status(rec)} (${errorText(rec)})`;
-  const r = resultsOf(rec.body) as any;
-  const scores: number[] = (r?.tags ?? []).map((t: any) => t?.query?.score).filter((x: unknown) => typeof x === "number");
+  const r = obj(resultsOf(rec.body));
+  const tags = list(r.tags).map(obj);
+  const scores = tags.map((t) => num(obj(t.query).score)).filter((x): x is number => x !== null);
   const range = scores.length ? `score ${Math.min(...scores).toFixed(3)} to ${Math.max(...scores).toFixed(3)}` : "no scores";
-  const sharedNames = (r?.tags ?? []).slice(0, 4).map((t: any) => t?.name).join(", ");
-  return `results {${keysOf(r)}}, shared tags ${r?.tags?.length ?? 0} (${sharedNames}), a ${r?.a?.length ?? 0}, b ${r?.b?.length ?? 0}, ${range}`;
+  const sharedNames = tags.slice(0, 4).map((t) => t.name).join(", ");
+  return `results {${keysOf(r)}}, shared tags ${tags.length} (${sharedNames}), a ${list(r.a).length}, b ${list(r.b).length}, ${range}`;
 }
 
 function demographicsByInput(ctx: ProbeContext): string[] {
@@ -32,10 +33,10 @@ function demographicsByInput(ctx: ProbeContext): string[] {
   const where = new Map<string, number>();
   for (const v of ctx.venues) {
     const rec = recordsFor(ctx, v.slug).get("demographics");
-    const rows: any[] = rec?.status === 200 ? (resultsOf(rec.body) as any)?.demographics ?? [] : [];
+    const rows = rec?.status === 200 ? list(obj(resultsOf(rec.body)).demographics).map(obj) : [];
     for (const row of rows) {
-      const key = String(row?.entity_id);
-      seen.set(key, (seen.get(key) ?? new Set()).add(JSON.stringify(row?.query)));
+      const key = String(row.entity_id);
+      seen.set(key, (seen.get(key) ?? new Set()).add(JSON.stringify(row.query)));
       where.set(key, (where.get(key) ?? 0) + 1);
     }
   }
@@ -54,7 +55,7 @@ export function mapFindings(ctx: ProbeContext): string[] {
     const typed = recs.get("compare_typed");
     if (typed) out.push(`  compare_typed: ${compareLine(typed)}; results identical to untyped ${JSON.stringify(resultsOf(typed.body)) === JSON.stringify(resultsOf(recs.get("compare")?.body))}`);
     const demo = recs.get("demographics");
-    const demoRows = demo?.status === 200 ? ((resultsOf(demo.body) as any)?.demographics ?? []).length : 0;
+    const demoRows = demo?.status === 200 ? list(obj(resultsOf(demo.body)).demographics).length : 0;
     out.push(`  demographics: ${demo ? `${demoRows} blocks for ${demo.params["signal.interests.tags"]?.split(",").length ?? 0} tags` : "not asked"}`);
     for (const name of ["demo_venue", "demo_location_only"]) {
       const rec = recs.get(name);

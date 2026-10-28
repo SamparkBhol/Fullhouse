@@ -1,4 +1,4 @@
-import { parseTags } from "../../../src/core/qloo/index.ts";
+import { list, obj, parseTags } from "../../../src/core/qloo/index.ts";
 import { recordsFor, type ProbeContext } from "../context.ts";
 import { errorText, namespaceLine, namespaces, shared, status, tagIds } from "../lens.ts";
 import type { CallRecord } from "../record.ts";
@@ -11,8 +11,11 @@ function topNames(rec: CallRecord | undefined, n = 6): string {
 function oddNames(recs: CallRecord[]): string[] {
   const odd = new Set<string>();
   for (const rec of recs) {
-    const rows: any[] = rec.status === 200 ? (rec.body as any)?.results?.tags ?? [] : [];
-    for (const r of rows) if (typeof r?.name === "string" && r.name !== r.name.trim()) odd.add(JSON.stringify(r.name));
+    const rows = rec.status === 200 ? list(obj(obj(rec.body).results).tags) : [];
+    for (const r of rows) {
+      const name = obj(r).name;
+      if (typeof name === "string" && name !== name.trim()) odd.add(JSON.stringify(name));
+    }
   }
   return [...odd].slice(0, 6);
 }

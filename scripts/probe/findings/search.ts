@@ -1,4 +1,4 @@
-import { parseEntities } from "../../../src/core/qloo/index.ts";
+import { list, obj, parseEntities, str } from "../../../src/core/qloo/index.ts";
 import { recordsFor, type ProbeContext } from "../context.ts";
 import { answered, rankOf, rawEntity } from "../derive.ts";
 import { errorText, names } from "../lens.ts";
@@ -35,8 +35,8 @@ function namesakes(rec: CallRecord): string {
 
 function untypedTypes(rec: CallRecord): string {
   const seen = new Map<string, number>();
-  const rows = answered(rec) && Array.isArray((rec.body as any)?.results) ? ((rec.body as any).results as any[]) : [];
-  for (const row of rows) for (const t of Array.isArray(row?.types) ? row.types : []) seen.set(t, (seen.get(t) ?? 0) + 1);
+  const rows = answered(rec) ? list(obj(rec.body).results) : [];
+  for (const row of rows) for (const t of list(obj(row).types).map(str)) if (t) seen.set(t, (seen.get(t) ?? 0) + 1);
   return [...seen.entries()].map(([t, n]) => `${t} ${n}`).join(", ") || "none";
 }
 
@@ -45,7 +45,7 @@ function hitFields(ctx: ProbeContext): string {
     const res = ctx.resolutions.get(v.slug);
     const rec = res ? recordsFor(ctx, v.slug).get(res.via) : undefined;
     const raw = res && rec ? rawEntity(rec.body, res.resolved.id) : null;
-    if (raw) return `top level {${Object.keys(raw).join(", ")}}, properties {${Object.keys(raw.properties ?? {}).join(", ")}}`;
+    if (raw) return `top level {${Object.keys(raw).join(", ")}}, properties {${Object.keys(obj(raw.properties)).join(", ")}}`;
   }
   return "no hit";
 }

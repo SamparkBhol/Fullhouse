@@ -1,3 +1,4 @@
+import { list, num, obj, str } from "../../../src/core/qloo/index.ts";
 import { recordsFor, type ProbeContext } from "../context.ts";
 import { rawEntity } from "../derive.ts";
 import { affinities, centerOf, distances, explainLayout, ids, quantile, sameOrder, shared, spreadLine, status } from "../lens.ts";
@@ -16,16 +17,15 @@ function variantLine(name: string, rec: CallRecord, base: CallRecord): string {
 
 function genres(rec: CallRecord | undefined, n = 10): string {
   if (!rec || rec.status !== 200) return "none";
-  const rows: any[] = (rec.body as any)?.results?.entities ?? [];
-  return rows
+  return list(obj(obj(rec.body).results).entities)
     .slice(0, n)
-    .map((r) => r?.properties?.primary_genre?.name ?? "no genre")
+    .map((r) => str(obj(obj(obj(r).properties).primary_genre).name) ?? "no genre")
     .join(", ");
 }
 
 function growth(rec: CallRecord | undefined): string {
-  const rows: any[] = rec && rec.status === 200 ? (rec.body as any)?.results?.entities ?? [] : [];
-  const g = rows.map((r) => r?.query?.measurements?.audience_growth).filter((x): x is number => typeof x === "number");
+  const rows = rec && rec.status === 200 ? list(obj(obj(rec.body).results).entities) : [];
+  const g = rows.map((r) => num(obj(obj(obj(r).query).measurements).audience_growth)).filter((x): x is number => x !== null);
   const nonzero = g.filter((x) => x !== 0).length;
   return g.length ? `audience_growth nonzero on ${nonzero} of ${g.length}, from ${Math.min(...g).toFixed(2)} to ${Math.max(...g).toFixed(2)}` : "no audience_growth";
 }
@@ -56,7 +56,7 @@ export function placeFindings(ctx: ProbeContext): string[] {
   const id = venue ? ctx.resolutions.get(venue)?.resolved.id : undefined;
   if (entity && id) {
     const raw = rawEntity(entity.body, id);
-    out.push("", `/entities for ${venue}: ${status(entity)}, fields {${Object.keys(raw ?? {}).join(", ")}}, ${Array.isArray(raw?.tags) ? raw.tags.length : 0} tags.`);
+    out.push("", `/entities for ${venue}: ${status(entity)}, fields {${Object.keys(raw ?? {}).join(", ")}}, ${list(raw?.tags).length} tags.`);
   }
   return out;
 }

@@ -1,5 +1,5 @@
-import { countResults, parseEntities, parseTags, parseWktPoint } from "../../src/core/qloo/index.ts";
-import { haversineM } from "../../src/core/street/geo.ts";
+import { countResults, isObj, list, obj, parseEntities, parseTags, parseWktPoint, str } from "../../src/core/qloo/index.ts";
+import { haversineM } from "../../src/shared/geo.ts";
 import type { Point } from "./plan.ts";
 import type { CallRecord } from "./record.ts";
 
@@ -17,11 +17,11 @@ export function status(rec: CallRecord | undefined): string {
 
 // Qloo answers errors in three layouts: {errors: [{message}]}, {error: {message, reason}} and {message, reason}.
 export function errorText(rec: CallRecord | undefined): string {
-  const b = rec?.body as any;
-  if (!b || typeof b !== "object") return typeof b === "string" ? b.slice(0, 160) : "";
-  const listed = Array.isArray(b.errors) ? b.errors.map((e: any) => e?.message) : [];
-  const inner = b.error && typeof b.error === "object" ? b.error : b;
-  return [...listed, inner.message, inner.reason, typeof b.error === "string" ? b.error : undefined]
+  const raw = rec?.body;
+  if (!isObj(raw)) return typeof raw === "string" ? raw.slice(0, 160) : "";
+  const listed = list(raw.errors).map((e) => obj(e).message);
+  const inner = isObj(raw.error) ? raw.error : raw;
+  return [...listed, inner.message, inner.reason, str(raw.error)]
     .filter((s) => typeof s === "string")
     .join(", ")
     .slice(0, 200);
@@ -113,8 +113,8 @@ function itemKeys(v: unknown): string {
 export function explainLayout(rec: CallRecord | undefined): { top: string[]; perResult: string[]; explained: number } {
   const out = { top: [] as string[], perResult: [] as string[], explained: 0 };
   if (!rec || rec.status !== 200) return out;
-  const body = rec.body as any;
-  const top = body?.query?.explainability;
+  const body = obj(rec.body);
+  const top = obj(body.query).explainability;
   if (top && typeof top === "object") {
     for (const [signal, block] of Object.entries(top as Record<string, unknown>)) {
       if (block && typeof block === "object" && !Array.isArray(block)) {
@@ -124,9 +124,8 @@ export function explainLayout(rec: CallRecord | undefined): { top: string[]; per
       }
     }
   }
-  const rows: any[] = Array.isArray(body?.results?.entities) ? body.results.entities : [];
-  for (const row of rows) {
-    const ex = row?.query?.explainability;
+  for (const row of list(obj(body.results).entities)) {
+    const ex = obj(obj(row).query).explainability;
     if (!ex || !Object.values(ex as Record<string, unknown>).some((v) => Array.isArray(v) && v.length > 0)) continue;
     out.explained += 1;
     if (!out.perResult.length) for (const [signal, v] of Object.entries(ex as Record<string, unknown>)) out.perResult.push(`results.entities[].query.explainability.${signal}[] ${itemKeys(v)}`);

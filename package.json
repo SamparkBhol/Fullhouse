@@ -16,8 +16,7 @@
     "dev": "bash scripts/dev.sh",
     "e2e": "bash scripts/e2e.sh",
     "probe": "node --no-warnings --experimental-strip-types scripts/probe/index.ts",
-    "live-read": "node --no-warnings --experimental-strip-types scripts/live-read.ts",
-    "bench": "node --no-warnings --experimental-strip-types scripts/bench.ts"
+    "live-read": "node --no-warnings --experimental-strip-types scripts/live/index.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/core": "2.2.0",

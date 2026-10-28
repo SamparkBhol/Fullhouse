@@ -57,5 +57,6 @@ export function splitQuery(query: string): { name: string; city: City | null } {
 export function addressIn(city: City, seed: number): string {
   const street = city.streets[seed % city.streets.length] ?? city.streets[0];
   const number = 10 + (seed % 290);
-  return city.countryCode === "US" ? `${number} ${street} ${city.name}, ${city.postcode}` : `${street} ${number}, ${city.postcode} ${city.name}`;
+  // Qloo writes US addresses as "12 Main St Portland, OR 97201" and others with the country last.
+  return city.countryCode === "US" ? `${number} ${street} ${city.name}, ${city.postcode}` : `${street} ${number} ${city.postcode} ${city.name} ${city.country}`;
 }

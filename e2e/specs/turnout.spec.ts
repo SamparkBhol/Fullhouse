@@ -1,14 +1,9 @@
-import type { Venue } from "../../src/shared/contract.ts";
+import { weekdayInThreeDays } from "../support/dates.ts";
 import { openAsOwner, publishedNight } from "../support/owner.ts";
 import { expect, test } from "../support/test.ts";
 
 function dayAfter(date: string): Date {
   return new Date(Date.parse(`${date}T12:00:00Z`) + 86_400_000);
-}
-
-// A quiet night three days out keeps the night in the future whatever day the suite runs.
-function weekdayInThreeDays(): Venue["quietSlot"]["weekday"] {
-  return ((new Date().getUTCDay() + 3) % 7) as Venue["quietSlot"]["weekday"];
 }
 
 test("after the night the owner logs how many came, and it stays with the venue", async ({ page, request }) => {
@@ -23,6 +18,7 @@ test("after the night the owner logs how many came, and it stays with the venue"
   await page.getByRole("button", { name: "Save the turnout" }).click();
   await expect(page.locator(".notice")).toHaveText("Turnout saved.");
   await expect(page.locator(".big-line")).toHaveText("27 people came.");
+  await expect(page.locator(".monday-line")).toHaveText(/^27 of 40 seats\. Monday keeps .+ nights in the mix\.$/);
 
   const res = await request.get(`/api/venues/${owner.venue.id}`, { headers: { authorization: `Bearer ${owner.token}` } });
   const saved = ((await res.json()) as { nights: Array<{ id: string; headcount?: number; status: string }> }).nights.find((n) => n.id === night.id);

@@ -8,21 +8,25 @@ test("the public event page takes one RSVP per browser and the owner sees the co
   expect(res?.headers()["x-robots-tag"]).toContain("noindex");
   expect(res?.headers()["content-security-policy"]).toContain("script-src 'none'");
   await expect(page.locator("meta[property='og:title']")).toHaveCount(1);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(night.copy.eventTitle);
+  await expect(page.locator(".kind")).toHaveText(/ night$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(night.feature?.name ?? night.copy.eventTitle);
+  await expect(page).toHaveTitle(/Copper Taproom/);
   await expect(page.locator(".place")).toContainText("Copper Taproom");
-  await expect(page.locator(".rsvp .count")).toHaveText("0 going");
+  await expect(page.locator(".rsvp .count")).toHaveText("0 said they are coming");
+  await expect(page.locator("footer")).toContainText("Copper Taproom has not confirmed it.");
+  await expect(page.getByRole("button", { name: "Report this page" })).toBeVisible();
 
   await page.getByRole("button", { name: "I am going" }).click();
-  await expect(page.locator(".rsvp .count")).toHaveText("1 going");
+  await expect(page.locator(".rsvp .count")).toHaveText("1 said they are coming");
   await expect(page.locator(".rsvp .going")).toHaveText("You are on the list. See you there.");
   await page.reload();
-  await expect(page.locator(".rsvp .count")).toHaveText("1 going");
+  await expect(page.locator(".rsvp .count")).toHaveText("1 said they are coming");
   await expect(page.getByRole("button", { name: "I am going" })).toHaveCount(0);
 
   await page.context().clearCookies();
   await page.reload();
   await page.getByRole("button", { name: "I am going" }).click();
-  await expect(page.locator(".rsvp .count")).toHaveText("2 going");
+  await expect(page.locator(".rsvp .count")).toHaveText("2 said they are coming");
 
   const state = await request.get(`/api/venues/${owner.venue.id}`, { headers: { authorization: `Bearer ${owner.token}` } });
   const nights = ((await state.json()) as { nights: Array<{ id: string; rsvps: number }> }).nights;
@@ -57,7 +61,7 @@ test("the poster renders for print with a QR code to the event page", async ({ p
   });
   page.on("pageerror", (e) => problems.push(e.message));
   await page.goto(`/e/${night.eventSlug}/poster`);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(night.copy.posterHeadline || night.copy.eventTitle);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(night.feature?.name || night.copy.posterHeadline || night.copy.eventTitle);
   await expect(page.locator(".p-where")).toContainText("Marigold Bakery");
   await expect(page.locator(".p-qr svg")).toBeVisible();
   await expect(page.locator(".p-url")).toHaveText(new RegExp(`/e/${night.eventSlug}$`));

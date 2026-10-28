@@ -1,4 +1,5 @@
-import { metresBetween, offset, type Point } from "../geo.ts";
+import { offset, type Point } from "../geo.ts";
+import { haversineM } from "../../../src/shared/geo.ts";
 import { between, hash, shuffled, uuidFrom } from "../seed.ts";
 import { addressIn, CITIES, type City } from "./cities.ts";
 import { tagDefs, type TagDef } from "./tags.ts";
@@ -45,7 +46,7 @@ const CAFE = ["urn:tag:genre:place:cafe", "urn:tag:offerings:place:coffee", "urn
 export const NEARBY_COUNT = 12;
 
 export function nearestCity(p: Point): City {
-  return [...CITIES].sort((a, b) => metresBetween(p, a.center) - metresBetween(p, b.center))[0] as City;
+  return [...CITIES].sort((a, b) => haversineM(p, a.center) - haversineM(p, b.center))[0] as City;
 }
 
 export function venueFromQuery(name: string, city: City): FakePlace {

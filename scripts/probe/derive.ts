@@ -1,5 +1,5 @@
-import { countResults, num, parseEntities, parseTags, resultsOf, type QEntity } from "../../src/core/qloo/index.ts";
-import { haversineM } from "../../src/core/street/geo.ts";
+import { countResults, list, num, obj, parseEntities, parseTags, resultsOf, str, type Obj, type QEntity } from "../../src/core/qloo/index.ts";
+import { haversineM } from "../../src/shared/geo.ts";
 import { LOVED_RADIUS_M, MATCH_RADIUS_KM } from "./config.ts";
 import { GAME_URNS, urnFor, type CityLocalities, type FollowUp, type Locality, type ResolvedVenue, type TrendTarget } from "./plan.ts";
 import type { CallRecord } from "./record.ts";
@@ -37,11 +37,11 @@ function sortByScore<T>(items: T[], score: (item: T) => number | null): T[] {
     .map((x) => x.item);
 }
 
-export function rawEntity(body: unknown, id: string): Record<string, any> | null {
-  const r = resultsOf(body) as any;
-  const rows: unknown[] = Array.isArray(r) ? r : Array.isArray(r?.entities) ? r.entities : [];
-  const hit = rows.find((row: any) => typeof row?.entity_id === "string" && row.entity_id.toUpperCase() === id.toUpperCase());
-  return (hit as Record<string, any>) ?? null;
+export function rawEntity(body: unknown, id: string): Obj | null {
+  const r = resultsOf(body);
+  const rows = Array.isArray(r) ? r : list(obj(r).entities);
+  const hit = rows.map(obj).find((row) => str(row.entity_id)?.toUpperCase() === id.toUpperCase());
+  return hit ?? null;
 }
 
 export function localitiesFrom(rec: CallRecord | undefined): CityLocalities {
@@ -50,7 +50,7 @@ export function localitiesFrom(rec: CallRecord | undefined): CityLocalities {
     id: e.id,
     name: e.name,
     label: e.disambiguation ?? e.name,
-    adminLevel: num(rawEntity(rec.body, e.id)?.properties?.admin_level),
+    adminLevel: num(obj(rawEntity(rec.body, e.id)?.properties).admin_level),
     lat: e.lat,
     lng: e.lng,
   }));
@@ -75,8 +75,8 @@ export function resolveVenue(v: ProbeVenue, searches: CallRecord[], loc: CityLoc
   for (const rec of searches) {
     const e = matchVenue(v, rec, loc);
     if (!e || e.lat === null || e.lng === null) continue;
-    const props = rawEntity(rec.body, e.id)?.properties ?? {};
-    const area = props.neighborhood ?? props.geocode?.name ?? v.city;
+    const props = obj(rawEntity(rec.body, e.id)?.properties);
+    const area = str(props.neighborhood) ?? str(obj(props.geocode).name) ?? v.city;
     return { resolved: { venue: v, id: e.id, name: e.name, lat: e.lat, lng: e.lng, area: String(area) }, via: rec.call };
   }
   return null;

@@ -1,14 +1,4 @@
-import {
-  errorMessage,
-  explainSummary,
-  parseCompare,
-  parseDemographics,
-  parseEntities,
-  parseHeatmap,
-  parseTags,
-  parseTrending,
-  resultsOf,
-} from "../../src/core/qloo/index.ts";
+import { errorMessage, explainSummary, list, obj, parseCompare, parseDemographics, parseEntities, parseHeatmap, parseTags, parseTrending, resultsOf } from "../../src/core/qloo/index.ts";
 import type { ProbeContext } from "./context.ts";
 import { explainLayout } from "./lens.ts";
 import { APP_MAX_HEAT_CELLS } from "./plan.ts";
@@ -23,9 +13,9 @@ interface Tally {
 }
 
 function lengthAt(body: unknown, key: string): number {
-  const r = resultsOf(body) as any;
+  const r = resultsOf(body);
   if (key === "" && Array.isArray(r)) return r.length;
-  return Array.isArray(r?.[key]) ? r[key].length : 0;
+  return list(obj(r)[key]).length;
 }
 
 function note(t: Tally, text: string, n = 1): void {

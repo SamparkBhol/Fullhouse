@@ -1,4 +1,4 @@
-import { metresBetween } from "../geo.ts";
+import { haversineM } from "../../../src/shared/geo.ts";
 import type { Query } from "../params.ts";
 import { takeOf, wkt } from "../params.ts";
 import { between } from "../seed.ts";
@@ -24,13 +24,13 @@ export function placeInsights(q: Query, places: PlaceRegistry): Answer {
   const signal = ids.join(",");
   const scored = places
     .remember(placesAround(center))
-    .filter((p) => !filterPoint || metresBetween(p.point, filterPoint) <= radius)
+    .filter((p) => !filterPoint || haversineM(p.point, filterPoint) <= radius)
     .filter((p) => !excluded.has(p.id.toUpperCase()))
     .map((p) => ({ p, affinity: ids.length ? between(`${signal}|${p.id}`, 0.8, 0.99) : between(`area|${p.id}`, 0.9993, 0.99999) }))
     .sort((a, b) => b.affinity - a.affinity)
     .slice(0, take);
   const rows = scored.map(({ p, affinity }) =>
-    insightsPlace(p, { affinity, distance: metresBetween(center, p.point), ...(explain ? { explainedBy: ids } : {}) }),
+    insightsPlace(p, { affinity, distance: haversineM(center, p.point), ...(explain ? { explainedBy: ids } : {}) }),
   );
   const body = insightsEnvelope("entities", rows, { ...(explain ? { explained: ids } : {}), located: Boolean(signalPoint) });
   if (q.one("feature.explainability") === "true" && !ids.length) body.warnings = [{ type: "Could not calculate explainability" }];

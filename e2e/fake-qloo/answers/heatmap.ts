@@ -1,4 +1,5 @@
-import { metresBetween, offset, type Point } from "../geo.ts";
+import { offset, type Point } from "../geo.ts";
+import { haversineM } from "../../../src/shared/geo.ts";
 import type { Query } from "../params.ts";
 import { wkt } from "../params.ts";
 import { between, round } from "../seed.ts";
@@ -14,7 +15,7 @@ function grid(center: Point, radius: number): Point[] {
   for (let i = -n; i <= n; i++) {
     for (let j = -n; j <= n; j++) {
       const p = offset(center, i * STEP_M, j * STEP_M);
-      if (metresBetween(center, p) <= radius) out.push(p);
+      if (haversineM(center, p) <= radius) out.push(p);
     }
   }
   return out;
@@ -30,7 +31,7 @@ export function heatmap(q: Query, places: PlaceRegistry): Answer {
   const radius = Math.min(5000, Number(q.one("filter.location.radius") ?? "1000") || 1000);
   const focus = (ids[0] ? places.find(ids[0])?.point : undefined) ?? center;
   const seed = [...ids, ...tags].join(",");
-  const cells = grid(center, radius).map((p) => ({ p, raw: Math.exp(-metresBetween(focus, p) / 700) * between(`${seed}|${p.lat},${p.lng}`, 0.7, 1) }));
+  const cells = grid(center, radius).map((p) => ({ p, raw: Math.exp(-haversineM(focus, p) / 700) * between(`${seed}|${p.lat},${p.lng}`, 0.7, 1) }));
   const top = Math.max(...cells.map((c) => c.raw));
   const order = [...cells].sort((a, b) => b.raw - a.raw);
   const last = Math.max(1, order.length - 1);

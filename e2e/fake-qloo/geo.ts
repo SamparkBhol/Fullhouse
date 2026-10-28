@@ -1,18 +1,9 @@
-export interface Point {
-  lat: number;
-  lng: number;
-}
+import type { LatLng } from "../../src/shared/geo.ts";
+
+export type Point = LatLng;
 
 const EARTH_M = 6371008.8;
 const BASE32 = "0123456789bcdefghjkmnpqrstuvwxyz";
-
-export function metresBetween(a: Point, b: Point): number {
-  const rad = Math.PI / 180;
-  const dLat = (b.lat - a.lat) * rad;
-  const dLng = (b.lng - a.lng) * rad;
-  const s = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2;
-  return 2 * EARTH_M * Math.asin(Math.min(1, Math.sqrt(s)));
-}
 
 export function geohash(p: Point, precision: number): string {
   const lat = [-90, 90];
@@ -47,14 +38,6 @@ export function parseWktPoint(text: string): Point | null {
   const m = /^\s*POINT\s*\(\s*(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s*\)\s*$/i.exec(text);
   if (!m) return null;
   const p = { lng: Number(m[1]), lat: Number(m[2]) };
-  return Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180 ? p : null;
-}
-
-// /search takes "lat,lon" instead.
-export function parseLatLon(text: string): Point | null {
-  const m = /^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/.exec(text);
-  if (!m) return null;
-  const p = { lat: Number(m[1]), lng: Number(m[2]) };
   return Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180 ? p : null;
 }
 

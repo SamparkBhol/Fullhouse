@@ -36,6 +36,10 @@ test("the browser only talks to Full House and the map tiles, never to Qloo", as
   await openAsOwner(page, owner, "/street");
   await expect(page.locator(".map.leaflet-container .pin-venue")).toBeVisible();
   const tiles = (h: string) => h === "tile.openstreetmap.org" || h.endsWith(".tile.openstreetmap.org");
+  // A tile the page CSP refused would never reach the network, so a tile request seen here passed img-src.
+  await expect.poll(() => traffic.hosts().some(tiles)).toBe(true);
+  const appCsp = (await request.get("/")).headers()["content-security-policy"] ?? "";
+  expect(appCsp).toContain("https://tile.openstreetmap.org");
   const own = new URL(BASE_URL).host;
   expect(traffic.hosts()).toContain(own);
   expect(traffic.hosts().filter((h) => h !== own && !tiles(h))).toEqual([]);
