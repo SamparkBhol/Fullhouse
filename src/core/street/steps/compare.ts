@@ -3,7 +3,6 @@ import { parseCompare, type CompareRead } from "../../qloo/compare.ts";
 import type { QTag } from "../../qloo/tags.ts";
 import { renumber, tagKeys, uniqueBy } from "../rank.ts";
 import type { Runner } from "../runner.ts";
-import { possessive } from "../words.ts";
 import type { Fingerprint } from "./fingerprint.ts";
 import { isCatalogueTag, partnerGaps } from "./gaps.ts";
 import type { ReadContext } from "./resolve.ts";
@@ -51,7 +50,8 @@ export async function compareStep(run: Runner, ctx: ReadContext, input: CompareI
   const limits: string[] = [];
   if (!partners.length) limits.push(`${ctx.name} was not compared with nearby places because none came back, so this read shows no gap.`);
   else if (compared && !gaps.length) {
-    limits.push(`No tag that ${ctx.name} lacks is shared by the places nearby that ${possessive(ctx.name)} audience loves, so this read shows no gap.`);
+    const by = partners.length > 1 ? "shared by two or more of the places" : "on the one place";
+    limits.push(`No tag missing from ${ctx.name} is ${by} nearby that its audience loves, so this read shows no gap.`);
   }
   return { shared, gaps, limits };
 }

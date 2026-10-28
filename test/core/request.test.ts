@@ -68,14 +68,33 @@ describe("locations", () => {
 });
 
 describe("checkParams", () => {
+  const places = { "filter.type": "urn:entity:place" };
+
   it("holds insights to WKT and a radius on every POINT filter", () => {
-    expect(checkParams("/v2/insights", { "filter.location": "POINT(-73.99 40.72)" })).toMatch(/radius/);
-    expect(checkParams("/v2/insights", { "filter.location": "POINT(-73.99 40.72)", "filter.location.radius": "800" })).toBeNull();
-    expect(checkParams("/v2/insights", { "filter.location": "40.72,-73.99", "filter.location.radius": "800" })).toMatch(/not a lat,lon pair/);
-    expect(checkParams("/v2/insights", { "signal.location": "40.72,-73.99" })).toMatch(/not a lat,lon pair/);
-    expect(checkParams("/v2/insights", { "filter.location": "POINT(40.72 -100.5)", "filter.location.radius": "800" })).toMatch(/longitude first/);
-    expect(checkParams("/v2/insights", { "signal.location.radius": "800" })).toMatch(/POINT/);
-    expect(checkParams("/v2/insights", { "filter.location": "81E61924-6CEE-4AB4-93D3-282A5C784AB8" })).toBeNull();
+    expect(checkParams("/v2/insights", { ...places, "filter.location": "POINT(-73.99 40.72)" })).toMatch(/radius/);
+    expect(checkParams("/v2/insights", { ...places, "filter.location": "POINT(-73.99 40.72)", "filter.location.radius": "800" })).toBeNull();
+    expect(checkParams("/v2/insights", { ...places, "filter.location": "40.72,-73.99", "filter.location.radius": "800" })).toMatch(/not a lat,lon pair/);
+    expect(checkParams("/v2/insights", { ...places, "signal.location": "40.72,-73.99" })).toMatch(/not a lat,lon pair/);
+    expect(checkParams("/v2/insights", { ...places, "filter.location": "POINT(40.72 -100.5)", "filter.location.radius": "800" })).toMatch(/longitude first/);
+    expect(checkParams("/v2/insights", { ...places, "signal.location.radius": "800" })).toMatch(/POINT/);
+    expect(checkParams("/v2/insights", { ...places, "filter.location": "81E61924-6CEE-4AB4-93D3-282A5C784AB8" })).toBeNull();
+  });
+
+  it("refuses the type spellings and combinations the API answers with HTTP 400", () => {
+    expect(checkParams("/v2/insights", {})).toMatch(/filter.type/);
+    expect(checkParams("/v2/insights", { "filter.type": "urn:entity:video_game" })).toMatch(/not one the API accepts/);
+    expect(checkParams("/v2/insights", { "filter.type": "urn:entity:videogame" })).toBeNull();
+    expect(checkParams("/v2/insights", { "filter.type": "urn:entity:book", "bias.trends": "high" })).toMatch(/bias.trends/);
+    expect(checkParams("/v2/insights", { "filter.type": "urn:entity:artist", "bias.trends": "high" })).toBeNull();
+    expect(checkParams("/v2/insights", { "filter.type": "urn:demographics", "signal.location": "POINT(-73.99 40.72)" })).toMatch(/location alone/);
+    expect(checkParams("/v2/insights", { "filter.type": "urn:demographics", "signal.interests.entities": "A" })).toBeNull();
+    expect(checkParams("/v2/insights", { "filter.type": "urn:heatmap", "signal.interests.entities": "A" })).toMatch(/filter.location/);
+    expect(checkParams("/v2/insights", { "filter.type": "urn:heatmap", "filter.location.query": "SoHo" })).toMatch(/signal/);
+  });
+
+  it("needs entities on both sides of a compare", () => {
+    expect(checkParams("/v2/analysis/compare", { "a.signal.interests.entities": "A" })).toMatch(/both sides/);
+    expect(checkParams("/v2/analysis/compare", { "a.signal.interests.entities": "A", "b.signal.interests.entities": ["B", "C"] })).toBeNull();
   });
 
   it("holds /search to lat,lon and at most 100 miles", () => {
@@ -84,10 +103,20 @@ describe("checkParams", () => {
     expect(checkParams("/search", { "filter.location": "40.72,-73.99", "filter.radius": "10" })).toBeNull();
   });
 
-  it("caps take at 50 and holds trending to one entity", () => {
-    expect(checkParams("/v2/insights", { take: "60" })).toMatch(/take/);
-    expect(checkParams("/v2/trending", { "signal.interests.entities": ["A", "B"] })).toMatch(/exactly one/);
-    expect(checkParams("/v2/trending", { "signal.interests.entities": "A" })).toBeNull();
+  it("caps take at 50 and page at 100", () => {
+    expect(checkParams("/v2/insights", { ...places, take: "60" })).toMatch(/take/);
+    expect(checkParams("/v2/insights", { ...places, take: "0" })).toMatch(/take/);
+    expect(checkParams("/v2/insights", { ...places, page: "101" })).toMatch(/page/);
+  });
+
+  it("holds trending to one entity of a supported type and a dated window", () => {
+    const window = { "filter.start_date": "2026-04-28", "filter.end_date": "2026-10-27" };
+    const artist = { "filter.type": "urn:entity:artist", ...window };
+    expect(checkParams("/v2/trending", { ...artist, "signal.interests.entities": ["A", "B"] })).toMatch(/exactly one/);
+    expect(checkParams("/v2/trending", artist)).toMatch(/exactly one/);
+    expect(checkParams("/v2/trending", { ...artist, "signal.interests.entities": "A" })).toBeNull();
+    expect(checkParams("/v2/trending", { ...window, "filter.type": "urn:entity:book", "signal.interests.entities": "A" })).toMatch(/accepts only/);
+    expect(checkParams("/v2/trending", { "filter.type": "urn:entity:artist", "signal.interests.entities": "A" })).toMatch(/YYYY-MM-DD/);
   });
 });
 

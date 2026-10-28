@@ -30,11 +30,11 @@ describe("lovedPlaces", () => {
     const { run, ctx } = stepSetup();
     const { loved, limits } = await lovedPlaces(run, ctx);
     expect(loved?.places.map((p) => [p.name, p.rank, p.distanceM])).toEqual([
-      ["Blue Hour Wine Bar", 1, 151],
-      ["Kettle Books", 2, 213],
+      ["Blue Hour Wine Bar", 1, 176],
+      ["Kettle Books", 2, 241],
       ["Sora Ramen", 3, 525],
-      ["Daybreak Cafe", 4, 93],
-      ["Grand Street Cinema", 5, 743],
+      ["Daybreak Cafe", 4, 109],
+      ["Grand Street Cinema", 5, 742],
     ]);
     const first = loved!.places[0]!;
     expect(first).toMatchObject({ address: "40 Grand St Brooklyn, NY 11211", image: "https://images.example/blue-hour.jpg", url: "https://bluehour.example" });
@@ -50,7 +50,7 @@ describe("lovedPlaces", () => {
     const { run, ctx } = stepSetup([answer(isPlace, body)]);
     const { loved } = await lovedPlaces(run, ctx);
     expect(loved?.places.map((p) => p.name)).not.toContain("Blue Hour Wine Bar");
-    expect(loved?.places[0]).toMatchObject({ name: "Kettle Books", distanceM: 214 });
+    expect(loved?.places[0]).toMatchObject({ name: "Kettle Books", distanceM: 241, rank: 1 });
   });
 
   it("does not present an unexplained list as a ranking of taste", async () => {

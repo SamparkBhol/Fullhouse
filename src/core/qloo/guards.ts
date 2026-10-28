@@ -7,7 +7,8 @@ const LAT_LON = /^\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*$/;
 const WKT = /^\s*(POINT|POLYGON|MULTIPOLYGON)\s*\(/i;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
-const INSIGHTS_TYPES = new Set([...Object.values(TYPE_URN), "urn:tag", "urn:demographics", "urn:heatmap"]);
+// urn:entity:locality works only with localities as the signal. The app never sends it, but the API does accept it.
+const INSIGHTS_TYPES = new Set([...Object.values(TYPE_URN), "urn:entity:locality", "urn:tag", "urn:demographics", "urn:heatmap"]);
 const TRENDING_URNS = new Set(TRENDING_TYPES.map((t) => TYPE_URN[t]));
 // Both answer HTTP 400 "does not yet support trending requests" when bias.trends is sent.
 const NO_TREND_BIAS = new Set([TYPE_URN.book, TYPE_URN.videogame]);
@@ -64,6 +65,13 @@ function searchProblem(params: Params): string | null {
   return null;
 }
 
+function compareProblem(params: Params): string | null {
+  if (!count(params, "a.signal.interests.entities") || !count(params, "b.signal.interests.entities")) {
+    return "compare needs entities on both sides, a.signal.interests.entities and b.signal.interests.entities";
+  }
+  return null;
+}
+
 function trendingProblem(params: Params): string | null {
   if (count(params, "signal.interests.entities") !== 1) return "trending takes exactly one entity in signal.interests.entities";
   const type = one(params, "filter.type");
@@ -80,6 +88,7 @@ export function checkParams(path: string, params: Params): string | null {
   if (!intIn(one(params, "page"), 1, 100)) return "page must be between 1 and 100";
   if (path === "/v2/insights") return insightsProblem(params);
   if (path === "/search") return searchProblem(params);
+  if (path === "/v2/analysis/compare") return compareProblem(params);
   if (path === "/v2/trending") return trendingProblem(params);
   return null;
 }

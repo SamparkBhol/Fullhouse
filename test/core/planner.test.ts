@@ -121,16 +121,16 @@ describe("planNights", () => {
   it("takes menu ideas only from street tags", () => {
     const street = new Map(read.streetTags.map((t) => [t.name, t]));
     const p = plan().plan;
-    expect(p.menuIdeas.map((m) => m.text)).toEqual(["Add natural wine to the menu for the night", "Add Japanese food to the menu for the night"]);
+    expect(p.menuIdeas.map((m) => m.text)).toEqual(["Add natural wine to the menu for the night", "Add ramen to the menu for the night"]);
     for (const m of p.menuIdeas) {
-      const name = m.because[0]?.text.match(/^The street ranks (.+) #\d+/)?.[1] ?? "";
+      const name = m.because[0]?.text.match(/^(.+) is among the taste tags Qloo returns for the area around Cafe Lumen$/)?.[1] ?? "";
       expect(street.has(name)).toBe(true);
       expect(read.provenance[m.because[0]!.provenance]?.call).toBe("street_tags");
     }
     const tasting = plan({ preferFormats: ["tasting"] }).plan;
     expect(tasting.themeTags[0]?.name).toBe("Natural Wine");
     expect(tasting.copy.eventTitle).toBe("Natural wine tasting night at Cafe Lumen");
-    expect(tasting.copy.eventDescription).toContain("On the menu: natural wine and Japanese food.");
+    expect(tasting.copy.eventDescription).toContain("On the menu: natural wine and ramen.");
   });
 
   it("builds the playlist only from the street's artist results, with the licence note", () => {
@@ -170,7 +170,8 @@ describe("planNights", () => {
       }
     }
     const why = res.plan.why.map((b) => b.kind);
-    expect(why).toEqual(expect.arrayContaining(["affinity", "trending", "tag", "compare", "heatmap"]));
+    expect(why).toEqual(expect.arrayContaining(["affinity", "explainability", "tag", "compare", "heatmap"]));
+    expect(why).not.toContain("trending");
   });
 
   it("states what the plan rests on", () => {
@@ -180,7 +181,7 @@ describe("planNights", () => {
   });
 
   it("says so when there are no partners or menu ideas", () => {
-    const bare: StreetRead = { ...read, lovedPlaces: [], streetTags: read.streetTags.filter((t) => !t.namespace.includes("cuisine") && !t.namespace.includes("menu")) };
+    const bare: StreetRead = { ...read, lovedPlaces: [], streetTags: read.streetTags.filter((t) => t.namespace !== "urn:tag:specialty_dish:place") };
     const p = plan({}, VENUE, bare).plan;
     expect(p.partners).toEqual([]);
     expect(p.limits).toContain("No place within a 1 km walk came back from Qloo, so this night has no partners.");

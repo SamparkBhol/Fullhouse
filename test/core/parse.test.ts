@@ -44,7 +44,7 @@ describe("entity parsing", () => {
 
   it("reads insights places: subtype, distance, audience growth and per result explainability", () => {
     const [first, , third] = parseEntities(fixture("insights_place"));
-    expect(first).toMatchObject({ type: "place", affinity: 0.9681, distanceM: 151.4, audienceGrowth: 0.42, lat: 40.7223, lng: -73.9568 });
+    expect(first).toMatchObject({ type: "place", affinity: 0.9681, distanceM: 176.2, audienceGrowth: 0.42, lat: 40.7223, lng: -73.9568 });
     expect(first?.explain).toEqual([{ entityId: VENUE_ID, score: 1 }]);
     expect(first?.tags[0]).toEqual({ id: "urn:tag:genre:place:wine_bar", name: "Wine Bar", namespace: "urn:tag:genre:place", score: null, popularity: null });
     expect(third?.audienceGrowth).toBe(-0.8);
@@ -113,10 +113,15 @@ describe("other insights modes", () => {
   it("reads compare's shared tags, each side's own tags and the string counts", () => {
     const c = parseCompare(fixture("compare"));
     expect(c.shared.map((t) => t.name)).toEqual(["Place", "Coffee"]);
-    expect(c.shared[1]?.b).toEqual([{ id: "A1B2C3D4-2222-4A2B-9C3D-0E1F2A3B4C12", name: "Kettle Books" }]);
+    expect(c.shared[1]?.b).toEqual([
+      { id: "A1B2C3D4-2222-4A2B-9C3D-0E1F2A3B4C12", name: "Kettle Books" },
+      { id: "A1B2C3D4-4444-4A2B-9C3D-0E1F2A3B4C14", name: "Daybreak Cafe" },
+    ]);
+    expect(c.shared[0]?.b).toHaveLength(5);
     expect(c.shared[0]?.score).toBeCloseTo(0.731, 3);
-    expect(c.a.map((t) => t.id)).toEqual(["urn:tag:genre:place", "urn:tag:genre:place:cafe", "urn:tag:offerings:place:coffee"]);
-    expect(c.b.find((t) => t.name === "Wine")?.count).toBe(2);
+    expect(c.a.map((t) => t.id)).toEqual(["urn:tag:genre:place", "urn:tag:genre:place:cafe", "urn:tag:category:place:cafe", "urn:tag:offerings:place:coffee"]);
+    expect(c.a[2]?.namespace).toBe("urn:tag:category:place");
+    expect(c.b.find((t) => t.name === "Wine")?.count).toBe(3);
   });
 
   it("reads one demographics block per input", () => {
@@ -140,7 +145,7 @@ describe("counts and errors", () => {
     expect(countResults(fixture("insights_street_tags"))).toBe(9);
     expect(countResults(fixture("heatmap_street"))).toBe(3);
     expect(countResults(fixture("demographics"))).toBe(1);
-    expect(countResults(fixture("compare"))).toBe(9);
+    expect(countResults(fixture("compare"))).toBe(14);
     expect(countResults({})).toBe(0);
   });
 

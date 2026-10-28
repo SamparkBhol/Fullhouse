@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { LovedPlace } from "../../../src/shared/contract.ts";
 import { lovedPlaces } from "../../../src/core/street/steps/loved_places.ts";
-import { compareStep } from "../../../src/core/street/steps/compare.ts";
+import { PARTNERS_COMPARED, compareStep } from "../../../src/core/street/steps/compare.ts";
 import { streetFingerprint } from "../../../src/core/street/steps/street_tags.ts";
 import { venueFingerprint } from "../../../src/core/street/steps/venue_tags.ts";
 import { VENUE_ID, fixture } from "../../fixtures/street.ts";
@@ -17,12 +17,13 @@ async function inputs(routes = [] as ReturnType<typeof answer>[]) {
 }
 
 describe("compareStep", () => {
-  it("compares the venue with its top three loved places", async () => {
+  it("compares the venue with its top five loved places", async () => {
     const { run, ctx, calls, input } = await inputs();
     await compareStep(run, ctx, input);
     const p = calls.find((c) => c.url.pathname === "/v2/analysis/compare")!.url.searchParams;
     expect(p.get("a.signal.interests.entities")).toBe(VENUE_ID);
-    expect(p.get("b.signal.interests.entities")).toBe(input.partners.slice(0, 3).map((x) => x.id).join(","));
+    expect(p.get("b.signal.interests.entities")).toBe(input.partners.slice(0, PARTNERS_COMPARED).map((x) => x.id).join(","));
+    expect(PARTNERS_COMPARED).toBe(5);
     expect(p.get("take")).toBe("20");
   });
 
@@ -35,20 +36,20 @@ describe("compareStep", () => {
     ]);
   });
 
-  it("finds the gap as the partners' side minus the venue's side, most carried first", async () => {
+  it("finds the gap as the partners' side minus the venue's side, shared by two or more, most carried first", async () => {
     const { run, ctx, input } = await inputs();
     const { gaps, limits } = await compareStep(run, ctx, input);
     expect(gaps.map((g) => g.tag.name)).toEqual(["Wine", "Live music", "Date Night", "Bar"]);
-    expect(gaps[0]?.note).toBe("2 of the 3 places nearby that Cafe Lumen's audience also loves are tagged Wine; Cafe Lumen is not");
+    expect(gaps[0]?.note).toBe("3 of the 5 places nearby that Cafe Lumen's audience also loves are tagged Wine. Cafe Lumen is not.");
     expect(gaps[1]?.because.map((b) => b.text)).toEqual(["Tagged Live music: Blue Hour Wine Bar", "Cafe Lumen's own Qloo tags do not include Live music"]);
     expect(gaps.every((g) => g.because.every((b) => b.kind === "compare"))).toBe(true);
     expect(limits).toEqual([]);
   });
 
-  it("leaves out amenities, namespace roots and tags the venue already carries", async () => {
+  it("leaves out amenities, catalogue tags, single carriers and tags the venue already carries", async () => {
     const { run, ctx, input } = await inputs();
     const names = (await compareStep(run, ctx, input)).gaps.map((g) => g.tag.name);
-    for (const left of ["Hair dryer", "Place", "Coffee"]) expect(names).not.toContain(left);
+    for (const left of ["Hair dryer", "Place", "Tourist Attraction", "Coffee", "Cozy", "Repair services", "Movie Theater"]) expect(names).not.toContain(left);
   });
 
   it("falls back to the street and audience overlap when compare fails, and shows no gap", async () => {
@@ -71,7 +72,7 @@ describe("compareStep", () => {
     body.results.b = body.results.a;
     const { run, ctx, input } = await inputs([answer(isCompare, body)]);
     expect((await compareStep(run, ctx, input)).limits).toEqual([
-      "The places nearby that Cafe Lumen's audience loves carry no tag that Cafe Lumen lacks, so this read shows no gap.",
+      "No tag missing from Cafe Lumen is shared by two or more of the places nearby that its audience loves, so this read shows no gap.",
     ]);
   });
 });

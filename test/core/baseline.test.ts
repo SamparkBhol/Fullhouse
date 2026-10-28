@@ -12,13 +12,21 @@ const searchRoute: Route = (url) => {
   if (url.pathname !== "/search") return undefined;
   const q = url.searchParams.get("query") ?? "";
   const types = url.searchParams.get("types");
-  const place = (id: string, name: string, lat: number, lng: number) => ({ entity_id: id, name, types: ["urn:entity:place"], properties: { lat, lon: lng, address: `${name} street` } });
+  const place = (id: string, name: string, lat: number, lng: number, address: string) => ({
+    entity_id: id,
+    name,
+    types: ["urn:entity:place"],
+    disambiguation: address,
+    location: { lat, lon: lng },
+    properties: { address },
+  });
   if (types === "urn:entity:place") {
-    if (q === "Blue Hour Wine Bar") return { status: 200, body: { results: [place("PLACE-1", "Blue Hour Wine Bar", 40.7225, -73.957)] } };
-    if (q === "Kettle Books") return { status: 200, body: { results: [place("PLACE-2", "Kettle Books", 40.719, -73.96)] } };
-    if (q === "Sora Ramen") return { status: 200, body: { results: [place("X-9", "Sora Ramen", 40.78, -73.9)] } };
+    if (q === "Blue Hour Wine Bar") return { status: 200, body: { results: [place("PLACE-1", "Blue Hour Wine Bar", 40.7223, -73.9568, "40 Grand St Brooklyn, NY 11211")] } };
+    if (q === "Kettle Books") return { status: 200, body: { results: [place("PLACE-2", "Kettle Books", 40.7192, -73.9596, "7 Roebling St Brooklyn, NY 11211")] } };
+    if (q === "Sora Ramen") return { status: 200, body: { results: [place("X-9", "Sora Ramen", 40.7801, -73.9012, "1530 Lexington Ave New York, NY 10128")] } };
     if (q === "Daybreak Cafe") return { status: 500, body: {} };
-    return { status: 404, body: { message: "No results" } };
+    // Search never answers empty, so a name Qloo does not know comes back as a fuzzy namesake.
+    return { status: 200, body: { results: [place("X-7", "Silver Spoon Diner", 40.6501, -73.9496, "2101 Church Ave Brooklyn, NY 11226")] } };
   }
   if (types === "urn:entity:artist") {
     if (q === "Alice Coltrane" || q === "Norah Jones") return { status: 200, body: { results: [{ entity_id: "ART-X", name: q, types: ["urn:entity:artist"] }] } };
@@ -47,7 +55,7 @@ describe("runBaseline", () => {
 
     expect(asked[0]).toEqual([PLAIN_SYSTEM, baselineAsk(VENUE)]);
     expect(asked[1]?.[0]).toBe(EXTRACT_SYSTEM);
-    expect(b.ask).toBe("I run Cafe Lumen at 12 Grand St, Brooklyn, NY 11211, Brooklyn. Thursday evenings are quiet. Suggest one night I could run on a Thursday, one featured act for it, and three nearby businesses I could partner with.");
+    expect(b.ask).toBe("I run Cafe Lumen at 12 Grand St Brooklyn, NY 11211, Brooklyn. Thursday evenings are quiet. Suggest one night I could run on a Thursday, one featured act for it, and three nearby businesses I could partner with.");
     expect(b.plainText).toBe(PLAIN);
     expect(b.model).toBe("@cf/meta/llama-3.3-70b-instruct-fp8-fast");
     expect(b.at).toBe(NOW.toISOString());
