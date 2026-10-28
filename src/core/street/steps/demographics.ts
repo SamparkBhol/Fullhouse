@@ -2,6 +2,7 @@ import type { Demographics } from "../../../shared/contract.ts";
 import { listWords } from "../../copy/text.ts";
 import { parseDemographics, type QDemo } from "../../qloo/demographics.ts";
 import type { Runner } from "../runner.ts";
+import { possessive } from "../words.ts";
 import type { ReadContext } from "./resolve.ts";
 
 const AGE_LABEL: Record<string, string> = {
@@ -35,6 +36,6 @@ export async function demographicsStep(run: Runner, ctx: ReadContext): Promise<{
   const got = await run.call("demographics", "/v2/insights", params, "Audience demographics");
   if (!got) return { demographics: null, limits: [] };
   const summary = summariseDemographics(parseDemographics(got.body), ctx.name);
-  if (!summary) return { demographics: null, limits: [`Qloo returned no age or gender lean for ${ctx.name}'s audience.`] };
+  if (!summary) return { demographics: null, limits: [`Qloo returned no age or gender lean for ${possessive(ctx.name)} audience.`] };
   return { demographics: { summary, provenance: got.ref }, limits: [] };
 }

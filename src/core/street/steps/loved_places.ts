@@ -7,7 +7,7 @@ import { explainBecause, tiedToVenue } from "../because.ts";
 import { haversineM } from "../geo.ts";
 import { rankBy } from "../rank.ts";
 import type { Runner } from "../runner.ts";
-import { plural } from "../words.ts";
+import { plural, possessive } from "../words.ts";
 import type { ReadContext } from "./resolve.ts";
 
 export const LOVED_RADIUS_M = 1200;
@@ -22,7 +22,8 @@ export interface LovedRead {
 function toPlace(e: QEntity, rank: number, n: number, tied: boolean, ctx: ReadContext, ref: number): LovedPlace {
   const lat = e.lat as number;
   const lng = e.lng as number;
-  const ranked = tied ? `Ranked #${rank} of ${n} places ${WITHIN} for people who like ${ctx.name}` : `Listed #${rank} of ${n} places ${WITHIN} of ${ctx.name}`;
+  const of = plural(n, "place", "places");
+  const ranked = tied ? `Ranked #${rank} of ${of} ${WITHIN} for people who like ${ctx.name}` : `Listed #${rank} of ${of} ${WITHIN} of ${ctx.name}`;
   const p: LovedPlace = {
     id: e.id,
     name: e.name,
@@ -45,7 +46,7 @@ function placeLimits(found: number, unmapped: number, tied: boolean, ctx: ReadCo
   const out: string[] = [];
   if (!found) out.push(`Qloo returned no places ${WITHIN} of ${ctx.name}.`);
   else if (found < 3) out.push(`Only ${plural(found, "place", "places")} ${WITHIN} came back from Qloo, so this part of the read is thin.`);
-  if (found && !tied) out.push(`Qloo did not tie the nearby places to ${ctx.name}'s audience, so their order is not a ranking of taste.`);
+  if (found && !tied) out.push(`Qloo did not tie the nearby places to ${possessive(ctx.name)} audience, so their order is not a ranking of taste.`);
   if (unmapped) out.push(`${plural(unmapped, "place", "places")} came back without coordinates and ${unmapped === 1 ? "is" : "are"} not on the map.`);
   return out;
 }

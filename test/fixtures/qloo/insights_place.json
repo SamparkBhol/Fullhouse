@@ -29,7 +29,7 @@
         },
         "query": {
           "affinity": 0.9681,
-          "distance": 151.4,
+          "distance": 176.2,
           "measurements": { "audience_growth": 0.42 },
           "explainability": { "signal.interests.entities": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "score": 1 }] }
         }
@@ -49,7 +49,7 @@
         "properties": { "address": "7 Roebling St Brooklyn, NY 11211", "business_rating": null, "price_level": null },
         "query": {
           "affinity": 0.9513,
-          "distance": 212.9,
+          "distance": 241.0,
           "measurements": { "audience_growth": 0 },
           "explainability": { "signal.interests.entities": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "score": 1 }] }
         }
@@ -70,7 +70,7 @@
         "properties": { "address": "201 Havemeyer St Brooklyn, NY 11211" },
         "query": {
           "affinity": 0.9442,
-          "distance": 524.6,
+          "distance": 524.9,
           "measurements": { "audience_growth": -0.8 },
           "explainability": { "signal.interests.entities": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "score": 1 }] }
         }
@@ -87,7 +87,7 @@
         "properties": { "address": "3 Grand St Brooklyn, NY 11211" },
         "query": {
           "affinity": 0.9321,
-          "distance": 93.2,
+          "distance": 108.5,
           "measurements": { "audience_growth": 0 },
           "explainability": { "signal.interests.entities": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "score": 1 }] }
         }
@@ -104,7 +104,7 @@
         "properties": { "address": "120 Grand St Brooklyn, NY 11249", "website": "https://grandstreetcinema.example" },
         "query": {
           "affinity": 0.9174,
-          "distance": 742.8,
+          "distance": 741.7,
           "measurements": { "audience_growth": 0.11 },
           "explainability": { "signal.interests.entities": [{ "entity_id": "0B5E1C2A-7D3F-4E8A-9B61-2C4D5E6F7A01", "score": 1 }] }
         }

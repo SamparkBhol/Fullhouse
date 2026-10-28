@@ -4,7 +4,7 @@ import { parseHeatmap } from "../../qloo/heatmap.ts";
 import { locationFilter } from "../../qloo/location.ts";
 import type { Params } from "../../qloo/request.ts";
 import type { Runner } from "../runner.ts";
-import { plural } from "../words.ts";
+import { plural, possessive } from "../words.ts";
 import type { ReadContext } from "./resolve.ts";
 
 export const HEAT_RADIUS_M = 2000;
@@ -49,8 +49,8 @@ export function venueHeat(run: Runner, ctx: ReadContext): Promise<{ layer: HeatL
     call: "heat_venue",
     label: "Venue heatmap",
     signal: { "signal.interests.entities": ctx.entityId },
-    title: `Where ${ctx.name}'s audience over indexes`,
-    subject: `${ctx.name}'s audience`,
+    title: `Where ${possessive(ctx.name)} audience over indexes`,
+    subject: `${possessive(ctx.name)} audience`,
   });
 }
 

@@ -1,26 +1,18 @@
 import type { QlooType, Rising } from "../../../shared/contract.ts";
-import { listWords } from "../../copy/text.ts";
+import { capFirst, listWords } from "../../copy/text.ts";
 import { parseEntities, type QEntity } from "../../qloo/entities.ts";
 import { locationSignal } from "../../qloo/location.ts";
 import { TYPE_URN } from "../../qloo/urns.ts";
 import { explainBecause, tiedToVenue } from "../because.ts";
 import { rankBy } from "../rank.ts";
 import type { Runner } from "../runner.ts";
-import { TYPE_PLURAL } from "../words.ts";
+import { TYPE_PLURAL, TYPE_SINGULAR, plural } from "../words.ts";
 import type { ReadContext } from "./resolve.ts";
 
 // Video games are left out: one title tops most venues, so they add little for a night.
 // bias.trends is never sent: books and video games refuse it with HTTP 400 and it changed nothing for the rest.
 export const CROSS_TYPES: QlooType[] = ["artist", "book", "movie", "tv_show", "podcast"];
 const PICKS_PER_TYPE = 10;
-
-const TYPE_LABEL: Partial<Record<QlooType, string>> = {
-  artist: "Artist picks",
-  book: "Book picks",
-  movie: "Film picks",
-  tv_show: "TV show picks",
-  podcast: "Podcast picks",
-};
 
 interface PickList {
   type: QlooType;
@@ -38,19 +30,18 @@ async function pickList(run: Runner, ctx: ReadContext, type: QlooType): Promise<
     "feature.explainability": "true",
     take: String(PICKS_PER_TYPE),
   };
-  const got = await run.call(`insights_${type}`, "/v2/insights", params, TYPE_LABEL[type] ?? `${TYPE_PLURAL[type]} picks`);
+  const got = await run.call(`insights_${type}`, "/v2/insights", params, capFirst(`${TYPE_SINGULAR[type]} picks`));
   if (!got) return null;
   const entities = rankBy(parseEntities(got.body), (e) => e.affinity);
   return { type, ref: got.ref, entities, tied: entities.some((e) => tiedToVenue(e, ctx)) };
 }
 
 function toRising(e: QEntity, rank: number, list: PickList, ctx: ReadContext): Rising {
-  const n = list.entities.length;
-  const kind = TYPE_PLURAL[list.type];
+  const of = plural(list.entities.length, TYPE_SINGULAR[list.type], TYPE_PLURAL[list.type]);
   // Without the venue in the signal the scores sit level, so the order is not presented as a ranking.
   const ranked = list.tied
-    ? `Ranked #${rank} of ${n} ${kind} for people who like ${ctx.name}, weighted to the area around it`
-    : `One of ${n} ${kind} Qloo returned for the area around ${ctx.name}`;
+    ? `Ranked #${rank} of ${of} for people who like ${ctx.name}, weighted to the area around it`
+    : `One of ${of} Qloo returned for the area around ${ctx.name}`;
   const r: Rising = {
     id: e.id,
     name: e.name,

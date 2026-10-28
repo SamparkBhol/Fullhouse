@@ -1,13 +1,15 @@
 import type { Gap, LovedPlace, StreetTag } from "../../../shared/contract.ts";
 import { parseCompare, type CompareRead } from "../../qloo/compare.ts";
-import { isNamespaceRoot, type QTag } from "../../qloo/tags.ts";
+import type { QTag } from "../../qloo/tags.ts";
 import { renumber, tagKeys, uniqueBy } from "../rank.ts";
 import type { Runner } from "../runner.ts";
+import { possessive } from "../words.ts";
 import type { Fingerprint } from "./fingerprint.ts";
-import { partnerGaps } from "./gaps.ts";
+import { isCatalogueTag, partnerGaps } from "./gaps.ts";
 import type { ReadContext } from "./resolve.ts";
 
-export const PARTNERS_COMPARED = 3;
+// With three places nearly every partner tag is carried once; five lets a gap be one the street shares.
+export const PARTNERS_COMPARED = 5;
 const MAX_SHARED = 10;
 
 export interface CompareInput {
@@ -23,7 +25,7 @@ export interface CompareOutput {
 }
 
 function asStreetTags(tags: QTag[]): StreetTag[] {
-  return tags.filter((t) => !isNamespaceRoot(t)).map((t) => ({ id: t.id, name: t.name, namespace: t.namespace, rank: 0 }));
+  return tags.filter((t) => !isCatalogueTag(t)).map((t) => ({ id: t.id, name: t.name, namespace: t.namespace, rank: 0 }));
 }
 
 // Compare's shared tags come first, then the venue's own side of compare. The street and audience overlap
@@ -48,6 +50,8 @@ export async function compareStep(run: Runner, ctx: ReadContext, input: CompareI
   const gaps = compared ? partnerGaps(compared.read, partners, ctx, compared.ref) : [];
   const limits: string[] = [];
   if (!partners.length) limits.push(`${ctx.name} was not compared with nearby places because none came back, so this read shows no gap.`);
-  else if (compared && !gaps.length) limits.push(`The places nearby that ${ctx.name}'s audience loves carry no tag that ${ctx.name} lacks, so this read shows no gap.`);
+  else if (compared && !gaps.length) {
+    limits.push(`No tag that ${ctx.name} lacks is shared by the places nearby that ${possessive(ctx.name)} audience loves, so this read shows no gap.`);
+  }
   return { shared, gaps, limits };
 }
