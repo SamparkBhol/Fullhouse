@@ -48,3 +48,11 @@ describe("checkClaims", () => {
     expect(findNames("Playlist: Radiohead, Massive Attack (live), Jean-Luc Ponty.").map((f) => f.text)).toEqual(["Radiohead", "Massive Attack", "Jean-Luc Ponty"]);
   });
 });
+
+describe("sentence starts", () => {
+  it("does not read a verb at the start of a sentence as part of a name", async () => {
+    const { checkClaims } = await import("../../src/core/copy/claims.ts");
+    const r = checkClaims("Watch Master of None with us on Tuesday. Catch Friday Black after.", ["Master of None", "Friday Black"]);
+    expect(r.ok).toBe(true);
+  });
+});

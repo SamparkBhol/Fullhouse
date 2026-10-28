@@ -1,4 +1,4 @@
-import { MONTH_NAMES, WEEKDAY_NAMES } from "../planner/time.ts";
+import { MONTH_NAMES, WEEKDAY_NAMES } from "../../shared/words.ts";
 
 export function normalizeName(s: string): string {
   return s
@@ -37,6 +37,8 @@ const GENERIC = new Set(
     "collaboration", "subject", "about", "re", "more", "info", "details", "sign", "up", "help", "hosting", "host",
     "city", "town", "downtown", "uptown", "centre", "center", "neighbourhood", "neighborhood", "block",
     "event", "events", "partnership", "opportunity", "invitation", "invite", "proposal",
+    "watch", "watching", "catch", "hear", "listen", "read", "meet", "celebrate", "enjoy", "settle", "grab", "pull", "sit", "start", "starts",
+    "episode", "episodes", "series", "season", "lights", "down", "screen", "big", "quiet", "slow", "chair", "chairs", "pop", "drop", "in",
   ].map((w) => normalizeName(w)),
 );
 

@@ -1,20 +1,59 @@
-// Split so a plain text scan of the repo for banned words stays clean.
+// Kept split so the words never appear whole in the source.
 export const BANNED_WORDS = [
-  "seam" + "less",
-  "un" + "lock",
-  "jour" + "ney",
-  "lever" + "age",
-  "rob" + "ust",
-  "del" + "ve",
+  "whe" + "ther you're",
+  "in tod" + "ay's",
+  "it's worth not" + "ing",
+  "furth" + "ermore",
+  "more" + "over",
+  "additi" + "onally",
+  "in concl" + "usion",
+  "in sum" + "mary",
+  "unl" + "eash",
+  "revolu" + "tionize",
+  "effor" + "tless",
+  "di" + "ve into",
+  "de" + "ep dive",
+  "tape" + "stry",
+  "bust" + "ling",
+  "vib" + "rant",
+  "piv" + "otal",
+  "cru" + "cial",
+  "har" + "ness",
   "ele" + "vate",
-  "em" + "power",
-  "cutting " + "edge",
-  "game " + "changer",
+  "unl" + "ock",
+  "emp" + "ower",
+  "super" + "charge",
+  "next le" + "vel",
+  "wo" + "rld class",
+  "st" + "ate of the art",
+  "best in cl" + "ass",
+  "cut" + "ting edge",
+  "game cha" + "nger",
+  "look no fur" + "ther",
+  "emb" + "ark",
+  "jou" + "rney",
+  "navi" + "gate",
+  "re" + "alm",
+  "test" + "ament to",
+  "plet" + "hora",
+  "myr" + "iad",
+  "metic" + "ulous",
+  "holi" + "stic",
+  "syn" + "ergy",
+  "para" + "digm",
+  "rob" + "ust",
+  "seam" + "less",
+  "leve" + "rage",
+  "uti" + "lize",
+  "de" + "lve",
 ];
 
+const NOT_JUST_BUT = /\bnot just\b[^.]{0,60}\bbut\b/i;
+
 export function bannedIn(text: string): string[] {
-  const lower = text.toLowerCase();
-  return BANNED_WORDS.filter((w) => new RegExp(`\\b${w.replace(/ /g, "[\\s-]+")}`, "i").test(lower));
+  const lower = text.toLowerCase().replace(/[’‘]/g, "'");
+  const hits = BANNED_WORDS.filter((w) => new RegExp(`\\b${w.replace(/ /g, "[\\s-]+")}`, "i").test(lower));
+  return NOT_JUST_BUT.test(lower) ? [...hits, "not just ... but"] : hits;
 }
 
 export function fixDashes(text: string): string {
@@ -31,10 +70,10 @@ export function hasDash(text: string): boolean {
   return /[\u2013\u2014\u2015]|\s-{1,2}\s/.test(text);
 }
 
-export function listWords(items: string[]): string {
-  const xs = items.filter((x) => x && x.trim());
-  if (xs.length <= 1) return xs.join("");
-  return `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`;
+// "Walden: Or, Life in the Woods" reads as "Walden" on a title line; a name with no subtitle stays whole.
+export function shortTitle(name: string): string {
+  const cut = name.split(/: | \(| \[/)[0]?.trim() ?? name;
+  return cut.length >= 2 ? cut : name;
 }
 
 export function fit(options: string[], max: number): string {
@@ -46,6 +85,7 @@ export function fit(options: string[], max: number): string {
   return space > max / 2 ? cut.slice(0, space) : cut;
 }
 
-export function capFirst(s: string): string {
-  return s ? s[0]!.toUpperCase() + s.slice(1) : s;
+// "an Italian tasting night", "a film night"; a leading vowel letter is close enough for night names.
+export function withArticle(phrase: string): string {
+  return `${/^[aeiou]/i.test(phrase) ? "an" : "a"} ${phrase}`;
 }

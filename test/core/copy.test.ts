@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import {
   BANNED_WORDS,
+  COPY_SCHEMA,
   COPY_SYSTEM_PROMPT,
   bannedIn,
   buildBrief,
@@ -9,8 +10,12 @@ import {
   extractJson,
   fixDashes,
   hasDash,
+  jsonObjectIn,
+  parseCopy,
   planNights,
   readStreet,
+  repairJson,
+  templateCopy,
   writeCopy,
 } from "../../src/core/index.ts";
 import type { NightPlan, StreetRead } from "../../src/shared/contract.ts";
@@ -43,6 +48,30 @@ describe("extractJson", () => {
     expect(extractJson("{ broken { \"a\": 2 }")).toEqual({ a: 2 });
     expect(extractJson("no json here")).toBeNull();
   });
+
+  it("repairs raw line breaks and trailing commas that Llama leaves in its JSON", () => {
+    const raw = 'Here is the copy:\n{"body": "Hi there,\n\nWe run Cafe Lumen.\tThanks",\n "tags": ["a", "b",],}';
+    expect(extractJson(raw)).toEqual({ body: "Hi there,\n\nWe run Cafe Lumen.\tThanks", tags: ["a", "b"] });
+    expect(repairJson('{"a": "x,}"}')).toBe('{"a": "x,}"}');
+  });
+
+  it("reads an object sent as a JSON string and says why nothing came out", () => {
+    expect(extractJson(JSON.stringify(JSON.stringify({ a: 1 })))).toEqual({ a: 1 });
+    expect(jsonObjectIn("I cannot help with that")).toEqual({ failure: "no_object" });
+    expect(jsonObjectIn('{"eventTitle": "Alice Coltrane night", "eventDescription": "On Thursday we pl')).toEqual({ failure: "cut_off" });
+    expect(jsonObjectIn('{"eventTitle": "The "Other" Two"}')).toEqual({ failure: "unparsed" });
+  });
+
+  it("closes a reply cut off after its last value, and says so when only a nested object survives", () => {
+    const whole = JSON.stringify(good);
+    expect(jsonObjectIn(whole.slice(0, -1))).toEqual({ value: good });
+    expect(jsonObjectIn(`Here it is:\n${JSON.stringify(good, null, 2).slice(0, -2)}`)).toEqual({ value: good });
+    const cutInPitch = whole.slice(0, whole.indexOf('"body"')) + '"body": "Hi, we are hosting a list';
+    expect(jsonObjectIn(cutInPitch)).toEqual({ failure: "cut_off" });
+    const pitchFirst = `{"partnerPitch": ${JSON.stringify(good.partnerPitch)}, "eventTitle": "Alice Coltrane list`;
+    expect(jsonObjectIn(pitchFirst)).toEqual({ value: good.partnerPitch, inside: true });
+    expect(parseCopy(pitchFirst)).toEqual({ problem: "stopped before its JSON object was complete" });
+  });
 });
 
 describe("writeCopy", () => {
@@ -53,14 +82,17 @@ describe("writeCopy", () => {
   it("uses model copy when every name is in the brief", async () => {
     const generate = vi.fn(async () => "```json\n" + JSON.stringify(good) + "\n```");
     const out = await writeCopy(plan, VENUE, read, generate);
-    expect(out.copy).toEqual({ ...good, writtenBy: "model" });
+    const headline = plan.feature && plan.feature.name.length <= 40 ? plan.feature.name : good.posterHeadline;
+    expect(out.copy).toEqual({ ...good, posterHeadline: headline, writtenBy: "model" });
     expect(out.checks).toEqual({ claimsVerified: true, unverified: [] });
-    const [system, user] = generate.mock.calls[0] as unknown as [string, string];
+    const [system, user, options] = generate.mock.calls[0] as unknown as [string, string, { schema?: unknown; maxTokens?: number }];
     expect(system).toBe(COPY_SYSTEM_PROMPT);
     expect(user).toBe(copyUserPrompt(buildBrief(plan, VENUE, read), plan.copy));
     expect(user).toContain(plan.copy.eventDescription.slice(0, 40));
-    expect(user).toContain('"name": "Alice Coltrane"');
+    expect(user).toContain('"name":"Alice Coltrane"');
     expect(user).not.toContain("urn:");
+    expect(options.schema).toBe(COPY_SCHEMA);
+    expect(options.maxTokens).toBeGreaterThanOrEqual(1200);
   });
 
   it("keeps the template copy when the model names something outside the brief", async () => {
@@ -79,13 +111,31 @@ describe("writeCopy", () => {
     expect(fails.copy).toEqual(plan.copy);
     expect(fails.limits.at(-1)).toBe("The model did not answer, so the copy comes from templates.");
 
-    expect((await writeCopy(plan, VENUE, read, async () => "I cannot help")).limits.at(-1)).toBe("The model reply was not a JSON object, so the copy comes from templates.");
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const plain = "The model's reply was not usable, so the copy comes from templates.";
+    expect((await writeCopy(plan, VENUE, read, async () => "I cannot help")).limits.at(-1)).toBe(plain);
+    expect(warn).toHaveBeenCalledWith("model copy refused", expect.stringContaining("had no JSON object in it"));
+    expect(warn).toHaveBeenCalledWith("model copy refused", expect.stringContaining("I cannot help"));
+    const cut = await writeCopy(plan, VENUE, read, async () => JSON.stringify(good).slice(0, 120));
+    expect(cut.limits.at(-1)).toBe(plain);
+    expect(warn).toHaveBeenLastCalledWith("model copy refused", expect.stringContaining("stopped before its JSON object was complete"));
     const missing = await writeCopy(plan, VENUE, read, async () => JSON.stringify({ ...good, social: 4 }));
-    expect(missing.limits.at(-1)).toContain("social");
+    expect(missing.limits.at(-1)).toBe(plain);
+    expect(missing.limits.join(" ")).not.toMatch(/JSON|social|posterSub/);
+    expect(warn).toHaveBeenLastCalledWith("model copy refused", expect.stringContaining("social"));
+    warn.mockRestore();
     const long = await writeCopy(plan, VENUE, read, async () => JSON.stringify({ ...good, social: "x ".repeat(200) }));
     expect(long.copy.writtenBy).toBe("template");
     const banned = await writeCopy(plan, VENUE, read, async () => JSON.stringify({ ...good, social: `A night to ${BANNED_WORDS[1]} your Thursday.` }));
     expect(banned.copy.writtenBy).toBe("template");
+  });
+
+  it("takes copy the model wrapped in prose, nested one level down or with raw line breaks", async () => {
+    const pitchBody = "Hi there,\n\nWe run Cafe Lumen and we play Alice Coltrane on Thursday.\n\nThanks,\nCafe Lumen";
+    const json = JSON.stringify({ copy: { ...good, partnerPitch: { subject: "Alice Coltrane at Cafe Lumen", body: pitchBody } } }).replace(/\\n/g, "\n");
+    const out = await writeCopy(plan, VENUE, read, async () => `Sure, here it is.\n${json}\nEnjoy the night.`);
+    expect(out.copy.writtenBy).toBe("model");
+    expect(out.copy.partnerPitch.body).toBe(pitchBody);
   });
 
   it("repairs dashes in model copy instead of rejecting it", async () => {
@@ -94,6 +144,33 @@ describe("writeCopy", () => {
     expect(out.copy.writtenBy).toBe("model");
     expect(out.copy.posterSub).toBe("Thursday 29 October, 19:00 at Cafe Lumen");
     expect(out.copy.social).toBe("Doors 19:00 to 22:00 at Cafe Lumen, free");
+  });
+});
+
+describe("partner pitch template", () => {
+  it("reads like a short note from one neighbour to another", () => {
+    const { subject, body } = templateCopy(plan, VENUE).partnerPitch;
+    const paragraphs = body.split("\n\n");
+    expect(paragraphs[0]).toBe("Hi there,");
+    expect(paragraphs[1]).toMatch(/^We run Cafe Lumen, a short walk from you\. On Thursday 29 October from 19:00 to 22:00 we are putting on a listening night around Alice Coltrane\.$/);
+    expect(paragraphs[2]).toBe(
+      "Qloo's aggregate taste data puts your place among the spots nearby that people who like Cafe Lumen also like, which is why we are writing to you.",
+    );
+    expect(paragraphs[3]).toMatch(/^Would you cross promote it with us\?/);
+    expect(paragraphs.at(-1)).toBe("Thanks,\nCafe Lumen");
+    expect(body.split(/\s+/).length).toBeLessThan(120);
+    expect(body).not.toMatch(/^Hi,$/m);
+    expect(bannedIn(body)).toEqual([]);
+    expect(hasDash(body)).toBe(false);
+    expect(subject).toBe("Listening night at Cafe Lumen on Thursday 29 October");
+  });
+
+  it("names a tasting night with the right article", () => {
+    const tasting = planNights(read, VENUE, { preferFormats: ["tasting"] }, NOW, "owner", () => "t1").plan;
+    const italian = { ...tasting, themeTags: [{ id: "urn:tag:cuisine:qloo:italian", name: "Italian", namespace: "urn:tag:cuisine:qloo", rank: 1 }] };
+    const copy = templateCopy(italian, VENUE);
+    expect(copy.partnerPitch.body).toContain("we are putting on an Italian tasting night.");
+    expect(copy.eventDescription).toContain("Cafe Lumen hosts an Italian tasting night built around");
   });
 });
 

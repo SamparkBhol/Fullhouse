@@ -1,32 +1,26 @@
 import type { NightCopy, NightPlan, Venue } from "../../shared/contract.ts";
-import { tagLabel } from "../qloo/tags.ts";
-import { FORMATS, MENU_NAMESPACES, menuItem } from "../planner/formats.ts";
+import { FORMATS, menuItem } from "../planner/formats.ts";
 import { describeDate } from "../planner/time.ts";
-import { capFirst, fit, listWords } from "./text.ts";
+import { capFirst, listWords } from "../../shared/words.ts";
+import { fit, shortTitle, withArticle } from "./text.ts";
+import { planTheme, themeWords } from "./theme.ts";
 
 type CopyFields = Omit<NightCopy, "writtenBy">;
 
-function themeWords(plan: NightPlan): string[] {
-  const carried = new Set(plan.feature?.tags ?? []);
-  const own = FORMATS[plan.format].themeNamespaces;
-  return plan.themeTags
-    .filter((t) => carried.has(t.id) || (plan.format === "listening" && own.includes(t.namespace)) || plan.format === "tasting")
-    .slice(0, 2)
-    .map((t) => tagLabel(t.id).toLowerCase());
-}
-
-function pitch(plan: NightPlan, venue: Venue, day: string): CopyFields["partnerPitch"] {
+// The same note goes to every partner, so it greets them as a neighbour and gets to the ask in three short paragraphs.
+function pitch(plan: NightPlan, venue: Venue, day: string, night: string): CopyFields["partnerPitch"] {
   const v = venue.entity.name;
-  const label = FORMATS[plan.format].label;
-  const what = plan.feature ? `${label} around ${plan.feature.name}` : label;
+  const what = plan.feature ? `${night} around ${plan.feature.name}` : night;
   return {
-    subject: fit([`A ${label} at ${v} on ${day}`, `A ${label} on ${day}`], 100),
+    subject: fit([`${capFirst(night)} at ${v} on ${day}`, `${capFirst(night)} on ${day}`], 100),
     body: [
-      "Hi,",
+      "Hi there,",
       "",
-      `We run ${v}, a short walk from you, and we are hosting a ${what} on ${day} from ${plan.start} to ${plan.end}.`,
-      `Your place came up among the spots people around our street rate highly in Qloo's aggregate taste data, so we thought of you first.`,
-      "Would you like to cross promote the night? We would be glad to put your name on our event page and poster and to return the favour for something of yours.",
+      `We run ${v}, a short walk from you. On ${day} from ${plan.start} to ${plan.end} we are putting on ${withArticle(what)}.`,
+      "",
+      `Qloo's aggregate taste data puts your place among the spots nearby that people who like ${v} also like, which is why we are writing to you.`,
+      "",
+      "Would you cross promote it with us? We would put your name on our event page and poster, and we are happy to do the same for one of your nights.",
       "",
       "Thanks,",
       v,
@@ -34,24 +28,37 @@ function pitch(plan: NightPlan, venue: Venue, day: string): CopyFields["partnerP
   };
 }
 
+function tastingLead(plan: NightPlan): string {
+  const lead = plan.themeTags[0];
+  return lead ? menuItem(lead).replace(/ food$/, "") : "street favourites";
+}
+
+export function nightName(plan: NightPlan): string {
+  if (plan.format === "film") return plan.feature?.type === "tv_show" ? "watch night" : "film night";
+  if (plan.format === "tasting") return `${tastingLead(plan)} tasting night`;
+  return FORMATS[plan.format].label;
+}
+
 export function templateCopy(plan: NightPlan, venue: Venue): NightCopy {
   const v = venue.entity.name;
   const day = describeDate(plan.date);
   const dayShort = day.split(" ")[0] ?? day;
   const f = plan.feature?.name ?? "";
-  const theme = themeWords(plan);
-  const themeText = theme.length ? listWords(theme) : "";
+  const fs = shortTitle(f);
+  const theme = planTheme(plan, venue.city);
+  const themeText = listWords(themeWords(theme));
+  const genreText = listWords(theme.filter((p) => p.kind === "genre").map((p) => p.text));
   const others = plan.playlist.filter((a) => a.name !== f).slice(0, 4).map((a) => a.name);
   const when = `On ${day} from ${plan.start} to ${plan.end}`;
   const rsvp = "Free to come in. RSVP so we know how many chairs to put out.";
-  let c: CopyFields;
+  let c: Omit<CopyFields, "partnerPitch">;
 
   switch (plan.format) {
     case "listening": {
       const between = others.length ? ` Between records we play more artists people around here love, like ${listWords(others)}.` : "";
       const lean = themeText ? ` Expect ${themeText}.` : "";
       c = {
-        eventTitle: fit([`${f} listening night at ${v}`, `${f} listening night`, `Listening night at ${v}`], 60),
+        eventTitle: fit([`${f} listening night at ${v}`, `${f} listening night`, `${fs} listening night at ${v}`, `${fs} listening night`, `Listening night at ${v}`], 60),
         eventDescription: `${when}, ${v} puts on the records of ${f} and plays them properly, with room to listen and room to talk.${between}${lean} ${rsvp}`,
         posterHeadline: fit([`${f} on the speakers`, `${f} night`, "Listening night"], 40),
         posterSub: "Records played properly, with room to listen and room to talk. Free entry.",
@@ -62,31 +69,28 @@ export function templateCopy(plan: NightPlan, venue: Venue): NightCopy {
           ],
           280,
         ),
-        partnerPitch: pitch(plan, venue, day),
       };
       break;
     }
     case "film": {
-      const isShow = plan.feature?.type === "tv_show";
-      const noun = isShow ? "watch night" : "film night";
+      const noun = nightName(plan);
       const lean = themeText ? ` If you like ${themeText}, this one is for you.` : "";
       c = {
-        eventTitle: fit([`${f} ${noun} at ${v}`, `${f} ${noun}`, `${capFirst(noun)} at ${v}`], 60),
+        eventTitle: fit([`${f} ${noun} at ${v}`, `${f} ${noun}`, `${fs} ${noun} at ${v}`, `${fs} ${noun}`, `${capFirst(noun)} at ${v}`], 60),
         eventDescription: `${when}, ${v} hosts a ${noun} around ${f}. Pull up a chair, get a drink and settle in.${lean} ${rsvp}`,
-        posterHeadline: fit([`${f}`, capFirst(noun)], 40),
+        posterHeadline: fit([`${f}`, `${fs}`, capFirst(noun)], 40),
         posterSub: fit([`${capFirst(noun)}. Pull up a chair and settle in. Free entry.`, `${capFirst(noun)}. Free entry.`], 90),
         social: fit(
           [`${capFirst(noun)} at ${v} on ${day} at ${plan.start}. We are watching ${f}. Free, RSVP at the link.`, `${capFirst(noun)}, ${dayShort} ${plan.start}. Free, RSVP at the link.`],
           280,
         ),
-        partnerPitch: pitch(plan, venue, day),
       };
       break;
     }
     case "quiz": {
-      const rounds = themeText ? ` and rounds on ${themeText}` : "";
+      const rounds = genreText ? ` and rounds on ${genreText}` : "";
       c = {
-        eventTitle: fit([`${f} quiz night at ${v}`, `${f} quiz night`, `Quiz night at ${v}`], 60),
+        eventTitle: fit([`${f} quiz night at ${v}`, `${f} quiz night`, `${fs} quiz night at ${v}`, `${fs} quiz night`, `Quiz night at ${v}`], 60),
         eventDescription: `${when}, ${v} runs a quiz night with a round on ${f}${rounds}. Teams of up to six, free to enter. RSVP so we can print enough answer sheets.`,
         posterHeadline: fit([`${f} quiz night`, "Quiz night"], 40),
         posterSub: "Teams of up to six. Free to enter.",
@@ -94,62 +98,56 @@ export function templateCopy(plan: NightPlan, venue: Venue): NightCopy {
           [`Quiz night at ${v}, ${day} at ${plan.start}, with a round on ${f}. Teams of up to six, free to enter. RSVP at the link.`, `Quiz night, ${dayShort} ${plan.start}. RSVP at the link.`],
           280,
         ),
-        partnerPitch: pitch(plan, venue, day),
       };
       break;
     }
     case "book": {
       const lean = themeText ? ` Fans of ${themeText} especially welcome.` : "";
       c = {
-        eventTitle: fit([`${f} book night at ${v}`, `${f} book night`, `Book night at ${v}`], 60),
+        eventTitle: fit([`${f} book night at ${v}`, `${f} book night`, `${fs} book night at ${v}`, `${fs} book night`, `Book night at ${v}`], 60),
         eventDescription: `${when}, ${v} hosts a book night around ${f}. Come if you have read it, come if you mean to.${lean} Free, RSVP so we can save you a seat.`,
-        posterHeadline: fit([`${f}`, "Book night"], 40),
+        posterHeadline: fit([`${f}`, `${fs}`, "Book night"], 40),
         posterSub: "Come if you have read it, come if you mean to.",
         social: fit(
           [`Book night at ${v} on ${day} at ${plan.start}. We are talking about ${f}. Free, RSVP at the link.`, `Book night, ${dayShort} ${plan.start}. RSVP at the link.`],
           280,
         ),
-        partnerPitch: pitch(plan, venue, day),
       };
       break;
     }
     case "games": {
       c = {
-        eventTitle: fit([`${f} game night at ${v}`, `${f} game night`, `Game night at ${v}`], 60),
+        eventTitle: fit([`${f} game night at ${v}`, `${f} game night`, `${fs} game night at ${v}`, `${fs} game night`, `Game night at ${v}`], 60),
         eventDescription: `${when}, ${v} hosts a game night around ${f}. Play, watch, or just hang out with people who like the same games.${themeText ? ` Expect ${themeText}.` : ""} ${rsvp}`,
         posterHeadline: fit([`${f} game night`, "Game night"], 40),
         posterSub: "Play, watch or just hang out. Free entry.",
         social: fit([`Game night at ${v}, ${day} at ${plan.start}, around ${f}. Free, RSVP at the link.`, `Game night, ${dayShort} ${plan.start}. RSVP at the link.`], 280),
-        partnerPitch: pitch(plan, venue, day),
       };
       break;
     }
     case "podcast": {
       c = {
-        eventTitle: fit([`${f} listening night at ${v}`, `${f} listening night`, `Podcast night at ${v}`], 60),
+        eventTitle: fit([`${f} listening night at ${v}`, `${f} listening night`, `${fs} listening night at ${v}`, `${fs} listening night`, `Podcast night at ${v}`], 60),
         eventDescription: `${when}, ${v} plays an episode of ${f} for the room, then we talk about it over a drink.${themeText ? ` Good for anyone into ${themeText}.` : ""} ${rsvp}`,
         posterHeadline: fit([`${f}, together`, "Podcast night"], 40),
         posterSub: "One episode for the room, then we talk about it over a drink.",
         social: fit([`Podcast night at ${v}, ${day} at ${plan.start}. We are playing ${f} for the room. Free, RSVP at the link.`, `Podcast night, ${dayShort} ${plan.start}. RSVP at the link.`], 280),
-        partnerPitch: pitch(plan, venue, day),
       };
       break;
     }
     case "tasting": {
-      const menuTags = plan.themeTags.filter((x) => MENU_NAMESPACES.includes(x.namespace));
-      const t = menuTags[0] ? menuItem(menuTags[0]).replace(/ food$/, "") : "street favourites";
-      const menu = menuTags.slice(0, 3).map(menuItem);
+      const t = tastingLead(plan);
+      const menu = plan.themeTags.slice(0, 3).map(menuItem);
       const menuLine = menu.length ? ` On the menu: ${listWords(menu)}.` : "";
       c = {
         eventTitle: fit([`${capFirst(t)} tasting night at ${v}`, `${capFirst(t)} tasting night`, `Tasting night at ${v}`], 60),
-        eventDescription: `${when}, ${v} hosts a ${t} tasting night built around the food and drink this street goes for.${menuLine} Free to come in. RSVP so we can plan portions.`,
+        eventDescription: `${when}, ${v} hosts ${withArticle(`${t} tasting night`)} built around the food and drink this street goes for.${menuLine} Free to come in. RSVP so we can plan portions.`,
         posterHeadline: fit([`${capFirst(t)} tasting night`, "Tasting night"], 40),
         posterSub: fit([`${capFirst(t)} and more of what this street eats and drinks. Free to come in.`, "Free to come in."], 90),
         social: fit([`${capFirst(t)} tasting night at ${v}, ${day} at ${plan.start}. Free to come in, RSVP at the link.`, `Tasting night, ${dayShort} ${plan.start}. RSVP at the link.`], 280),
-        partnerPitch: pitch(plan, venue, day),
       };
       break;
     }
   }
-  return { ...c, writtenBy: "template" };
+  return { ...c, partnerPitch: pitch(plan, venue, day, nightName(plan)), writtenBy: "template" };
 }

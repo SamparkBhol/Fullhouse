@@ -1,4 +1,4 @@
-import type { Generate } from "../core/index.ts";
+import { extractJson, type Generate } from "../core/index.ts";
 import type { PlanInput } from "../shared/contract.ts";
 import type { AiLike } from "./env.ts";
 
@@ -20,32 +20,61 @@ export function withTimeout<T>(work: Promise<T>, ms: number, label: string): Pro
   return Promise.race([work, limit]).finally(() => clearTimeout(timer));
 }
 
+// Workers AI answers { response: string }, or { response: object } in JSON mode; the REST API wraps that in
+// { result }, and OpenAI compatible models answer { choices }. A reply the platform read as a tool call
+// arrives with an empty response and the JSON under tool_calls[0].arguments.
 export function responseText(out: unknown): string | null {
   if (typeof out === "string") return out;
   if (!out || typeof out !== "object") return null;
-  const r = (out as { response?: unknown }).response;
-  if (typeof r === "string") return r;
-  if (r && typeof r === "object") return JSON.stringify(r);
-  const choices = (out as { choices?: Array<{ message?: { content?: unknown } }> }).choices;
-  const content = choices?.[0]?.message?.content;
-  return typeof content === "string" ? content : null;
+  const o = out as { response?: unknown; result?: unknown; choices?: Array<{ message?: { content?: unknown } }>; tool_calls?: Array<{ arguments?: unknown }> };
+  if (typeof o.response === "string" && o.response.trim()) return o.response;
+  if (o.response && typeof o.response === "object") return JSON.stringify(o.response);
+  if (o.result && typeof o.result === "object") return responseText(o.result);
+  const content = o.choices?.[0]?.message?.content;
+  if (typeof content === "string") return content;
+  const args = Array.isArray(o.tool_calls) ? o.tool_calls[0]?.arguments : undefined;
+  if (args && typeof args === "object") return JSON.stringify(args);
+  if (typeof args === "string") return args;
+  return typeof o.response === "string" ? o.response : null;
 }
+
+function completionTokens(out: unknown): number | null {
+  const n = (out as { usage?: { completion_tokens?: unknown } } | null)?.usage?.completion_tokens;
+  return typeof n === "number" ? n : null;
+}
+
+const DEFAULT_MAX_TOKENS = 1200;
+// Below this much time left, a second try without JSON mode would only run into the timeout.
+const RETRY_FLOOR_MS = 4000;
 
 export function makeGenerate(ai: AiLike | null | undefined, model: string, timeoutMs = 25000): Generate | null {
   if (!ai) return null;
-  return async (system: string, user: string) => {
-    const out = await withTimeout(
-      ai.run(model, {
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
-        max_tokens: 1200,
-        temperature: 0.4,
-      }),
-      timeoutMs,
-      "model call",
-    );
+  return async (system, user, options = {}) => {
+    const maxTokens = options.maxTokens ?? DEFAULT_MAX_TOKENS;
+    const inputs: Record<string, unknown> = {
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+      max_tokens: maxTokens,
+      temperature: 0.4,
+    };
+    const deadline = Date.now() + timeoutMs;
+    const run = (body: Record<string, unknown>) => withTimeout(ai.run(model, body), Math.max(1, deadline - Date.now()), "model call");
+    let out: unknown;
+    if (options.schema) {
+      try {
+        out = await run({ ...inputs, response_format: { type: "json_schema", json_schema: options.schema } });
+      } catch (err) {
+        if (err instanceof TimeoutError || deadline - Date.now() < RETRY_FLOOR_MS) throw err;
+        console.warn("JSON mode call failed, asking again without it", err instanceof Error ? err.message : String(err));
+        out = await run(inputs);
+      }
+    } else {
+      out = await run(inputs);
+    }
+    const used = completionTokens(out);
+    if (used !== null && used >= maxTokens) console.warn("model reply reached the token cap", JSON.stringify({ used, maxTokens }));
     const text = responseText(out);
     if (!text || !text.trim()) throw new Error("model returned no text");
     return text;
@@ -75,38 +104,6 @@ export function toolArguments(out: unknown, toolName: string): unknown {
     if (name !== toolName) continue;
     const args = parseArgs(flat.arguments ?? flat.function?.arguments);
     if (args && typeof args === "object") return args;
-  }
-  return undefined;
-}
-
-export function extractJsonObject(text: string): unknown {
-  const fenced = /```(?:json)?\s*([\s\S]*?)```/i.exec(text);
-  const body = fenced?.[1] ?? text;
-  const start = body.indexOf("{");
-  if (start < 0) return undefined;
-  let depth = 0;
-  let inString = false;
-  let escaped = false;
-  for (let i = start; i < body.length; i++) {
-    const ch = body[i];
-    if (inString) {
-      if (escaped) escaped = false;
-      else if (ch === "\\") escaped = true;
-      else if (ch === '"') inString = false;
-      continue;
-    }
-    if (ch === '"') inString = true;
-    else if (ch === "{") depth++;
-    else if (ch === "}") {
-      depth--;
-      if (depth === 0) {
-        try {
-          return JSON.parse(body.slice(start, i + 1)) as unknown;
-        } catch {
-          return undefined;
-        }
-      }
-    }
   }
   return undefined;
 }
@@ -158,8 +155,8 @@ export async function refineInput(
   if (deps.generate) {
     try {
       const system = `${REFINE_SYSTEM} Reply with one JSON object and nothing else. Its fields follow this JSON Schema: ${JSON.stringify(tool.parameters)}`;
-      const text = await deps.generate(system, refineUser(base, request));
-      const parsed = extractJsonObject(text);
+      const text = await deps.generate(system, refineUser(base, request), { schema: tool.parameters, maxTokens: 400 });
+      const parsed = extractJson(text);
       if (parsed && typeof parsed === "object") return { input: deps.core.applyRefine(base, parsed), method: "json" };
     } catch (err) {
       console.warn("refine json call failed", err instanceof Error ? err.message : String(err));
