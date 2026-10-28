@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { ApproveInput, PlanInput, VenueCandidate } from "../shared/contract.ts";
 import { NIGHT_ID_RE, VENUE_ID_RE } from "./tokens.ts";
 import { ACTIONS, FORMATS } from "./validate.ts";
-import type { Out, VenueApi } from "./venue_core.ts";
+import type { Out, VenueApi } from "./venue/api.ts";
 
 export const MCP_VERSION = "0.1.0";
 

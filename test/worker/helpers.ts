@@ -15,7 +15,8 @@ import type { AiLike, Env } from "../../src/worker/env.ts";
 import { MeterCore } from "../../src/worker/meter_core.ts";
 import { MemoryStore } from "../../src/worker/store.ts";
 import { newNightId } from "../../src/worker/tokens.ts";
-import { VenueCore, type CoreFns, type VenueDeps } from "../../src/worker/venue_core.ts";
+import type { CoreFns, VenueDeps } from "../../src/worker/venue/api.ts";
+import { VenueCore } from "../../src/worker/venue/core.ts";
 
 export const CANDIDATE: VenueCandidate = {
   id: "B6E7C1A4-0000-4000-8000-000000000001",

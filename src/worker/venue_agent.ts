@@ -8,7 +8,8 @@ import type { PublicNight } from "./pages/event.ts";
 import { buildQloo, cacheApiCache, sqlCache, tieredCache, type SqlLike } from "./qloo_wiring.ts";
 import { doStore } from "./store.ts";
 import { newNightId } from "./tokens.ts";
-import { VenueCore, type CoreFns, type Out, type VenueApi } from "./venue_core.ts";
+import type { CoreFns, Out, VenueApi } from "./venue/api.ts";
+import { VenueCore } from "./venue/core.ts";
 
 export const CORE_FNS: CoreFns = { readStreet, planNights, writeCopy, runBaseline, nextMondayNine, REFINE_TOOL, parseRefineFallback, applyRefine };
 

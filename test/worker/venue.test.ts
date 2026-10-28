@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { CreateVenueInput, Night } from "../../src/shared/contract.ts";
 import { MemoryStore } from "../../src/worker/store.ts";
-import { mondayInput, VenueCore } from "../../src/worker/venue_core.ts";
+import { VenueCore } from "../../src/worker/venue/core.ts";
+import { mondayInput } from "../../src/worker/venue/monday.ts";
 import { CANDIDATE, fakeCore, fakeFetch, type FakeCoreLog, venueDeps } from "./helpers.ts";
 
 const INPUT: CreateVenueInput = {
