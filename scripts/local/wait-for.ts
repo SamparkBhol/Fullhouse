@@ -1,4 +1,6 @@
 // Usage: wait-for.ts <url> [seconds]. Exits 0 once the url answers 2xx, 1 when time runs out.
+export {};
+
 const [url, seconds = "60"] = process.argv.slice(2);
 if (!url) {
   console.error("wait-for needs a url");

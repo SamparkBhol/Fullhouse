@@ -44,12 +44,27 @@ function actionItem(a: ActionResult): HTMLElement {
   if (!a.ok) {
     return h("li", { class: "result result-failed" }, h("p", { class: "result-label" }, a.label), h("p", { class: "result-detail" }, `Did not work. ${a.detail}`));
   }
-  const external = href && !href.startsWith(location.origin) ? { target: "_blank", rel: "noopener noreferrer" } : {};
   return h(
     "li",
     { class: "result" },
-    href ? h("a", { class: isPublic ? "result-label lit-link" : "result-label", href, ...external }, a.label) : h("p", { class: "result-label" }, a.label),
+    href ? h("a", { class: isPublic ? "result-label lit-link" : "result-label", href, ...externalAttrs(href) }, a.label) : h("p", { class: "result-label" }, a.label),
     a.detail ? h("p", { class: "result-detail" }, a.detail) : null,
+    composeLinks(a),
+  );
+}
+
+function externalAttrs(href: string): Record<string, string> {
+  return href.startsWith(location.origin) || href.startsWith("mailto:") ? {} : { target: "_blank", rel: "noopener noreferrer" };
+}
+
+// Outreach drafts come with the same note as a mail app, Gmail and Outlook link, so the owner sends it from their own account.
+function composeLinks(a: ActionResult): HTMLElement | null {
+  const links = (a.links ?? []).map((l) => ({ label: l.label, href: safeHref(l.url) })).filter((l): l is { label: string; href: string } => l.href !== null);
+  if (!links.length) return null;
+  return h(
+    "ul",
+    { class: "compose-links", "aria-label": "Open this draft in" },
+    links.map((l) => h("li", null, h("a", { href: l.href, ...externalAttrs(l.href) }, l.label))),
   );
 }
 
