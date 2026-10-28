@@ -1,7 +1,7 @@
 import type { Baseline, BaselineName } from "../../../src/shared/contract.ts";
 import { api } from "../api.ts";
 import { h, replace } from "../dom.ts";
-import { VERIFY_WORDS, moment } from "../format.ts";
+import { VERIFY_WORDS, count, moment } from "../format.ts";
 import { sessionGet, sessionSet } from "../store.ts";
 import { focusHeading, title } from "../ui/shell.ts";
 import { failure, loading } from "../ui/states.ts";
@@ -11,14 +11,29 @@ export function proofPage(id: string): Promise<void> {
   return withVenue(id, "proof", (ctx, main) => renderProof(ctx, main));
 }
 
+// Distance only means something for places; a found artist, book or film is simply in Qloo's catalog.
+function statusWord(n: BaselineName): string {
+  if (n.kind === "place" || n.status !== "found_nearby") return VERIFY_WORDS[n.status] ?? n.status;
+  return "In Qloo's catalog";
+}
+
+function countLine(names: BaselineName[]): string {
+  if (!names.length) return "No names to check";
+  const places = names.filter((n) => n.kind === "place");
+  const others = names.filter((n) => n.kind !== "place");
+  const parts: string[] = [];
+  if (places.length) parts.push(`${places.filter((n) => n.status === "found_nearby").length} of ${count(places.length, "place", "places")} found near you`);
+  if (others.length) parts.push(`${others.filter((n) => n.status !== "not_found").length} of ${count(others.length, "other name", "other names")} in Qloo's catalog`);
+  return `${parts.join(". ")}.`;
+}
+
 function nameList(names: BaselineName[], label: string, id: string, sub?: string): HTMLElement {
-  const nearby = names.filter((n) => n.status === "found_nearby").length;
   return h(
     "section",
     { class: "proof-col", "aria-labelledby": id },
     h("h3", { id }, label),
     sub ? h("p", { class: "proof-model" }, sub) : null,
-    h("p", { class: "proof-count" }, names.length ? `${nearby} of ${names.length} names found near you on Qloo` : "No names to check"),
+    h("p", { class: "proof-count" }, countLine(names)),
     names.length
       ? h(
           "ul",
@@ -29,7 +44,7 @@ function nameList(names: BaselineName[], label: string, id: string, sub?: string
               { class: `verify verify-${n.status}` },
               h("span", { class: "verify-mark", "aria-hidden": "true" }),
               h("span", { class: "verify-name" }, n.name),
-              h("span", { class: "verify-status" }, VERIFY_WORDS[n.status] ?? n.status),
+              h("span", { class: "verify-status" }, statusWord(n)),
               n.note ? h("span", { class: "verify-note" }, n.note) : null,
             ),
           ),
@@ -87,7 +102,7 @@ function renderProof(ctx: VenueCtx, main: HTMLElement): void {
       h(
         "p",
         { class: "lede" },
-        "Would a plain chatbot do the same job? Full House asks a plain language model to plan a night for your venue, then looks up every place and artist it names on Qloo near you. It does the same for its own plan.",
+        "Full House asks a plain language model the question an owner would type into a chatbot, then looks up every place and artist it names on Qloo near you. It checks its own plan the same way.",
       ),
       h("p", { class: "meta" }, "Running the check uses a few Qloo calls and one model call."),
       h("p", { class: "actions" }, button),

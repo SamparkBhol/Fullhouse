@@ -1,6 +1,6 @@
 import type { NightPlan, Venue } from "../../../src/shared/contract.ts";
 import { h } from "../dom.ts";
-import { formatName, hours, longDate } from "../format.ts";
+import { dayOnly, formatName, hours, longDate } from "../format.ts";
 
 export interface FlyerOptions {
   live?: boolean;
@@ -10,8 +10,16 @@ export interface FlyerOptions {
   headingLevel?: "h1" | "h2" | "h3";
 }
 
+// The feature is a real Qloo pick, so it heads the flyer; a model headline can drift to one word like "Film".
 function headline(plan: NightPlan): string {
-  return plan.copy?.posterHeadline?.trim() || plan.feature?.name || plan.copy?.eventTitle || formatName(plan.format);
+  return plan.feature?.name || plan.copy?.posterHeadline?.trim() || plan.copy?.eventTitle || formatName(plan.format);
+}
+
+// The band already prints the date, so a poster line that repeats it is left off.
+function subLine(plan: NightPlan): string | null {
+  const sub = plan.copy?.posterSub?.trim();
+  if (!sub) return null;
+  return sub.includes(longDate(plan.date)) || sub.includes(dayOnly(plan.date)) ? null : sub;
 }
 
 function lengthClass(text: string): string {
@@ -23,6 +31,7 @@ function lengthClass(text: string): string {
 
 export function flyer(plan: NightPlan, venue: Venue, opts: FlyerOptions = {}): HTMLElement {
   const title = headline(plan);
+  const sub = subLine(plan);
   const Heading = opts.headingLevel ?? "h2";
   const partners = (plan.partners ?? []).map((p) => p.name);
   const classes = ["flyer"];
@@ -38,7 +47,7 @@ export function flyer(plan: NightPlan, venue: Venue, opts: FlyerOptions = {}): H
     h("p", { class: "flyer-when" }, h("span", null, longDate(plan.date)), h("span", null, hours(plan.start, plan.end))),
     h("p", { class: "flyer-format" }, formatName(plan.format)),
     h(Heading, { class: lengthClass(title) }, title),
-    plan.copy?.posterSub ? h("p", { class: "flyer-sub" }, plan.copy.posterSub) : null,
+    sub ? h("p", { class: "flyer-sub" }, sub) : null,
     !opts.compact && plan.copy?.eventDescription ? h("p", { class: "flyer-body" }, plan.copy.eventDescription) : null,
     !opts.compact && partners.length ? h("p", { class: "flyer-with" }, `With ${joinNames(partners)}`) : null,
     h(

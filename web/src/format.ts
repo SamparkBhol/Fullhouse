@@ -163,7 +163,6 @@ export function metresBetween(aLat: number, aLng: number, bLat: number, bLng: nu
 }
 
 export function prettyTag(name: string): string {
-  if (!name) return name;
-  const spaced = name.replace(/_/g, " ");
+  const spaced = name.replace(/_/g, " ").replace(/^[^\p{L}\p{N}]+/u, "").trim();
   return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }

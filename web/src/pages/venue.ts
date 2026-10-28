@@ -28,8 +28,8 @@ function originLine(plan: NightPlan, tz: string): string {
 
 function streetSummary(ctx: VenueCtx, read: StreetRead): HTMLElement {
   const base = `/v/${encodeURIComponent(ctx.id)}`;
-  const topTags = read.streetTags.slice(0, 3).map((t) => prettyTag(t.name));
-  const gap = read.gaps[0];
+  const topTags = read.streetTags.slice(0, 4).map((t) => prettyTag(t.name));
+  const gaps = read.gaps.slice(0, 3).map((g) => prettyTag(g.tag.name));
   const topPicks = read.rising.filter((r) => r.rank === 1).map((r) => r.name);
   return h(
     "section",
@@ -41,8 +41,8 @@ function streetSummary(ctx: VenueCtx, read: StreetRead): HTMLElement {
       { class: "facts" },
       h("dt", null, "The street's taste"),
       h("dd", null, topTags.length ? topTags.join(", ") : "Qloo returned no taste tags for this street."),
-      h("dt", null, "You do not serve yet"),
-      h("dd", null, gap ? prettyTag(gap.tag.name) : "No gap found between you and the places your audience loves."),
+      h("dt", null, "Found nearby, not here"),
+      h("dd", null, gaps.length ? gaps.join(", ") : "Nothing that two or more of the places your audience loves carry and you do not."),
       h("dt", null, "Your audience's top picks"),
       h("dd", null, topPicks.length ? topPicks.slice(0, 4).join(", ") : "Qloo returned no artists, books, films, shows or podcasts for your venue."),
     ),

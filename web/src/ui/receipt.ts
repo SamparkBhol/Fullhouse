@@ -1,4 +1,5 @@
 import type { Because, Provenance } from "../../../src/shared/contract.ts";
+import { callName } from "../calls.ts";
 import { h } from "../dom.ts";
 import { count, moment } from "../format.ts";
 
@@ -14,7 +15,7 @@ function line(p: Provenance, index: number, tz?: string): HTMLElement {
   return h(
     "li",
     { id: `call-${index + 1}`, class: "receipt-line" },
-    h("p", { class: "receipt-call" }, h("span", { class: "receipt-no" }, `Call ${index + 1}`), " ", p.call),
+    h("p", { class: "receipt-call" }, h("span", { class: "receipt-no" }, `Call ${index + 1}`), " ", callName(p.call)),
     h("p", { class: "receipt-endpoint" }, `GET ${p.endpoint}`),
     params.length
       ? h(
