@@ -11,15 +11,31 @@ function geocode(p: FakePlace): Record<string, string> {
   return { name: p.city.neighborhood, city: p.city.name, admin1_region: p.city.region, country: p.city.country, country_code: p.city.countryCode };
 }
 
+function slug(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+function image(id: string): { url: string } {
+  return { url: `https://images.example/i/${id}-420x-auto.jpg` };
+}
+
 function placeProperties(p: FakePlace): Record<string, unknown> {
   const genre = p.tags.find((t) => t.namespace === "urn:tag:genre:place" && t.id !== t.namespace);
   return {
     address: p.address,
+    description: `${genre?.name ?? "Place"} in ${p.city.neighborhood}, ${p.city.name}.`,
     geocode: geocode(p),
+    image: image(p.id),
     neighborhood: p.city.neighborhood,
     is_closed: false,
+    website: `https://${slug(p.name)}.example`,
     ...(genre ? { primary_genre: { id: genre.id, name: genre.name, type: genre.namespace } } : {}),
   };
+}
+
+function workProperties(w: FakeWork): Record<string, unknown> {
+  const genres = w.tags.map((t) => t.name.toLowerCase()).join(" and ");
+  return { description: `${w.name}, ${genres}.`, image: image(w.id) };
 }
 
 // /search lists tags as {name, tag_id, type, value} and the entity type in types[].
@@ -75,7 +91,7 @@ export function insightsWork(w: FakeWork, popularity: number, s: Scored): Record
     entity_id: w.id,
     name: w.name,
     popularity: round(popularity, 6),
-    properties: {},
+    properties: workProperties(w),
     query,
     subtype: WORK_URN[w.type],
     tags: w.tags.map((t) => ({ id: t.id, name: t.name, type: t.namespace })),

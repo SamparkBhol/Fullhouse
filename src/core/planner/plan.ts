@@ -1,31 +1,19 @@
-import type {
-  Because,
-  EntityRef,
-  LovedPlace,
-  MenuIdea,
-  NightFormat,
-  NightPlan,
-  PlanInput,
-  PlanResponse,
-  QuietSlot,
-  Rising,
-  StreetRead,
-  StreetTag,
-  Venue,
-} from "../../shared/contract.ts";
+import type { EntityRef, MenuIdea, NightFormat, NightPlan, PlanInput, PlanResponse, QuietSlot, StreetRead, StreetTag, Venue } from "../../shared/contract.ts";
 import { checkClaims } from "../copy/claims.ts";
 import { templateCopy } from "../copy/templates.ts";
-import { capFirst, listWords } from "../copy/text.ts";
+import { listWords } from "../copy/text.ts";
 import { briefNames, buildBrief } from "../copy/write.ts";
-import { tagLabel } from "../qloo/tags.ts";
-import { describeDistance, haversineM } from "../street/geo.ts";
 import { RANK_LIMIT } from "../street/steps/limits.ts";
 import { streetTagLine } from "../street/words.ts";
-import { FORMATS, FORMAT_ORDER, MENU_NAMESPACES, PLAYLIST_LICENCE, menuItem, type FormatDef } from "./formats.ts";
+import { menuTags, scoreCandidates, type Candidate } from "./candidates.ts";
+import { FORMATS, FORMAT_ORDER, PLAYLIST_LICENCE, menuItem } from "./formats.ts";
+import { pickPartners } from "./partners.ts";
+import { streetTagsIndex, whyFor } from "./reasons.ts";
 import { nextSlotDate, parseHHMM } from "./time.ts";
 
-export const WALK_M = 1000;
-export const MAX_PARTNERS = 3;
+export { MAX_PARTNERS, WALK_M } from "./partners.ts";
+export { provIndex } from "./reasons.ts";
+
 export const PLAYLIST_SIZE = 8;
 
 export class PlanError extends Error {
@@ -37,103 +25,8 @@ export class PlanError extends Error {
   }
 }
 
-interface Candidate {
-  format: NightFormat;
-  feature: Rising | null;
-  menuTag: StreetTag | null;
-  score: number;
-}
-
-const MOMENTUM: Record<Rising["trend"], number> = { rising: 0.3, steady: 0.1, unknown: 0, falling: -0.2 };
-const COMPETITOR_NS = ["urn:tag:genre:place", "urn:tag:category:place"];
-
-export function provIndex(read: StreetRead, calls: string[]): number {
-  for (const call of calls) {
-    for (let i = read.provenance.length - 1; i >= 0; i--) {
-      const p = read.provenance[i];
-      if (p && p.call === call && (p.resultCount > 0 || call === calls[calls.length - 1])) return i;
-    }
-  }
-  return -1;
-}
-
-function streetTagsIndex(read: StreetRead): number {
-  return provIndex(read, ["street_tags"]);
-}
-
-// With compare, shared holds the venue's side of it, so a tag is called shared only when a loved place carries it too.
-// Without compare, shared is the overlap of the street and audience tag reads.
-function sharedBecause(read: StreetRead, venue: Venue): Because | null {
-  const iCompare = provIndex(read, ["compare"]);
-  if (iCompare >= 0) {
-    for (const t of read.shared) {
-      const place = read.lovedPlaces.find((p) => p.tags.includes(t.id));
-      if (place) return { kind: "compare", text: `${venue.entity.name} and ${place.name}, a place nearby its audience loves, are both tagged ${t.name}`, provenance: iCompare };
-    }
-    return null;
-  }
-  const t = read.shared[0];
-  const iStreet = streetTagsIndex(read);
-  return t && iStreet >= 0 ? { kind: "tag", text: `The street and ${venue.entity.name}'s audience both carry ${t.name}`, provenance: iStreet } : null;
-}
-
-function fitsPeople(def: FormatDef, cap: number | undefined): number {
-  if (cap === undefined) return 1;
-  return cap >= def.people.min ? 1 : 0.6;
-}
-
-function menuTags(read: StreetRead): StreetTag[] {
-  return read.streetTags.filter((t) => MENU_NAMESPACES.includes(t.namespace) && t.namespace !== "urn:tag:dining_options:place");
-}
-
 function menuText(t: StreetTag): string {
   return `Add ${menuItem(t)} to the menu for the night`;
-}
-
-function scoreCandidates(read: StreetRead, venue: Venue, cap: number | undefined, prefer: Set<NightFormat>): Candidate[] {
-  const gapIds = new Set(read.gaps.map((g) => g.tag.id));
-  const streetTop = new Set(read.streetTags.slice(0, 15).map((t) => t.id));
-  const venueIds = new Set([...venue.entity.tags, ...read.venueTags.map((t) => t.id)]);
-  const perType = new Map<string, number>();
-  for (const r of read.rising) perType.set(r.type, (perType.get(r.type) ?? 0) + 1);
-
-  const out: Candidate[] = [];
-  for (const format of FORMAT_ORDER) {
-    const def = FORMATS[format];
-    const bonus = prefer.has(format) ? 1 : 0;
-    const people = fitsPeople(def, cap);
-    if (format === "tasting") {
-      const tags = menuTags(read);
-      const n = Math.max(1, read.streetTags.length);
-      const pick = tags.find((t) => gapIds.has(t.id)) ?? tags[0];
-      if (pick) {
-        const base = (1 - (pick.rank - 1) / n) * 0.8 + (gapIds.has(pick.id) ? 0.3 : 0);
-        out.push({ format, feature: null, menuTag: pick, score: base * people + bonus });
-      }
-      continue;
-    }
-    for (const r of read.rising) {
-      if (!def.types.includes(r.type)) continue;
-      const n = Math.max(1, perType.get(r.type) ?? 1);
-      const tags = r.tags ?? [];
-      const base =
-        1 -
-        (r.rank - 1) / n +
-        MOMENTUM[r.trend] +
-        (tags.some((t) => gapIds.has(t)) ? 0.3 : 0) +
-        (tags.some((t) => streetTop.has(t)) ? 0.15 : 0) +
-        (tags.some((t) => venueIds.has(t)) ? 0.1 : 0) +
-        (format === "quiz" ? -0.05 : 0);
-      out.push({ format, feature: r, menuTag: null, score: base * people + bonus });
-    }
-  }
-  return out.sort(
-    (a, b) =>
-      b.score - a.score ||
-      FORMAT_ORDER.indexOf(a.format) - FORMAT_ORDER.indexOf(b.format) ||
-      (a.feature?.rank ?? 0) - (b.feature?.rank ?? 0) ||
-      (a.feature?.id ?? a.menuTag?.id ?? "").localeCompare(b.feature?.id ?? b.menuTag?.id ?? ""),
-  );
 }
 
 function themeFor(c: Candidate, read: StreetRead): StreetTag[] {
@@ -148,64 +41,6 @@ function themeFor(c: Candidate, read: StreetRead): StreetTag[] {
   for (const t of read.streetTags) if (tags.has(t.id)) add(t);
   for (const t of read.streetTags) if (def.themeNamespaces.includes(t.namespace)) add(t);
   return out;
-}
-
-function pickPartners(
-  c: Candidate,
-  theme: StreetTag[],
-  read: StreetRead,
-  venue: Venue,
-  notes: string[],
-): LovedPlace[] {
-  const def = FORMATS[c.format];
-  const walkable = read.lovedPlaces.filter((p) => p.distanceM <= WALK_M);
-  if (!walkable.length) {
-    notes.push("No place within a 1 km walk came back from Qloo, so this night has no partners.");
-    return [];
-  }
-  const themeIds = new Set(theme.map((t) => t.id));
-  const gapIds = new Set(read.gaps.map((g) => g.tag.id));
-  const sharedIds = new Set(read.shared.map((t) => t.id));
-  const names = new Map<string, string>();
-  for (const t of [...read.streetTags, ...read.shared, ...read.gaps.map((g) => g.tag)]) names.set(t.id, t.name);
-  const venueCats = new Set(venue.entity.tags.filter((t) => COMPETITOR_NS.some((ns) => t.startsWith(`${ns}:`))));
-  const scored = walkable.map((p) => {
-    const onTheme = p.tags.find((t) => themeIds.has(t));
-    const gap = p.tags.find((t) => gapIds.has(t));
-    const shared = p.tags.find((t) => sharedIds.has(t));
-    const hint = p.tags.find((t) => COMPETITOR_NS.some((ns) => t.startsWith(`${ns}:`)) && def.partnerHints.some((h) => tagLabel(t).toLowerCase().includes(h)));
-    const competitor = p.tags.some((t) => venueCats.has(t));
-    const score =
-      p.tags.filter((t) => themeIds.has(t)).length * 3 + (hint ? 2 : 0) + p.tags.filter((t) => gapIds.has(t) || sharedIds.has(t)).length;
-    return { p, onTheme, gap, shared, hint, competitor, score };
-  });
-  const order = (a: (typeof scored)[number], b: (typeof scored)[number]) => b.score - a.score || a.p.rank - b.p.rank;
-  const nonCompeting = scored.filter((s) => !s.competitor);
-  const pool = nonCompeting.length >= 2 ? nonCompeting : scored;
-  let chosen = pool.filter((s) => s.score > 0).sort(order).slice(0, MAX_PARTNERS);
-  if (chosen.length < 2) {
-    const fill = pool
-      .filter((s) => !chosen.includes(s))
-      .sort((a, b) => Number(a.competitor) - Number(b.competitor) || a.p.rank - b.p.rank)
-      .slice(0, 2 - chosen.length);
-    if (fill.length) notes.push("Few nearby places shared a tag with this night, so some partners are simply the street's top loved places.");
-    chosen = [...chosen, ...fill];
-  }
-  if (chosen.some((s) => s.competitor)) notes.push("A partner shares a category with your venue because no other nearby match came back.");
-  return chosen.map((s) => {
-    const prov = s.p.because[0]?.provenance ?? -1;
-    const extra: Because[] = [];
-    const walk = `${capFirst(describeDistance(s.p.distanceM))} from ${venue.entity.name}`;
-    const label = (id: string) => names.get(id) ?? tagLabel(id);
-    if (prov >= 0) {
-      if (s.onTheme) extra.push({ kind: "tag", text: `${walk}, tagged ${label(s.onTheme)}, which is part of this night's theme`, provenance: prov });
-      else if (s.hint) extra.push({ kind: "tag", text: `${walk}, tagged ${label(s.hint)}, which Full House pairs with a ${def.label}`, provenance: prov });
-      else if (s.gap) extra.push({ kind: "tag", text: `${walk}, tagged ${label(s.gap)}, which is one of the gaps between the street and ${venue.entity.name}`, provenance: prov });
-      else if (s.shared) extra.push({ kind: "tag", text: `${walk}, tagged ${label(s.shared)}, which the street already likes ${venue.entity.name} for`, provenance: prov });
-      else extra.push({ kind: "affinity", text: walk, provenance: prov });
-    }
-    return { ...s.p, because: [...s.p.because, ...extra] };
-  });
 }
 
 function menuFor(c: Candidate, read: StreetRead, venue: Venue): MenuIdea[] {
@@ -231,38 +66,6 @@ function playlistFor(read: StreetRead): EntityRef[] {
       if (r.url) e.url = r.url;
       return e;
     });
-}
-
-function whyFor(c: Candidate, theme: StreetTag[], read: StreetRead, venue: Venue, playlist: EntityRef[]): Because[] {
-  const why: Because[] = [];
-  if (c.feature) why.push(...c.feature.because);
-  const carried = new Set(c.feature?.tags ?? []);
-  const relevant = theme.filter((t) => carried.has(t.id) || c.format === "tasting" || (c.format === "listening" && FORMATS.listening.themeNamespaces.includes(t.namespace)));
-  const themeGap = read.gaps.find((g) => relevant.some((t) => t.id === g.tag.id));
-  if (themeGap) {
-    for (const b of themeGap.because) {
-      if (!why.some((w) => w.kind === b.kind && w.provenance === b.provenance && w.text.includes(themeGap.tag.name))) why.push(b);
-    }
-  } else {
-    const prov = streetTagsIndex(read);
-    const t = relevant[0];
-    if (t && prov >= 0 && read.streetTags.some((s) => s.id === t.id) && !why.some((w) => w.kind === "tag" && w.text.includes(t.name))) {
-      why.push({ kind: "tag", text: streetTagLine(t.name, venue.entity.name), provenance: prov });
-    }
-  }
-  const shared = sharedBecause(read, venue);
-  if (shared) why.push(shared);
-  const layer = read.heat[0];
-  const top = layer?.cells[0];
-  if (layer && top) {
-    const d = haversineM(read.center, { lat: top.lat, lng: top.lng });
-    why.push({ kind: "heatmap", text: `The strongest heatmap cell sits ${describeDistance(d)} from ${venue.entity.name}`, provenance: layer.provenance });
-  }
-  const iArtist = provIndex(read, ["insights_artist"]);
-  if (playlist.length && iArtist >= 0) {
-    why.push({ kind: "affinity", text: `The playlist is the top ${playlist.length} artists Qloo picked for ${venue.entity.name} and its area`, provenance: iArtist });
-  }
-  return why;
 }
 
 function validStart(s: string | undefined): string | undefined {

@@ -4,6 +4,8 @@ import { expect, test } from "../support/test.ts";
 test("a plan carries its reasons and says who wrote the copy, a plain phrase changes it, and approval publishes it", async ({ page, request }) => {
   const owner = await createVenue(request, { name: "Juniper Books", city: "Leeds", ownerEmail: "owner@example.com" });
   await readStreet(request, owner);
+  const health = (await (await request.get("/api/health")).json()) as { ai: boolean };
+  expect(health.ai).toBe(false);
   await openAsOwner(page, owner);
   await page.getByRole("button", { name: "Plan a night for Tuesday" }).click();
 
@@ -31,12 +33,12 @@ test("a plan carries its reasons and says who wrote the copy, a plain phrase cha
   const eventbrite = page.getByRole("checkbox", { name: /Create the Eventbrite event/ });
   await expect(eventbrite).toBeDisabled();
   await expect(eventbrite).not.toBeChecked();
-  for (const name of ["Publish the event page", "Make the poster", "Make a calendar file", "Make a Google Calendar link", "Email me the links"]) {
+  for (const name of ["Publish the event page", "Make the poster", "Make a calendar file", "Make a Google Calendar link", "Draft notes to the partners", "Email me the links"]) {
     await expect(page.getByRole("checkbox", { name: new RegExp(name) })).toBeChecked();
   }
   const partnerEmails = page.locator(".partner-emails input[type=email]");
-  const partners = await partnerEmails.count();
-  if (partners) await partnerEmails.first().fill("events@partner.example");
+  await expect(partnerEmails).not.toHaveCount(0);
+  await partnerEmails.first().fill("events@partner.example");
 
   await page.getByRole("button", { name: "Publish the night" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Published");
@@ -48,12 +50,10 @@ test("a plan carries its reasons and says who wrote the copy, a plain phrase cha
 
   const yours = page.locator("section", { has: page.getByRole("heading", { name: "For you to send" }) });
   await expect(yours.getByText("Email is not set up on this server, so nothing was sent.")).toBeVisible();
-  if (partners) {
-    const draft = yours.locator(".result").filter({ hasText: "Addressed to events@partner.example" });
-    await expect(draft.getByRole("link", { name: /^Draft to / })).toHaveAttribute("href", /^mailto:events@partner\.example\?/);
-    await expect(draft.getByRole("link", { name: "Gmail" })).toHaveAttribute("href", /^https:\/\/mail\.google\.com\//);
-    await expect(draft.getByRole("link", { name: "Outlook" })).toHaveAttribute("href", /^https:\/\/outlook\.(live|office)\.com\//);
-  }
+  const draft = yours.locator(".result").filter({ hasText: "Addressed to events@partner.example" });
+  await expect(draft.getByRole("link", { name: /^Draft to / })).toHaveAttribute("href", /^mailto:events@partner\.example\?/);
+  await expect(draft.getByRole("link", { name: "Gmail" })).toHaveAttribute("href", /^https:\/\/mail\.google\.com\//);
+  await expect(draft.getByRole("link", { name: "Outlook" })).toHaveAttribute("href", /^https:\/\/outlook\.(live|office)\.com\//);
   await expect(page.locator(".rsvp-line")).toContainText("0 people have said they are coming.");
 
   await page.getByRole("link", { name: "Nights", exact: true }).click();

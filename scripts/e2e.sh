@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Builds the web app, starts the fake Qloo server and wrangler dev, runs the Playwright specs and stops everything.
+# Builds the web app, starts the fake Qloo server and wrangler dev without the AI binding, runs the Playwright
+# specs and stops everything.
 # The first pass runs the app with a key. The second pass restarts the Worker without one for the key missing page.
 # Arguments go to the first Playwright pass, for example a spec file or --trace on.
 # Exits non zero when a spec fails or something does not start.
@@ -23,14 +24,12 @@ trap cleanup EXIT
 trap 'exit 130' INT TERM
 
 echo "Building the web app"
-(cd "$ROOT" && nice -n 15 "$BIN/vite" build --config web/vite.config.ts) >"$RUN_DIR/build.log" 2>&1 || {
-  tail -n 20 "$RUN_DIR/build.log" >&2
-  exit 1
-}
+build_web "$RUN_DIR/build.log"
 
 key="fake-$(random_secret)"
 secret="$(random_secret)"
 start_fake "$key" "$RUN_DIR/fake.log"
+no_ai_config
 write_env "$RUN_DIR/app.env" "QLOO_API_KEY=$key" "QLOO_BASE_URL=$FAKE_URL" "TOKEN_SECRET=$secret"
 write_env "$RUN_DIR/nokey.env" "QLOO_BASE_URL=$FAKE_URL" "TOKEN_SECRET=$secret"
 unset key secret
@@ -41,12 +40,12 @@ playwright() {
 
 status=0
 echo "Starting the Worker with the fake Qloo key"
-start_worker app "$RUN_DIR/app.env" "$RUN_DIR/wrangler-app.log" --local
+start_worker app "$RUN_DIR/app.env" "$RUN_DIR/wrangler-app.log" --local --config "$NO_AI_CONFIG"
 playwright --project=app "$@" || status=$?
 stop_pid "$WORKER_PID"
 
 echo "Starting the Worker without a Qloo key"
-start_worker nokey "$RUN_DIR/nokey.env" "$RUN_DIR/wrangler-nokey.log" --local
+start_worker nokey "$RUN_DIR/nokey.env" "$RUN_DIR/wrangler-nokey.log" --local --config "$NO_AI_CONFIG"
 playwright --project=nokey || status=$?
 stop_pid "$WORKER_PID"
 

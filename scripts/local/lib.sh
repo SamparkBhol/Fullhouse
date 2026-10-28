@@ -21,6 +21,14 @@ stop_all() {
   PIDS=()
 }
 
+build_web() {
+  local log="$1"
+  (cd "$ROOT" && nice -n 15 "$BIN/vite" build --config web/vite.config.ts) >"$log" 2>&1 || {
+    tail -n 20 "$log" >&2
+    return 1
+  }
+}
+
 # write_env FILE KEY=VALUE... writes a dotenv file only the current user can read.
 write_env() {
   local file="$1" pair
@@ -30,6 +38,12 @@ write_env() {
     : >"$file"
     for pair in "$@"; do printf '%s\n' "$pair" >>"$file"; done
   )
+}
+
+# no_ai_config writes a copy of wrangler.toml without the AI binding and sets NO_AI_CONFIG to its path.
+no_ai_config() {
+  NO_AI_CONFIG="$RUN_DIR/wrangler.toml"
+  node_ts "$ROOT/scripts/local/no-ai-config.ts" "$ROOT/wrangler.toml" "$NO_AI_CONFIG"
 }
 
 # start_fake KEY LOG sets FAKE_URL.
@@ -62,7 +76,7 @@ start_worker() {
   (cd "$ROOT" && CI=true exec nice -n 15 "$BIN/wrangler" "${args[@]}") </dev/null >"$log" 2>&1 &
   local pid="$!"
   WORKER_URL="http://127.0.0.1:$port"
-  if ! node_ts "$ROOT/scripts/local/wait-for.ts" "$WORKER_URL/api/health" 90; then
+  if ! node_ts "$ROOT/scripts/local/wait-for.ts" "$WORKER_URL/api/health" 90 "$pid"; then
     kill "$pid" 2>/dev/null || true
     wait "$pid" 2>/dev/null || true
     echo "wrangler dev ($name) did not start. Last lines of $log:" >&2
