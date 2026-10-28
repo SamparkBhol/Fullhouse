@@ -1,0 +1,86 @@
+.proof-cols {
+  display: grid;
+  gap: 28px;
+  margin-top: 24px;
+}
+
+.proof-col h3 {
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--chalk);
+}
+
+.proof-model {
+  margin-top: 6px;
+  color: var(--mist);
+  font-size: var(--s14);
+  overflow-wrap: anywhere;
+}
+
+.proof-count {
+  margin: 8px 0;
+  font-size: var(--s16);
+  color: var(--mist);
+}
+
+.verify-list {
+  list-style: none;
+}
+
+.verify {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 2px 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--rule);
+}
+
+.verify-mark {
+  width: 14px;
+  height: 14px;
+  margin-top: 5px;
+  grid-row: span 3;
+}
+
+.verify-found_nearby .verify-mark {
+  background: var(--chalk);
+}
+
+.verify-found_far .verify-mark {
+  border: 2px solid var(--mist);
+}
+
+.verify-not_found .verify-mark {
+  border: 2px solid var(--stop);
+  background: linear-gradient(45deg, transparent 44%, var(--stop) 44% 56%, transparent 56%);
+}
+
+.verify-name {
+  font-weight: 650;
+}
+
+.verify-status {
+  font-size: var(--s16);
+}
+
+.verify-found_far .verify-status {
+  color: var(--mist);
+}
+
+.verify-not_found .verify-status {
+  color: var(--stop);
+}
+
+.verify-note {
+  color: var(--mist);
+  font-size: var(--s14);
+}
+
+.proof-result h2 {
+  margin-top: 28px;
+}
+
+@media (min-width: 720px) {
+  .proof-cols {
+    grid-template-columns: 1fr 1fr;
+  }
+}

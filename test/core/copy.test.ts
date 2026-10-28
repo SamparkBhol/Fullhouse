@@ -57,7 +57,8 @@ describe("writeCopy", () => {
     expect(out.checks).toEqual({ claimsVerified: true, unverified: [] });
     const [system, user] = generate.mock.calls[0] as unknown as [string, string];
     expect(system).toBe(COPY_SYSTEM_PROMPT);
-    expect(user).toBe(copyUserPrompt(buildBrief(plan, VENUE, read)));
+    expect(user).toBe(copyUserPrompt(buildBrief(plan, VENUE, read), plan.copy));
+    expect(user).toContain(plan.copy.eventDescription.slice(0, 40));
     expect(user).toContain('"name": "Alice Coltrane"');
     expect(user).not.toContain("urn:");
   });

@@ -69,7 +69,7 @@ describe("escaping", () => {
 describe("event page", () => {
   it("shows the date, venue, the Qloo reason, RSVP form, calendar links and noindex", () => {
     const html = renderEventPage(night(), "https://x.example", NOW);
-    expect(html).toContain("Thursday 5 November, 19:00 to 22:00");
+    expect(html).toContain("<span>Thursday 5 November</span><span>19:00 to 22:00</span>");
     expect(html).toContain("Blue Hour Records");
     expect(html).toContain("Picked with Qloo taste data");
     expect(html).toContain('href="/how"');
@@ -92,6 +92,12 @@ describe("event page", () => {
     const html = renderEventPage(night(), "https://x.example", new Date("2026-11-06T12:00:00Z"));
     expect(html).toContain("This night has passed.");
     expect(html).not.toContain("<form");
+  });
+
+  it("headlines the feature under the kind of night on the page and the poster", () => {
+    const html = renderEventPage(night({ kind: "Listening night", feature: "Alice Coltrane" }), "https://x.example", NOW);
+    expect(html).toContain('<p class="kind">Listening night</p><h1>Alice Coltrane</h1>');
+    expect(renderPoster(night({ feature: "Alice Coltrane" }), "https://x.example")).toContain("<h1>Alice Coltrane</h1>");
   });
 
   it("says when a model wrote the description", () => {

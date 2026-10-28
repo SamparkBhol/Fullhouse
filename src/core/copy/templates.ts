@@ -54,7 +54,7 @@ export function templateCopy(plan: NightPlan, venue: Venue): NightCopy {
         eventTitle: fit([`${f} listening night at ${v}`, `${f} listening night`, `Listening night at ${v}`], 60),
         eventDescription: `${when}, ${v} puts on the records of ${f} and plays them properly, with room to listen and room to talk.${between}${lean} ${rsvp}`,
         posterHeadline: fit([`${f} on the speakers`, `${f} night`, "Listening night"], 40),
-        posterSub: fit([`${day}, ${plan.start} at ${v}. Free entry.`, `${dayShort} ${plan.start}. Free entry.`], 90),
+        posterSub: "Records played properly, with room to listen and room to talk. Free entry.",
         social: fit(
           [
             `${day}, ${plan.start}. ${f} on the speakers at ${v}, plus artists people around here love. Free, RSVP at the link.`,
@@ -74,7 +74,7 @@ export function templateCopy(plan: NightPlan, venue: Venue): NightCopy {
         eventTitle: fit([`${f} ${noun} at ${v}`, `${f} ${noun}`, `${capFirst(noun)} at ${v}`], 60),
         eventDescription: `${when}, ${v} hosts a ${noun} around ${f}. Pull up a chair, get a drink and settle in.${lean} ${rsvp}`,
         posterHeadline: fit([`${f}`, capFirst(noun)], 40),
-        posterSub: fit([`${capFirst(noun)}, ${day}, ${plan.start} at ${v}`, `${dayShort} ${plan.start} at ${v}`], 90),
+        posterSub: fit([`${capFirst(noun)}. Pull up a chair and settle in. Free entry.`, `${capFirst(noun)}. Free entry.`], 90),
         social: fit(
           [`${capFirst(noun)} at ${v} on ${day} at ${plan.start}. We are watching ${f}. Free, RSVP at the link.`, `${capFirst(noun)}, ${dayShort} ${plan.start}. Free, RSVP at the link.`],
           280,
@@ -89,7 +89,7 @@ export function templateCopy(plan: NightPlan, venue: Venue): NightCopy {
         eventTitle: fit([`${f} quiz night at ${v}`, `${f} quiz night`, `Quiz night at ${v}`], 60),
         eventDescription: `${when}, ${v} runs a quiz night with a round on ${f}${rounds}. Teams of up to six, free to enter. RSVP so we can print enough answer sheets.`,
         posterHeadline: fit([`${f} quiz night`, "Quiz night"], 40),
-        posterSub: fit([`${day}, ${plan.start} at ${v}. Teams of up to six.`, `${dayShort} ${plan.start}. Teams of up to six.`], 90),
+        posterSub: "Teams of up to six. Free to enter.",
         social: fit(
           [`Quiz night at ${v}, ${day} at ${plan.start}, with a round on ${f}. Teams of up to six, free to enter. RSVP at the link.`, `Quiz night, ${dayShort} ${plan.start}. RSVP at the link.`],
           280,
@@ -104,7 +104,7 @@ export function templateCopy(plan: NightPlan, venue: Venue): NightCopy {
         eventTitle: fit([`${f} book night at ${v}`, `${f} book night`, `Book night at ${v}`], 60),
         eventDescription: `${when}, ${v} hosts a book night around ${f}. Come if you have read it, come if you mean to.${lean} Free, RSVP so we can save you a seat.`,
         posterHeadline: fit([`${f}`, "Book night"], 40),
-        posterSub: fit([`Book night, ${day}, ${plan.start} at ${v}`, `Book night, ${dayShort} ${plan.start}`], 90),
+        posterSub: "Come if you have read it, come if you mean to.",
         social: fit(
           [`Book night at ${v} on ${day} at ${plan.start}. We are talking about ${f}. Free, RSVP at the link.`, `Book night, ${dayShort} ${plan.start}. RSVP at the link.`],
           280,
@@ -118,7 +118,7 @@ export function templateCopy(plan: NightPlan, venue: Venue): NightCopy {
         eventTitle: fit([`${f} game night at ${v}`, `${f} game night`, `Game night at ${v}`], 60),
         eventDescription: `${when}, ${v} hosts a game night around ${f}. Play, watch, or just hang out with people who like the same games.${themeText ? ` Expect ${themeText}.` : ""} ${rsvp}`,
         posterHeadline: fit([`${f} game night`, "Game night"], 40),
-        posterSub: fit([`${day}, ${plan.start} at ${v}`, `${dayShort} ${plan.start}`], 90),
+        posterSub: "Play, watch or just hang out. Free entry.",
         social: fit([`Game night at ${v}, ${day} at ${plan.start}, around ${f}. Free, RSVP at the link.`, `Game night, ${dayShort} ${plan.start}. RSVP at the link.`], 280),
         partnerPitch: pitch(plan, venue, day),
       };
@@ -129,7 +129,7 @@ export function templateCopy(plan: NightPlan, venue: Venue): NightCopy {
         eventTitle: fit([`${f} listening night at ${v}`, `${f} listening night`, `Podcast night at ${v}`], 60),
         eventDescription: `${when}, ${v} plays an episode of ${f} for the room, then we talk about it over a drink.${themeText ? ` Good for anyone into ${themeText}.` : ""} ${rsvp}`,
         posterHeadline: fit([`${f}, together`, "Podcast night"], 40),
-        posterSub: fit([`Podcast listening night, ${day}, ${plan.start} at ${v}`, `${dayShort} ${plan.start} at ${v}`], 90),
+        posterSub: "One episode for the room, then we talk about it over a drink.",
         social: fit([`Podcast night at ${v}, ${day} at ${plan.start}. We are playing ${f} for the room. Free, RSVP at the link.`, `Podcast night, ${dayShort} ${plan.start}. RSVP at the link.`], 280),
         partnerPitch: pitch(plan, venue, day),
       };
@@ -144,7 +144,7 @@ export function templateCopy(plan: NightPlan, venue: Venue): NightCopy {
         eventTitle: fit([`${capFirst(t)} tasting night at ${v}`, `${capFirst(t)} tasting night`, `Tasting night at ${v}`], 60),
         eventDescription: `${when}, ${v} hosts a ${t} tasting night built around the food and drink this street goes for.${menuLine} Free to come in. RSVP so we can plan portions.`,
         posterHeadline: fit([`${capFirst(t)} tasting night`, "Tasting night"], 40),
-        posterSub: fit([`${day}, ${plan.start} at ${v}`, `${dayShort} ${plan.start}`], 90),
+        posterSub: fit([`${capFirst(t)} and more of what this street eats and drinks. Free to come in.`, "Free to come in."], 90),
         social: fit([`${capFirst(t)} tasting night at ${v}, ${day} at ${plan.start}. Free to come in, RSVP at the link.`, `Tasting night, ${dayShort} ${plan.start}. RSVP at the link.`], 280),
         partnerPitch: pitch(plan, venue, day),
       };

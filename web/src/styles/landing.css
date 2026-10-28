@@ -1,0 +1,115 @@
+.landing {
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: 8px var(--gutter) 0;
+  display: grid;
+  gap: 8px;
+}
+
+.flyer-landing {
+  margin-top: 20px;
+}
+
+.landing-cta {
+  margin: 20px 0 4px;
+}
+
+.flyer-landing .flyer-title {
+  font-size: 5.25rem;
+  margin: 8px 0 16px;
+}
+
+.flyer-landing .flyer-sub {
+  max-width: 26ch;
+}
+
+.landing-steps {
+  margin-top: 28px;
+}
+
+.steps {
+  list-style: none;
+  counter-reset: step;
+  margin-top: 6px;
+}
+
+.steps > li {
+  counter-increment: step;
+  position: relative;
+  padding: 14px 0 14px 56px;
+  border-top: 1px solid var(--rule);
+}
+
+.steps > li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 8px;
+  font-size: var(--s48);
+  font-stretch: 62%;
+  font-weight: 820;
+  line-height: 1;
+  color: var(--paper);
+}
+
+.steps h3 {
+  margin-bottom: 2px;
+}
+
+.steps p {
+  color: var(--mist);
+  font-size: var(--s16);
+}
+
+.steps-small > li {
+  padding-left: 40px;
+}
+
+.steps-small > li::before {
+  font-size: var(--s36);
+}
+
+.steps-small > li {
+  color: var(--chalk);
+}
+
+.aside-link {
+  font-size: var(--s16);
+}
+
+.landing-mine {
+  margin-top: 28px;
+}
+
+@media (min-width: 720px) {
+  .landing {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+    column-gap: 56px;
+    align-items: start;
+  }
+
+  .landing > .landing-notice {
+    grid-column: 1 / -1;
+  }
+
+  .landing-hero {
+    grid-column: 1;
+    grid-row: span 2;
+  }
+
+  .flyer-landing,
+  .landing-steps {
+    margin-top: 40px;
+  }
+
+  .landing-steps,
+  .landing-mine {
+    grid-column: 2;
+  }
+}
+
+@media (min-width: 960px) {
+  .flyer-landing .flyer-title {
+    font-size: 7.5rem;
+  }
+}

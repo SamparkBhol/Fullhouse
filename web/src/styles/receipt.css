@@ -1,0 +1,109 @@
+.receipt {
+  width: min(32rem, calc(100% - 20px));
+  max-height: 88vh;
+  margin-top: 4vh;
+  padding: 0 0 18px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  overflow: auto;
+}
+
+.receipt::backdrop {
+  background: rgba(20, 32, 48, 0.66);
+}
+
+.receipt-paper {
+  background: var(--chalk);
+  padding: 18px 18px 34px;
+  font-stretch: 80%;
+  -webkit-mask: conic-gradient(from -45deg at bottom, transparent, #000 1deg 89deg, transparent 90deg) 50% / 18px 100%;
+  mask: conic-gradient(from -45deg at bottom, transparent, #000 1deg 89deg, transparent 90deg) 50% / 18px 100%;
+}
+
+.receipt :focus-visible {
+  outline-color: var(--ink);
+}
+
+.receipt-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+  margin: -18px -18px 0;
+  padding: 14px 18px 10px;
+  background: var(--chalk);
+  border-bottom: 1.5px solid var(--ink);
+}
+
+.receipt-head h2 {
+  font-stretch: 75%;
+  margin: 6px 0 0;
+}
+
+.receipt .receipt-close {
+  color: var(--ink);
+  border-color: var(--ink);
+  min-height: 44px;
+}
+
+.receipt-note {
+  margin: 10px 0 8px;
+  font-size: var(--s16);
+  color: var(--ink-soft);
+}
+
+.receipt-list {
+  list-style: none;
+}
+
+.receipt-line {
+  padding: 12px 6px;
+  border-top: 1.5px dashed rgba(29, 49, 80, 0.45);
+  font-size: var(--s16);
+}
+
+.receipt-call {
+  font-weight: 650;
+  font-size: var(--s18);
+}
+
+.receipt-no {
+  font-weight: 800;
+}
+
+.receipt-endpoint {
+  margin-top: 2px;
+  font-weight: 600;
+}
+
+.receipt-params {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  gap: 2px 12px;
+  margin-top: 6px;
+  font-size: var(--s14);
+}
+
+.receipt-params dt {
+  color: var(--ink-soft);
+}
+
+.receipt-params dd {
+  overflow-wrap: anywhere;
+}
+
+.receipt-facts {
+  margin-top: 6px;
+  font-size: var(--s14);
+  color: var(--ink-soft);
+  font-feature-settings: "tnum" 1;
+}
+
+.receipt-focus {
+  background: rgba(29, 49, 80, 0.08);
+  box-shadow: inset 4px 0 0 var(--ink);
+}

@@ -1,0 +1,26 @@
+/* The same values as src/shared/tokens.ts, which the worker's public pages use. test/shared/tokens.test.ts keeps them equal. */
+:root {
+  --street: #33506e;
+  --fascia: #243a53;
+  --chalk: #f3f5f8;
+  --mist: #b9c7d7;
+  --paper: #f6d8db;
+  --ink: #1d3150;
+  --ink-soft: #4a5b78;
+  --lit: #ffc24a;
+  --stop: #ffb3a6;
+  --rule: rgba(243, 245, 248, 0.18);
+  --tape: rgba(236, 228, 204, 0.86);
+  --glow: rgba(255, 194, 74, 0.42);
+  --face: "Archivo Variable", "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --s14: 0.875rem;
+  --s16: 1rem;
+  --s18: 1.125rem;
+  --s21: 1.3125rem;
+  --s24: 1.5rem;
+  --s36: 2.25rem;
+  --s48: 3rem;
+  --s60: 3.75rem;
+  --s72: 4.5rem;
+  --radius: 6px;
+}

@@ -72,14 +72,11 @@ export function partnerGaps(compare: CompareRead, partners: LovedPlace[], ctx: R
   return gapCandidates(compare, partners, ctx)
     .slice(0, MAX_GAPS)
     .map(({ tag: t, carriers, count }, i): Gap => {
-      const which = carriers.length ? `Tagged ${t.name}: ${listWords(carriers)}` : `${t.name} is on ${count} of the ${n} nearby places Qloo compared with ${ctx.name}`;
+      const which = carriers.length ? `Carried by ${listWords(carriers)}, not by ${ctx.name}` : `${t.name} is on ${count} of the ${n} nearby places Qloo compared with ${ctx.name}, and not on ${ctx.name}`;
       return {
         tag: { id: t.id, name: t.name, namespace: t.namespace, rank: i + 1 },
-        note: `${carriedBy(count, n)} nearby that ${possessive(ctx.name)} audience also loves ${count === 1 ? "is" : "are"} tagged ${t.name}. ${ctx.name} is not.`,
-        because: [
-          { kind: "compare", text: which, provenance: ref },
-          { kind: "compare", text: `${possessive(ctx.name)} own Qloo tags do not include ${t.name}`, provenance: ref },
-        ],
+        note: `${carriedBy(count, n)} nearby that ${possessive(ctx.name)} audience also loves ${count === 1 ? "is" : "are"} tagged ${t.name}.`,
+        because: [{ kind: "compare", text: which, provenance: ref }],
       };
     });
 }

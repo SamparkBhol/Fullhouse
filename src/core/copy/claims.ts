@@ -18,6 +18,7 @@ const GENERIC = new Set(
     ...WEEKDAY_NAMES,
     ...MONTH_NAMES,
     "mon", "tue", "tues", "wed", "thu", "thur", "thurs", "fri", "sat", "sun",
+    "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "sept", "oct", "nov", "dec",
     "a", "an", "the", "and", "or", "but", "of", "on", "in", "at", "for", "to", "with", "by", "from", "into", "near",
     "our", "your", "you", "we", "us", "it", "its", "this", "that", "these", "those", "my", "me", "i", "hi", "hello", "dear",
     "night", "nights", "evening", "afternoon", "morning", "tonight", "today", "tomorrow", "weekly", "week", "next",
@@ -35,6 +36,7 @@ const GENERIC = new Set(
     "would", "could", "should", "love", "like", "ask", "idea", "ideas", "cross", "promotion", "promote", "collab",
     "collaboration", "subject", "about", "re", "more", "info", "details", "sign", "up", "help", "hosting", "host",
     "city", "town", "downtown", "uptown", "centre", "center", "neighbourhood", "neighborhood", "block",
+    "event", "events", "partnership", "opportunity", "invitation", "invite", "proposal",
   ].map((w) => normalizeName(w)),
 );
 

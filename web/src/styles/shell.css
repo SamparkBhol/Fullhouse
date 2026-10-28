@@ -1,0 +1,169 @@
+.fascia {
+  background: var(--fascia);
+  border-bottom: 6px solid #1c2f45;
+}
+
+.fascia-inner {
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: 14px var(--gutter) 18px;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--mist);
+  font-size: var(--s16);
+  font-stretch: 125%;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.wordmark-big {
+  color: var(--chalk);
+  font-size: var(--s24);
+}
+
+.venue-name {
+  font-size: 1.875rem;
+  font-stretch: 125%;
+  font-weight: 650;
+  line-height: 1.05;
+  letter-spacing: 0.005em;
+  overflow-wrap: anywhere;
+}
+
+.venue-meta {
+  margin-top: 6px;
+  color: var(--mist);
+  font-size: var(--s16);
+}
+
+.fascia-live {
+  margin-top: 10px;
+  color: var(--lit);
+  font-size: var(--s16);
+  font-weight: 600;
+}
+
+.fascia-live a {
+  color: var(--lit);
+}
+
+
+.tabs {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  background: var(--fascia);
+  border-top: 1px solid rgba(243, 245, 248, 0.16);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.tabs[hidden] {
+  display: none;
+}
+
+.tabs ul {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  max-width: 40rem;
+  margin: 0 auto;
+}
+
+.tabs a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tabbar);
+  color: var(--mist);
+  font-size: var(--s16);
+  font-weight: 650;
+  text-decoration: none;
+  border-top: 3px solid transparent;
+}
+
+.tabs a[aria-current="page"] {
+  color: var(--chalk);
+  border-top-color: var(--chalk);
+}
+
+body.has-tabs {
+  padding-bottom: calc(var(--tabbar) + env(safe-area-inset-bottom, 0px));
+}
+
+
+main {
+  display: block;
+  padding-bottom: 32px;
+}
+
+main:focus {
+  outline: none;
+}
+
+.foot {
+  max-width: 76rem;
+  margin: 24px auto 0;
+  padding: 20px var(--gutter) 28px;
+  border-top: 1px solid var(--rule);
+  color: var(--mist);
+  font-size: var(--s14);
+}
+
+.foot a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: var(--s16);
+}
+
+@media (min-width: 960px) {
+  body.has-tabs {
+    padding-bottom: 0;
+  }
+
+  .fascia {
+    position: relative;
+  }
+
+  .fascia-inner {
+    padding-top: 12px;
+    padding-bottom: 22px;
+  }
+
+  .venue-name {
+    font-size: var(--s48);
+  }
+
+  .tabs {
+    position: absolute;
+    left: auto;
+    right: max(var(--gutter), calc((100vw - 76rem) / 2 + var(--gutter)));
+    top: 12px;
+    bottom: auto;
+    background: transparent;
+    border: 0;
+    padding: 0;
+  }
+
+  .tabs ul {
+    display: flex;
+    gap: 4px;
+  }
+
+  .tabs a {
+    min-height: 44px;
+    padding: 0 14px;
+    border-top: 0;
+    border-bottom: 3px solid transparent;
+  }
+
+  .tabs a[aria-current="page"] {
+    border-bottom-color: var(--chalk);
+  }
+}

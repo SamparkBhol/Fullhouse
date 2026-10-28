@@ -111,6 +111,9 @@ describe("sameName", () => {
     expect(sameName("Café Lumen", "cafe lumen")).toBe(true);
     expect(sameName("Sora Ramen Williamsburg", "Sora Ramen")).toBe(true);
     expect(sameName("Sora", "Ramen Bar")).toBe(false);
+    expect(sameName("Emily St. John Mandel", "St John")).toBe(false);
+    expect(sameName("Moss", "Moss Siridajnawanan Mortgage Broker")).toBe(false);
+    expect(sameName("Cafe Grumpy", "Café Grumpy Lower East Side")).toBe(true);
     expect(sameName("", "x")).toBe(false);
   });
 });

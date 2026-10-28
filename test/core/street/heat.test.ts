@@ -35,7 +35,7 @@ describe("heatCells", () => {
 });
 
 describe("venueHeat", () => {
-  it("maps where the venue's audience over indexes inside 2 km", async () => {
+  it("maps where the taste for the venue runs strongest inside 2 km", async () => {
     const { run, ctx, calls } = stepSetup();
     const { layer, limits } = await venueHeat(run, ctx);
     expect(Object.fromEntries(calls[0]!.url.searchParams)).toEqual({
@@ -44,7 +44,7 @@ describe("venueHeat", () => {
       "filter.type": "urn:heatmap",
       "signal.interests.entities": VENUE_ID,
     });
-    expect(layer?.label).toBe("Where Cafe Lumen's audience over indexes");
+    expect(layer?.label).toBe("Where the taste for Cafe Lumen runs strongest");
     expect(layer?.cells.map((c) => c.affinityRank)).toEqual([1, 0.8745, 0.4129, 0.303, 0]);
     expect(limits).toEqual([]);
   });
@@ -63,7 +63,7 @@ describe("streetHeat", () => {
     expect(p.get("signal.interests.tags")).toBe("urn:tag:genre:music:jazz,urn:tag:ambience:qloo:intimate");
     expect(p.get("operator.signal.interests.tags")).toBe("union");
     expect(p.has("signal.interests.entities")).toBe(false);
-    expect(layer?.label).toBe("Taste for Jazz and Intimate around Cafe Lumen");
+    expect(layer?.label).toBe("Where Jazz and Intimate run strongest");
     expect(layer?.cells).toHaveLength(fixture("heatmap_street").results.heatmap.length);
   });
 

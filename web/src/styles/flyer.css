@@ -1,0 +1,222 @@
+.flyer {
+  position: relative;
+  max-width: 30rem;
+  margin: 12px 0 0;
+  padding: 0 20px 22px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 1px 0 rgba(10, 20, 35, 0.35);
+}
+
+.flyer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 1px rgba(255, 194, 74, 0.55),
+    0 0 36px 8px rgba(255, 194, 74, 0.36),
+    0 0 110px 34px rgba(255, 194, 74, 0.16);
+}
+
+.flyer-when {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0 12px;
+  margin: 0 -20px 18px;
+  padding: 10px 20px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: var(--s16);
+  font-weight: 650;
+  font-feature-settings: "tnum" 1;
+}
+
+.flyer-format {
+  font-size: var(--s21);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.flyer-title {
+  margin: 4px 0 12px;
+  max-width: none;
+  font-size: var(--s72);
+  font-stretch: 62%;
+  font-weight: 820;
+  line-height: 0.9;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  overflow-wrap: break-word;
+}
+
+.flyer-title-m {
+  font-size: var(--s60);
+}
+
+.flyer-title-s {
+  font-size: var(--s48);
+}
+
+.flyer-sub {
+  font-size: var(--s21);
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.flyer-body {
+  margin-top: 12px;
+  font-size: var(--s16);
+  line-height: 1.45;
+}
+
+.flyer-with {
+  margin-top: 12px;
+  font-size: var(--s16);
+  font-weight: 650;
+}
+
+.flyer-where {
+  margin-top: 16px;
+  padding-top: 10px;
+  border-top: 3px solid var(--ink);
+  font-size: var(--s16);
+  font-weight: 700;
+}
+
+.flyer-where span {
+  display: block;
+  font-weight: 400;
+}
+
+.flyer-compact .flyer-title {
+  font-size: var(--s60);
+}
+
+.flyer-compact .flyer-title-m,
+.flyer-compact .flyer-title-s {
+  font-size: var(--s48);
+}
+
+.flyer-taped {
+  transform: rotate(-0.8deg);
+  margin-top: 26px;
+}
+
+.flyer-live::before {
+  opacity: 1;
+}
+
+.tape {
+  position: absolute;
+  top: -13px;
+  width: 96px;
+  height: 28px;
+  background: var(--tape);
+  clip-path: polygon(2% 0, 98% 0, 100% 14%, 97% 30%, 100% 47%, 96% 63%, 100% 80%, 97% 100%, 3% 100%, 0 84%, 3% 68%, 0 52%, 4% 35%, 0 18%);
+  z-index: 2;
+}
+
+.tape-left {
+  left: 14px;
+  transform: rotate(-5deg);
+}
+
+.tape-right {
+  right: 14px;
+  transform: rotate(4deg);
+}
+
+.flyer-taped-now {
+  animation: hang 760ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.flyer-taped-now::before {
+  animation: light 900ms ease-out 380ms both;
+}
+
+.flyer-taped-now .tape-left {
+  animation: tape-left 420ms ease-out 120ms both;
+}
+
+.flyer-taped-now .tape-right {
+  animation: tape-right 420ms ease-out 260ms both;
+}
+
+@keyframes hang {
+  from {
+    transform: rotate(0deg) translateY(-8px);
+  }
+  to {
+    transform: rotate(-0.8deg) translateY(0);
+  }
+}
+
+@keyframes light {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes tape-left {
+  from {
+    opacity: 0;
+    transform: rotate(-5deg) translateY(-10px) scale(1.12);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-5deg);
+  }
+}
+
+@keyframes tape-right {
+  from {
+    opacity: 0;
+    transform: rotate(4deg) translateY(-10px) scale(1.12);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(4deg);
+  }
+}
+
+.flyer-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  max-width: 30rem;
+}
+
+.flyer-link:focus-visible {
+  outline-offset: 6px;
+}
+
+.flyer-blank {
+  max-width: 30rem;
+  margin-top: 12px;
+  padding: 18px 20px 4px;
+  border: 2px dashed rgba(246, 216, 219, 0.7);
+}
+
+.draft-note {
+  margin-top: 12px;
+  color: var(--mist);
+  font-size: var(--s16);
+}
+
+@media (min-width: 720px) {
+  .flyer {
+    padding: 0 28px 28px;
+  }
+
+  .flyer-when {
+    margin: 0 -28px 22px;
+    padding: 12px 28px;
+  }
+}

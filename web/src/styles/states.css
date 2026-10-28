@@ -1,0 +1,112 @@
+.state {
+  margin: 24px 0;
+}
+
+.state-title {
+  font-size: var(--s21);
+  font-weight: 650;
+}
+
+.state-lines {
+  list-style: none;
+  margin-top: 10px;
+  color: var(--mist);
+  font-size: var(--s16);
+}
+
+.state-lines li {
+  padding: 4px 0 4px 18px;
+  position: relative;
+}
+
+.state-lines li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.8em;
+  width: 6px;
+  height: 6px;
+  background: var(--mist);
+}
+
+.lamp {
+  display: inline-flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.lamp span {
+  width: 12px;
+  height: 12px;
+  background: var(--chalk);
+  opacity: 0.25;
+  animation: lamp 1.2s infinite;
+}
+
+.lamp span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.lamp span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes lamp {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+.state-failure {
+  border-left: 4px solid var(--stop);
+  padding-left: 16px;
+}
+
+.state-failure .state-title {
+  color: var(--stop);
+}
+
+.state-failure .button {
+  margin-top: 14px;
+}
+
+.empty {
+  border-left: 4px dashed var(--mist);
+  padding: 4px 0 4px 14px;
+  color: var(--mist);
+  margin: 10px 0;
+}
+
+.limits {
+  margin-top: 40px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--mist);
+  color: var(--mist);
+  font-size: var(--s14);
+  line-height: 1.5;
+}
+
+.limits-head {
+  color: var(--chalk);
+  font-size: var(--s16);
+  font-weight: 650;
+  margin-bottom: 6px;
+}
+
+.limits ul {
+  list-style: none;
+}
+
+.limits li + li {
+  margin-top: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lamp span {
+    opacity: 0.7;
+  }
+}

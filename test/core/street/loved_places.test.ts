@@ -39,8 +39,7 @@ describe("lovedPlaces", () => {
     const first = loved!.places[0]!;
     expect(first).toMatchObject({ address: "40 Grand St Brooklyn, NY 11211", image: "https://images.example/blue-hour.jpg", url: "https://bluehour.example" });
     expect(first.because.map((b) => b.text)).toEqual([
-      "Ranked #1 of 5 places within 1.2 km for people who like Cafe Lumen",
-      "Qloo's explainability ties this place to Cafe Lumen",
+      "Ranked among 5 places within 1.2 km for people who like Cafe Lumen",
     ]);
     expect(limits).toEqual([]);
   });
@@ -57,7 +56,7 @@ describe("lovedPlaces", () => {
     const body = placesWith((e) => ({ ...e, query: { distance: e.query.distance } }));
     const { run, ctx } = stepSetup([answer(isPlace, body)]);
     const { loved, limits } = await lovedPlaces(run, ctx);
-    expect(loved?.places[0]?.because.map((b) => b.text)).toEqual(["Listed #1 of 5 places within 1.2 km of Cafe Lumen"]);
+    expect(loved?.places[0]?.because.map((b) => b.text)).toEqual(["Listed among 5 places within 1.2 km of Cafe Lumen"]);
     expect(limits).toEqual(["Qloo did not tie the nearby places to Cafe Lumen's audience, so their order is not a ranking of taste."]);
   });
 

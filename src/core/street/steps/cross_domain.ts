@@ -3,7 +3,7 @@ import { capFirst, listWords } from "../../copy/text.ts";
 import { parseEntities, type QEntity } from "../../qloo/entities.ts";
 import { locationSignal } from "../../qloo/location.ts";
 import { TYPE_URN } from "../../qloo/urns.ts";
-import { explainBecause, tiedToVenue } from "../because.ts";
+import { rankBecause, tiedToVenue } from "../because.ts";
 import { rankBy } from "../rank.ts";
 import type { Runner } from "../runner.ts";
 import { TYPE_PLURAL, TYPE_SINGULAR, plural } from "../words.ts";
@@ -38,17 +38,22 @@ async function pickList(run: Runner, ctx: ReadContext, type: QlooType): Promise<
 
 function toRising(e: QEntity, rank: number, list: PickList, ctx: ReadContext): Rising {
   const of = plural(list.entities.length, TYPE_SINGULAR[list.type], TYPE_PLURAL[list.type]);
+  // Every result in a list shares this line, so a screen can say it once; the rank itself is Rising.rank.
   // Without the venue in the signal the scores sit level, so the order is not presented as a ranking.
-  const ranked = list.tied
-    ? `Ranked #${rank} of ${of} for people who like ${ctx.name}, weighted to the area around it`
-    : `One of ${of} Qloo returned for the area around ${ctx.name}`;
+  const reason = rankBecause(
+    { ranked: `Ranked among ${of} for people who like ${ctx.name} and the streets around it`, area: `One of ${of} Qloo returned for the area around ${ctx.name}` },
+    e,
+    list.tied,
+    ctx,
+    list.ref,
+  );
   const r: Rising = {
     id: e.id,
     name: e.name,
     type: list.type,
     rank,
     trend: "unknown",
-    because: [{ kind: "affinity", text: ranked, provenance: list.ref }, ...explainBecause(e, ctx, list.ref, "pick")],
+    because: [reason],
     tags: e.tags.map((t) => t.id),
   };
   if (e.image) r.image = e.image;

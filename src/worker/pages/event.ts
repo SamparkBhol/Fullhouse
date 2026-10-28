@@ -12,6 +12,8 @@ export interface PublicNight {
   description: string;
   posterHeadline: string;
   posterSub: string;
+  kind?: string;
+  feature?: string;
   writtenBy: "model" | "template";
   date: string;
   start: string;
@@ -127,8 +129,9 @@ export function renderEventPage(n: PublicNight, origin: string, now: Date): stri
     head(titleAt(n), desc, url) +
     `<body>${fascia(n)}<main class="sheet">` +
     `<article class="flyer">` +
-    `<p class="when">${esc(when)}</p>` +
-    `<h1>${esc(n.title)}</h1>` +
+    `<p class="when"><span>${esc(longDate(n.date))}</span><span>${esc(`${n.start} to ${n.end}`)}</span></p>` +
+    (n.kind ? `<p class="kind">${esc(n.kind)}</p>` : "") +
+    `<h1>${esc(n.feature || n.title)}</h1>` +
     `<div class="desc">${paragraphs(n.description)}</div>` +
     `<p class="place">${esc(n.venueName)}${address ? `<span>${esc(address)}</span>` : ""}</p>` +
     `<p class="tz">Times are local to the venue (${esc(n.tz)}).</p>` +
@@ -164,7 +167,8 @@ export function renderPoster(n: PublicNight, origin: string): string {
     `<body><div class="print-bar"><button id="print" type="button">Print the poster</button><span>A4 portrait. Turn off headers and footers in the print dialog.</span></div>` +
     `<main class="poster">` +
     `<p class="when">${esc(when)}</p>` +
-    `<h1>${esc(n.posterHeadline || n.title)}</h1>` +
+    (n.kind ? `<p class="kind">${esc(n.kind)}</p>` : "") +
+    `<h1>${esc(n.feature || n.posterHeadline || n.title)}</h1>` +
     (n.posterSub ? `<p class="p-sub">${esc(n.posterSub)}</p>` : "") +
     `<p class="p-where"><strong>${esc(n.venueName)}</strong>${n.address ? `<br>${esc(n.address)}` : ""}</p>` +
     `<p class="p-why">${esc(reason)}</p>` +

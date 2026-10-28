@@ -1,5 +1,5 @@
 import "@fontsource-variable/archivo/wdth.css";
-import "./styles/app.css";
+import "./styles/index.css";
 import { notFound, route, startRouter } from "./router.ts";
 import { mountShell } from "./ui/shell.ts";
 import { fitHeadlines } from "./ui/flyer.ts";

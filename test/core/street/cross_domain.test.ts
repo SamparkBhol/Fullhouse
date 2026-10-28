@@ -31,8 +31,7 @@ describe("crossDomain", () => {
       ["Khruangbin", 3, "unknown"],
     ]);
     expect(artists[0]?.because.map((b) => b.text)).toEqual([
-      "Ranked #1 of 3 artists for people who like Cafe Lumen, weighted to the area around it",
-      "Qloo's explainability ties this pick to Cafe Lumen",
+      "Ranked among 3 artists for people who like Cafe Lumen and the streets around it",
     ]);
     expect(artists[0]?.tags).toEqual(["urn:tag:genre:music:jazz", "urn:tag:influenced_by:qloo:john_coltrane"]);
   });

@@ -1,0 +1,61 @@
+.calls {
+  list-style: none;
+  counter-reset: call;
+}
+
+.calls > li {
+  counter-increment: call;
+  position: relative;
+  padding: 14px 0 14px 44px;
+  border-top: 1px solid var(--rule);
+}
+
+.calls > li::before {
+  content: counter(call);
+  position: absolute;
+  left: 0;
+  top: 10px;
+  font-size: var(--s36);
+  font-stretch: 62%;
+  font-weight: 820;
+  line-height: 1;
+  color: var(--paper);
+}
+
+.calls p {
+  font-size: var(--s16);
+  color: var(--mist);
+}
+
+.calls .endpoint {
+  color: var(--chalk);
+  font-stretch: 80%;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+
+.danger {
+  border-top: 2px solid var(--stop);
+  padding-top: 16px;
+}
+
+.ticks {
+  list-style: none;
+  margin: 8px 0 16px;
+}
+
+.ticks li {
+  padding: 6px 0 6px 20px;
+  position: relative;
+  border-top: 1px solid var(--rule);
+}
+
+.ticks li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.95em;
+  width: 10px;
+  height: 10px;
+  background: var(--paper);
+}

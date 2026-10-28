@@ -36,12 +36,11 @@ describe("partnerGaps", () => {
       7,
     );
     expect(gaps.map((g) => [g.tag.name, g.tag.rank])).toEqual([["Wine", 1], ["Live music", 2], ["Bar", 3]]);
-    expect(gaps[0]?.note).toBe("4 of the 5 places nearby that Cafe Lumen's audience also loves are tagged Wine. Cafe Lumen is not.");
+    expect(gaps[0]?.note).toBe("4 of the 5 places nearby that Cafe Lumen's audience also loves are tagged Wine.");
     expect(gaps[1]?.because).toEqual([
-      { kind: "compare", text: "Tagged Live music: Blue Hour Wine Bar", provenance: 7 },
-      { kind: "compare", text: "Cafe Lumen's own Qloo tags do not include Live music", provenance: 7 },
+      { kind: "compare", text: "Carried by Blue Hour Wine Bar, not by Cafe Lumen", provenance: 7 },
     ]);
-    expect(gaps[0]?.because[0]?.text).toBe("Wine is on 4 of the 5 nearby places Qloo compared with Cafe Lumen");
+    expect(gaps[0]?.because[0]?.text).toBe("Wine is on 4 of the 5 nearby places Qloo compared with Cafe Lumen, and not on Cafe Lumen");
   });
 
   it("leaves out what the venue already carries, catalogue tags, other namespaces and repeated names", () => {
@@ -75,14 +74,14 @@ describe("partnerGaps", () => {
     );
     expect(gaps.map((g) => g.tag.name)).toEqual(["Vegetarian Meals", "Vegan Meals"]);
     expect(gaps[0]?.note).toMatch(/^3 of the 3 places nearby/);
-    expect(gaps[0]?.because[0]?.text).toBe("Tagged Vegetarian Meals: Blue Hour Wine Bar, Kettle Books and Sora Ramen");
+    expect(gaps[0]?.because[0]?.text).toBe("Carried by Blue Hour Wine Bar, Kettle Books and Sora Ramen, not by Cafe Lumen");
   });
 
   it("accepts a single carrier when only one place was compared, and caps the list", () => {
     const many = Array.from({ length: MAX_GAPS + 2 }, (_, i) => side(`urn:tag:offerings:place:item_${i}`, `Item ${i}`, 1));
     const gaps = partnerGaps(compare(many), [partner("Blue Hour Wine Bar")], ctx, 0);
     expect(gaps).toHaveLength(MAX_GAPS);
-    expect(gaps[0]?.note).toBe("The one place nearby that Cafe Lumen's audience also loves is tagged Item 0. Cafe Lumen is not.");
+    expect(gaps[0]?.note).toBe("The one place nearby that Cafe Lumen's audience also loves is tagged Item 0.");
   });
 });
 

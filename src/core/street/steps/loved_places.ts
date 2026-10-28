@@ -3,7 +3,7 @@ import { parseEntities, type QEntity } from "../../qloo/entities.ts";
 import { locationFilter } from "../../qloo/location.ts";
 import { TYPE_URN } from "../../qloo/urns.ts";
 import { sameId } from "../../qloo/values.ts";
-import { explainBecause, tiedToVenue } from "../because.ts";
+import { rankBecause, tiedToVenue } from "../because.ts";
 import { haversineM } from "../geo.ts";
 import { rankBy } from "../rank.ts";
 import type { Runner } from "../runner.ts";
@@ -23,7 +23,13 @@ function toPlace(e: QEntity, rank: number, n: number, tied: boolean, ctx: ReadCo
   const lat = e.lat as number;
   const lng = e.lng as number;
   const of = plural(n, "place", "places");
-  const ranked = tied ? `Ranked #${rank} of ${of} ${WITHIN} for people who like ${ctx.name}` : `Listed #${rank} of ${of} ${WITHIN} of ${ctx.name}`;
+  const reason = rankBecause(
+    { ranked: `Ranked among ${of} ${WITHIN} for people who like ${ctx.name}`, area: `Listed among ${of} ${WITHIN} of ${ctx.name}` },
+    e,
+    tied,
+    ctx,
+    ref,
+  );
   const p: LovedPlace = {
     id: e.id,
     name: e.name,
@@ -33,7 +39,7 @@ function toPlace(e: QEntity, rank: number, n: number, tied: boolean, ctx: ReadCo
     distanceM: Math.round(e.distanceM ?? haversineM(ctx.center, { lat, lng })),
     rank,
     tags: e.tags.map((t) => t.id),
-    because: [{ kind: "affinity", text: ranked, provenance: ref }, ...explainBecause(e, ctx, ref, "place")],
+    because: [reason],
   };
   const address = e.address ?? e.disambiguation;
   if (address) p.address = address;

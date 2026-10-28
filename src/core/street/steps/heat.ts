@@ -49,7 +49,7 @@ export function venueHeat(run: Runner, ctx: ReadContext): Promise<{ layer: HeatL
     call: "heat_venue",
     label: "Venue heatmap",
     signal: { "signal.interests.entities": ctx.entityId },
-    title: `Where ${possessive(ctx.name)} audience over indexes`,
+    title: `Where the taste for ${ctx.name} runs strongest`,
     subject: `${possessive(ctx.name)} audience`,
   });
 }
@@ -62,7 +62,7 @@ export async function streetHeat(run: Runner, ctx: ReadContext, top: StreetTag[]
     call: "heat_street",
     label: "Street heatmap",
     signal: { "signal.interests.tags": top.map((t) => t.id), "operator.signal.interests.tags": "union" },
-    title: `Taste for ${names} around ${ctx.name}`,
+    title: `Where ${names} run strongest`,
     subject: names,
   });
 }

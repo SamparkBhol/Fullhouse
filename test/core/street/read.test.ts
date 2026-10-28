@@ -79,20 +79,19 @@ describe("readStreet", () => {
       ["Grand Street Cinema", 742],
     ]);
     expect(read.lovedPlaces[0]?.because.map((b) => b.text)).toEqual([
-      "Ranked #1 of 5 places within 1.2 km for people who like Cafe Lumen",
-      "Qloo's explainability ties this place to Cafe Lumen",
-      "Intimate is among the taste tags Qloo returns for the area around Cafe Lumen",
+      "Ranked among 5 places within 1.2 km for people who like Cafe Lumen",
+      "Tagged Intimate, like the street around Cafe Lumen",
     ]);
 
     expect([...new Set(read.rising.map((r) => r.type))]).toEqual(["artist", "book", "movie", "podcast"]);
     expect(read.rising.every((r) => r.trend === "unknown" && r.trendNote === undefined)).toBe(true);
     const alice = read.rising.find((r) => r.name === "Alice Coltrane")!;
-    expect(alice.because.map((b) => b.kind)).toEqual(["affinity", "explainability", "tag"]);
-    expect(alice.because[2]?.text).toBe("Jazz is among the taste tags Qloo returns for the area around Cafe Lumen");
+    expect(alice.because.map((b) => b.kind)).toEqual(["explainability", "tag"]);
+    expect(alice.because[1]?.text).toBe("Tagged Jazz, like the street around Cafe Lumen");
 
     expect(read.heat.map((h) => [h.label, h.cells.length])).toEqual([
-      ["Where Cafe Lumen's audience over indexes", 5],
-      ["Taste for Jazz, Intimate and Documentary around Cafe Lumen", 3],
+      ["Where the taste for Cafe Lumen runs strongest", 5],
+      ["Where Jazz, Intimate and Documentary run strongest", 3],
     ]);
     expect(read.demographics?.summary).toMatch(/^People who like Cafe Lumen on Qloo over index on the 25 to 29 and 30 to 34 age groups, leaning female\./);
 

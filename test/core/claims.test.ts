@@ -35,6 +35,8 @@ describe("checkClaims", () => {
   it("lets generic words, days, months and parts of allowed names through", () => {
     expect(checkClaims("Thursday Night Listening Session, Free Entry. See you at Lumen on Friday 6 November.", allowed).ok).toBe(true);
     expect(checkClaims("Brooklyn City Quiz Night", allowed).ok).toBe(true);
+    expect(checkClaims("Cafe Lumen on Tue 27 Oct, doors at 19:00. Back on Sat 7 Nov.", allowed).ok).toBe(true);
+    expect(checkClaims("Partnership Opportunity: A Listening Night Invitation from Cafe Lumen", allowed).ok).toBe(true);
     expect(checkClaims('Bring your "no live music" sign', allowed).ok).toBe(true);
   });
 

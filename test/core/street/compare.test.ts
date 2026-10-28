@@ -40,8 +40,8 @@ describe("compareStep", () => {
     const { run, ctx, input } = await inputs();
     const { gaps, limits } = await compareStep(run, ctx, input);
     expect(gaps.map((g) => g.tag.name)).toEqual(["Wine", "Live music", "Date Night", "Bar"]);
-    expect(gaps[0]?.note).toBe("3 of the 5 places nearby that Cafe Lumen's audience also loves are tagged Wine. Cafe Lumen is not.");
-    expect(gaps[1]?.because.map((b) => b.text)).toEqual(["Tagged Live music: Blue Hour Wine Bar", "Cafe Lumen's own Qloo tags do not include Live music"]);
+    expect(gaps[0]?.note).toBe("3 of the 5 places nearby that Cafe Lumen's audience also loves are tagged Wine.");
+    expect(gaps[1]?.because.map((b) => b.text)).toEqual(["Carried by Blue Hour Wine Bar, not by Cafe Lumen"]);
     expect(gaps.every((g) => g.because.every((b) => b.kind === "compare"))).toBe(true);
     expect(limits).toEqual([]);
   });

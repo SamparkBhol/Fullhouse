@@ -1,0 +1,174 @@
+:root {
+  --gutter: 16px;
+  --tabbar: 64px;
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 100%;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--street);
+  color: var(--chalk);
+  font-family: var(--face);
+  font-size: var(--s18);
+  line-height: 1.5;
+  font-stretch: 100%;
+  font-weight: 400;
+  font-feature-settings: "tnum" 0;
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+p,
+ul,
+ol,
+dl,
+dd,
+figure,
+fieldset {
+  margin: 0;
+}
+
+ul,
+ol {
+  padding: 0;
+}
+
+h1 {
+  font-size: var(--s36);
+  font-stretch: 75%;
+  font-weight: 760;
+  line-height: 1.05;
+  letter-spacing: -0.005em;
+  margin: 28px 0 12px;
+  max-width: 22ch;
+}
+
+h2 {
+  font-size: var(--s24);
+  font-stretch: 87.5%;
+  font-weight: 700;
+  line-height: 1.15;
+  margin: 0 0 10px;
+}
+
+h3 {
+  font-size: var(--s21);
+  font-weight: 650;
+  line-height: 1.2;
+  margin: 0 0 6px;
+}
+
+p + p {
+  margin-top: 0.75em;
+}
+
+a {
+  color: var(--chalk);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+}
+
+strong {
+  font-weight: 650;
+}
+
+:focus-visible {
+  outline: 3px solid var(--chalk);
+  outline-offset: 3px;
+}
+
+[tabindex="-1"]:focus {
+  outline: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip {
+  position: absolute;
+  left: 8px;
+  top: -64px;
+  z-index: 50;
+  background: var(--chalk);
+  color: var(--ink);
+  padding: 12px 16px;
+  font-weight: 650;
+}
+
+.skip:focus {
+  top: 8px;
+}
+
+details > summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (min-width: 720px) {
+  :root {
+    --gutter: 28px;
+  }
+
+  h1 {
+    font-size: var(--s48);
+  }
+}
+
+@media (min-width: 960px) {
+  :root {
+    --gutter: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  .fascia,
+  .tabs,
+  .foot,
+  .actions {
+    display: none;
+  }
+
+  body {
+    background: #ffffff;
+    color: #000000;
+  }
+}

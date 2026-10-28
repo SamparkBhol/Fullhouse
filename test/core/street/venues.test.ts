@@ -5,12 +5,12 @@ import { VENUE_ID, fakeFetch, streetRoute } from "../../fixtures/street.ts";
 const KEY = "venue-test-key";
 
 describe("findVenues", () => {
-  it("searches name and city in one call and puts hits in that city first", async () => {
+  it("searches name and city in one call and keeps only the hits in that city when there are any", async () => {
     const f = fakeFetch([streetRoute]);
     const out = await findVenues(createQloo({ apiKey: KEY, fetch: f.fetch }), "  Cafe   Lumen ", "Brooklyn");
     expect(f.calls).toHaveLength(1);
     expect(Object.fromEntries(f.calls[0]!.url.searchParams)).toEqual({ query: "Cafe Lumen Brooklyn", types: "urn:entity:place", take: "8" });
-    expect(out.map((c) => c.name)).toEqual(["Cafe Lumen", "Cafe Lumen Lisboa"]);
+    expect(out.map((c) => c.name)).toEqual(["Cafe Lumen"]);
     expect(out[0]).toEqual({
       id: VENUE_ID,
       name: "Cafe Lumen",
@@ -27,7 +27,7 @@ describe("findVenues", () => {
   it("matches the city against Qloo's geocode names too, and searches by name alone when no hit is in the city", async () => {
     const f = fakeFetch([streetRoute]);
     const q = createQloo({ apiKey: KEY, fetch: f.fetch });
-    expect((await findVenues(q, "Cafe Lumen", "Lisbon")).map((c) => c.name)).toEqual(["Cafe Lumen Lisboa", "Cafe Lumen"]);
+    expect((await findVenues(q, "Cafe Lumen", "Lisbon")).map((c) => c.name)).toEqual(["Cafe Lumen Lisboa"]);
     expect(f.calls).toHaveLength(1);
     await findVenues(q, "Cafe Lumen", "Oslo");
     expect(f.calls.slice(1).map((c) => c.url.searchParams.get("query"))).toEqual(["Cafe Lumen Oslo", "Cafe Lumen"]);

@@ -35,7 +35,7 @@ test("the street read shows the map, both tag lists, the gap, the picks and ever
 
   const picks = page.locator("section", { has: page.getByRole("heading", { name: "What people who like Saltwater Records love" }) });
   await expect(picks.locator(".pick-group h3")).toHaveText(["Artists", "Books", "Films", "TV shows", "Podcasts"]);
-  await expect(picks.locator(".pick").first()).toContainText(/Ranked #1 of 10 artists for people who like Saltwater Records/);
+  await expect(picks.locator(".pick").first()).toContainText(/Ranked among 10 artists for people who like Saltwater Records/);
   await expect(page.locator(".trend")).toHaveCount(0);
 
   const loved = page.locator("section", { has: page.getByRole("heading", { name: "Places nearby your audience loves" }) });

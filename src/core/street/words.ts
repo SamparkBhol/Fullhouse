@@ -47,3 +47,7 @@ export function plural(n: number, one: string, many: string): string {
 export function streetTagLine(tag: string, venueName: string): string {
   return `${tag} is among the taste tags Qloo returns for the area around ${venueName}`;
 }
+
+export function sharesStreetTagLine(tag: string, venueName: string): string {
+  return `Tagged ${tag}, like the street around ${venueName}`;
+}

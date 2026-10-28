@@ -1,0 +1,147 @@
+.picks {
+  list-style: none;
+}
+
+.pick {
+  padding: 14px 0;
+  border-top: 1px solid var(--rule);
+}
+
+.picks > .pick:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+
+.pick-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.pick-name {
+  font-size: var(--s21);
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.pick-dist {
+  color: var(--mist);
+  font-size: var(--s16);
+  font-feature-settings: "tnum" 1;
+  white-space: nowrap;
+}
+
+.pick-tags {
+  margin-top: 4px;
+  font-size: var(--s16);
+}
+
+.numbered .pick {
+  position: relative;
+  padding-left: 42px;
+}
+
+.pin-no {
+  position: absolute;
+  left: 0;
+  top: 17px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: var(--s14);
+  font-weight: 750;
+}
+
+.trend {
+  font-size: var(--s16);
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.trend::before {
+  content: "";
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: 0.1em;
+}
+
+.trend-rising {
+  color: var(--chalk);
+}
+
+.trend-rising::before {
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 9px solid var(--chalk);
+}
+
+.trend-falling::before {
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 9px solid var(--mist);
+}
+
+.trend-steady::before {
+  width: 10px;
+  height: 3px;
+  background: var(--mist);
+  vertical-align: 0.25em;
+}
+
+.trend-steady,
+.trend-falling,
+.trend-unknown {
+  color: var(--mist);
+}
+
+.because {
+  list-style: none;
+  margin-top: 8px;
+}
+
+.because li {
+  font-size: var(--s16);
+  color: var(--mist);
+}
+
+.because li > .because-text {
+  display: block;
+  padding: 10px 0;
+  border-top: 1px solid var(--rule);
+}
+
+.because-row {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  min-height: 44px;
+  padding: 8px 0;
+  border: 0;
+  border-top: 1px solid var(--rule);
+  background: none;
+  color: var(--mist);
+  font: inherit;
+  font-size: var(--s16);
+  text-align: left;
+  cursor: pointer;
+}
+
+.because-row:hover {
+  color: var(--chalk);
+}
+
+.because-call {
+  flex: none;
+  color: var(--chalk);
+  font-size: var(--s14);
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-feature-settings: "tnum" 1;
+}

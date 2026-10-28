@@ -48,9 +48,9 @@ export async function findVenues(q: Qloo, name: string, city: string): Promise<V
   if (!hits.some((h) => inCity(h, cityName))) {
     hits = uniqueBy([...hits, ...(await search(q, "find_venue_by_name", venueName))], (h) => [h.id.toUpperCase()]);
   }
+  // A namesake in another country only gets in the owner's way once the right city has a hit.
   const local = hits.filter((h) => inCity(h, cityName));
-  const elsewhere = hits.filter((h) => !inCity(h, cityName));
-  return [...local, ...elsewhere]
+  return (local.length ? local : hits)
     .map(toCandidate)
     .filter((c): c is VenueCandidate => c !== null)
     .slice(0, MAX_CANDIDATES);

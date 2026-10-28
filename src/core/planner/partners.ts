@@ -34,14 +34,15 @@ export function pickPartners(
     const shared = p.tags.find((t) => sharedIds.has(t));
     const hint = p.tags.find((t) => COMPETITOR_NS.some((ns) => t.startsWith(`${ns}:`)) && def.partnerHints.some((h) => tagLabel(t).toLowerCase().includes(h)));
     const competitor = p.tags.some((t) => venueCats.has(t));
+    // A tag the venue already shares, such as LGBTQ+ friendly, says nothing about the night, so it only breaks ties.
     const score =
-      p.tags.filter((t) => themeIds.has(t)).length * 3 + (hint ? 2 : 0) + p.tags.filter((t) => gapIds.has(t) || sharedIds.has(t)).length;
+      p.tags.filter((t) => themeIds.has(t)).length * 3 + (hint ? 2 : 0) + p.tags.filter((t) => gapIds.has(t)).length + (shared ? 0.5 : 0);
     return { p, onTheme, gap, shared, hint, competitor, score };
   });
   const order = (a: (typeof scored)[number], b: (typeof scored)[number]) => b.score - a.score || a.p.rank - b.p.rank;
   const nonCompeting = scored.filter((s) => !s.competitor);
   const pool = nonCompeting.length >= 2 ? nonCompeting : scored;
-  let chosen = pool.filter((s) => s.score > 0).sort(order).slice(0, MAX_PARTNERS);
+  let chosen = pool.filter((s) => s.score >= 1).sort(order).slice(0, MAX_PARTNERS);
   if (chosen.length < 2) {
     const fill = pool
       .filter((s) => !chosen.includes(s))

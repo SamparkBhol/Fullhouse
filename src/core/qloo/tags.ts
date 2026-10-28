@@ -20,6 +20,16 @@ export function tagLabel(idOrName: string): string {
   return last.replace(/_/g, " ").trim();
 }
 
+// Live names include "Alt- country" and "+young Adult". A hyphen with a space beside it would read as a dash,
+// and a leading symbol as a typo, so both go. Hyphens inside a word stay.
+export function cleanTagName(name: string): string {
+  return name
+    .replace(/^[^\p{L}\p{N}]+/u, "")
+    .replace(/\s+-\s*|\s*-\s+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 // A bare namespace such as urn:tag:genre:place ("Place") says nothing about a venue.
 export function isNamespaceRoot(tag: Pick<QTag, "id" | "namespace">): boolean {
   return tag.id === tag.namespace;
@@ -38,7 +48,7 @@ export function parseTag(raw: unknown): QTag | null {
   const q = obj(raw.query);
   return {
     id,
-    name: str(raw.name) ?? tagLabel(id),
+    name: cleanTagName(str(raw.name) ?? tagLabel(id)) || tagLabel(id),
     namespace: namespaceFrom(raw.subtype) ?? namespaceFrom(raw.type) ?? tagNamespace(id),
     score: num(q.affinity) ?? num(q.score),
     popularity: num(raw.popularity),

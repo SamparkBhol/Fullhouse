@@ -1,0 +1,74 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 20px;
+  border: 2px solid var(--chalk);
+  border-radius: 6px;
+  background: var(--chalk);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--s18);
+  font-weight: 650;
+  line-height: 1.15;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: #ffffff;
+  border-color: #ffffff;
+}
+
+.button:active {
+  transform: translateY(1px);
+}
+
+.button:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.button-big {
+  min-height: 56px;
+  font-size: var(--s21);
+  padding: 0 24px;
+}
+
+.button-quiet {
+  background: transparent;
+  color: var(--chalk);
+  border-color: rgba(243, 245, 248, 0.6);
+}
+
+.button-quiet:hover {
+  background: rgba(243, 245, 248, 0.1);
+  border-color: var(--chalk);
+}
+
+.button-danger {
+  background: var(--stop);
+  border-color: var(--stop);
+  color: var(--ink);
+}
+
+.button-danger:hover {
+  background: #ffc8be;
+  border-color: #ffc8be;
+}
+
+.link-button {
+  background: none;
+  border: 0;
+  padding: 0;
+  min-height: 44px;
+  color: var(--chalk);
+  font: inherit;
+  font-size: var(--s16);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}

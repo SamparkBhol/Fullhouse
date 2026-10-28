@@ -1,3 +1,4 @@
+import { FORMATS, capFirst } from "../../core/index.ts";
 import { isPast, type PublicNight } from "../pages/event.ts";
 import { fail, ok, type Out, type VenueDeps } from "./api.ts";
 import type { VenueRecords } from "./records.ts";
@@ -24,12 +25,15 @@ export async function publicNight(records: VenueRecords, slug: string, browser: 
     city: venue.city,
     lat: venue.entity.lat,
     lng: venue.entity.lng,
-    why: n.why.map((b) => b.text).filter((t) => typeof t === "string" && t.trim().length > 0),
+    // A heatmap cell's distance means something to the owner, not to a guest reading the page.
+    why: n.why.filter((b) => b.kind !== "heatmap").map((b) => b.text).filter((t) => typeof t === "string" && t.trim().length > 0),
     rsvps: n.rsvps,
     going,
     published: rec.published,
   };
   if (venue.entity.address) pub.address = venue.entity.address;
+  if (n.feature) pub.feature = n.feature.name;
+  if (FORMATS[n.format]) pub.kind = capFirst(FORMATS[n.format].label);
   return ok(pub);
 }
 

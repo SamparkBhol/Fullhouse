@@ -62,9 +62,12 @@ export function briefNames(brief: CopyBrief, plan: NightPlan, read: StreetRead):
 }
 
 export const COPY_SYSTEM_PROMPT = [
-  "You write short event copy for a small independent venue.",
+  "You write the words for one night at a small independent venue, the way its owner would tell regulars about it, in plain and specific words.",
   "Use only the facts and names in the JSON brief. Never name a person, place, work, brand or business that is not in the brief.",
   "Do not invent prices, performers, guests, prizes, offers or times.",
+  "The brief comes with a plain draft. Keep its facts and write it better. Say what happens on the night and in what order, name the feature, and use one or two concrete things from the theme or menu ideas.",
+  "Do not sum up the street in general terms such as people around here like film and food, and do not hedge with may or might.",
+  "posterHeadline is the feature's name when the brief has a feature. posterSub is one short line in the owner's voice that makes a passer by want to come in, without the date or time, which the poster already prints.",
   "Public copy (title, description, poster, social) must not mention partner businesses. The partner pitch may.",
   "The partner pitch must describe the Qloo results as aggregate taste data for the area, never as facts about anyone's customers.",
   "Write in sentence case with plain verbs and short sentences. Times are 24 hour. Write dates as the brief gives them.",
@@ -73,8 +76,16 @@ export const COPY_SYSTEM_PROMPT = [
   "Return one JSON object and nothing else, with string fields eventTitle (under 60 characters), eventDescription (60 to 120 words), posterHeadline (under 40 characters), posterSub (under 90 characters), social (under 280 characters), and partnerPitch, an object with string fields subject and body (under 120 words, addressed to a nearby business, signed with the venue name).",
 ].join(" ");
 
-export function copyUserPrompt(brief: CopyBrief): string {
-  return `Brief:\n${JSON.stringify(brief, null, 2)}\nReturn only the JSON object.`;
+export function copyUserPrompt(brief: CopyBrief, draft: NightCopy): string {
+  const plain = {
+    eventTitle: draft.eventTitle,
+    eventDescription: draft.eventDescription,
+    posterHeadline: draft.posterHeadline,
+    posterSub: draft.posterSub,
+    social: draft.social,
+    partnerPitch: draft.partnerPitch,
+  };
+  return `Brief:\n${JSON.stringify(brief, null, 2)}\nPlain draft:\n${JSON.stringify(plain, null, 2)}\nReturn only the JSON object.`;
 }
 
 export function extractJson(text: string): unknown {
@@ -173,7 +184,7 @@ export async function writeCopy(plan: NightPlan, venue: Venue, read: StreetRead,
   const allowed = briefNames(brief, plan, read);
   let raw: string;
   try {
-    raw = await generate(COPY_SYSTEM_PROMPT, copyUserPrompt(brief));
+    raw = await generate(COPY_SYSTEM_PROMPT, copyUserPrompt(brief, plan.copy));
   } catch {
     return keepTemplate(plan, "The model did not answer");
   }
