@@ -6,19 +6,21 @@ const thu = { weekday: 4 as const, start: "19:00", durationMin: 180 };
 describe("nextSlotDate", () => {
   it("finds the next occurrence in the venue's zone, not UTC", () => {
     expect(nextSlotDate(thu, "America/New_York", new Date("2026-10-25T15:00:00Z"))).toEqual({ date: "2026-10-29", start: "19:00", end: "22:00" });
-    expect(nextSlotDate({ ...thu, weekday: 0 }, "Asia/Tokyo", new Date("2026-10-24T16:00:00Z"))).toEqual({ date: "2026-10-25", start: "19:00", end: "22:00" });
+    expect(nextSlotDate({ ...thu, weekday: 0 }, "Asia/Tokyo", new Date("2026-10-23T02:00:00Z"))).toEqual({ date: "2026-10-25", start: "19:00", end: "22:00" });
     expect(nextSlotDate({ ...thu, weekday: 6 }, "Pacific/Honolulu", new Date("2026-10-25T05:00:00Z")).date).toBe("2026-10-31");
   });
 
-  it("uses today while the slot is still ahead, next week once it has started", () => {
-    expect(nextSlotDate(thu, "Europe/London", new Date("2026-10-29T17:59:00Z")).date).toBe("2026-10-29");
-    expect(nextSlotDate(thu, "Europe/London", new Date("2026-10-29T19:00:00Z")).date).toBe("2026-11-05");
+  it("gives at least two days' notice, so a night never lands the same evening", () => {
+    expect(nextSlotDate(thu, "Europe/London", new Date("2026-10-27T18:59:00Z")).date).toBe("2026-10-29");
+    expect(nextSlotDate(thu, "Europe/London", new Date("2026-10-27T19:01:00Z")).date).toBe("2026-11-05");
+    expect(nextSlotDate(thu, "Europe/London", new Date("2026-10-29T15:50:00Z")).date).toBe("2026-11-05");
+    expect(nextSlotDate({ ...thu, weekday: 1 }, "Europe/London", new Date("2026-11-02T09:00:00Z")).date).toBe("2026-11-09");
   });
 
   it("crosses daylight saving changes on both sides of the world", () => {
-    expect(nextSlotDate({ ...thu, weekday: 0 }, "Europe/Berlin", new Date("2026-10-24T22:30:00Z")).date).toBe("2026-10-25");
-    expect(nextSlotDate({ ...thu, weekday: 0 }, "America/New_York", new Date("2026-10-31T23:30:00Z")).date).toBe("2026-11-01");
-    expect(nextSlotDate({ ...thu, weekday: 1 }, "Australia/Sydney", new Date("2026-10-03T15:00:00Z")).date).toBe("2026-10-05");
+    expect(nextSlotDate({ ...thu, weekday: 0 }, "Europe/Berlin", new Date("2026-10-23T16:00:00Z")).date).toBe("2026-10-25");
+    expect(nextSlotDate({ ...thu, weekday: 0 }, "America/New_York", new Date("2026-10-30T12:00:00Z")).date).toBe("2026-11-01");
+    expect(nextSlotDate({ ...thu, weekday: 1 }, "Australia/Sydney", new Date("2026-10-02T15:00:00Z")).date).toBe("2026-10-05");
   });
 
   it("wraps the end time past midnight and falls back on bad input", () => {

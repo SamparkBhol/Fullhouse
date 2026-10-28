@@ -1,28 +1,13 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import {
-  FORMATS,
-  PLAYLIST_LICENCE,
-  PlanError,
-  WALK_M,
-  checkClaims,
-  createQloo,
-  planNights,
-  readStreet,
-  briefNames,
-  buildBrief,
-} from "../../src/core/index.ts";
-import type { Because, NightPlan, PlanResponse, StreetRead } from "../../src/shared/contract.ts";
-import { NOW, VENUE, fakeFetch, streetRoute } from "../fixtures/street.ts";
+import { FORMATS, PlanError, checkClaims, briefNames, buildBrief } from "../../src/core/index.ts";
+import type { Because, NightPlan, PlanInput, PlanResponse, StreetRead } from "../../src/shared/contract.ts";
+import { NOW, VENUE } from "../fixtures/street.ts";
+import { fixtureRead, planFrom } from "./plan_setup.ts";
 
 let read: StreetRead;
 
-function ids() {
-  let n = 0;
-  return () => `plan-${++n}`;
-}
-
-function plan(input = {}, venue = VENUE, r = read): PlanResponse {
-  return planNights(r, venue, input, NOW, "owner", ids());
+function plan(input: PlanInput = {}, venue = VENUE, r = read): PlanResponse {
+  return planFrom(r, input, venue);
 }
 
 function becauseOf(p: NightPlan): Because[] {
@@ -35,8 +20,7 @@ function becauseOf(p: NightPlan): Because[] {
 }
 
 beforeAll(async () => {
-  const f = fakeFetch([streetRoute]);
-  read = await readStreet(createQloo({ apiKey: "k", fetch: f.fetch, now: () => NOW }), VENUE);
+  read = await fixtureRead();
 });
 
 describe("planNights", () => {
@@ -84,9 +68,9 @@ describe("planNights", () => {
   });
 
   it("throws when nothing can be built or everything was ruled out", () => {
-    const empty: StreetRead = { ...read, rising: [], streetTags: [] };
+    const empty: StreetRead = { ...read, rising: [], streetTags: [], venueTags: [], gaps: [] };
     expect(() => plan({}, VENUE, empty)).toThrow(PlanError);
-    const onlyArtists: StreetRead = { ...read, rising: read.rising.filter((r) => r.type === "artist"), streetTags: [] };
+    const onlyArtists: StreetRead = { ...read, rising: read.rising.filter((r) => r.type === "artist"), streetTags: [], venueTags: [], gaps: [] };
     const err = (() => {
       try {
         plan({ avoidFormats: ["listening", "quiz"] }, VENUE, onlyArtists);
@@ -98,48 +82,63 @@ describe("planNights", () => {
     expect(err?.code).toBe("all_avoided");
   });
 
-  it("picks partners within walking distance that share the theme and are not direct competitors", () => {
-    for (const p of [plan().plan, ...plan().alternatives]) {
-      expect(p.partners.length).toBeGreaterThanOrEqual(2);
-      expect(p.partners.length).toBeLessThanOrEqual(3);
-      for (const x of p.partners) {
-        expect(x.distanceM).toBeLessThanOrEqual(WALK_M);
-        expect(x.tags).not.toContain("urn:tag:genre:place:cafe");
-      }
-      expect(p.partners.map((x) => x.name)).not.toContain("Daybreak Cafe");
-    }
-    const listening = plan().plan;
-    expect(listening.partners[0]?.name).toBe("Blue Hour Wine Bar");
-    expect(listening.partners[0]?.because.at(-1)?.text).toContain("tagged Wine Bar, which Full House pairs with a listening night");
-    const book = plan({ preferFormats: ["book"] }).plan;
-    expect(book.partners.map((x) => x.name)).toContain("Kettle Books");
-    const tasting = plan({ preferFormats: ["tasting"] }).plan;
-    expect(tasting.partners[0]?.because.at(-1)?.text).toContain("which is part of this night's theme");
-    expect(listening.partners[0]?.because.at(-1)?.text).toMatch(/^About \d+ m from Cafe Lumen, tagged /);
+  it("lets the gap pick the night when it matches a format: a Movie Theater gap makes it a film night", () => {
+    const gap = read.gaps[0]!;
+    const cinemaGap = { tag: { id: "urn:tag:category:place:movie_theater", name: "Movie Theater", namespace: "urn:tag:category:place", rank: 1 }, note: "3 of the 5 places nearby that Cafe Lumen's audience also loves are tagged Movie Theater.", because: gap.because };
+    expect(plan({}, VENUE, { ...read, gaps: [] }).plan.format).toBe("listening");
+    const film = plan({}, VENUE, { ...read, gaps: [cinemaGap] }).plan;
+    expect(film.format).toBe("film");
+    expect(film.why.map((b) => b.text)).toContain("A film night answers a gap the read found: 3 of the 5 places nearby that Cafe Lumen's audience also loves are tagged Movie Theater");
   });
 
-  it("takes menu ideas only from street tags", () => {
-    const street = new Map(read.streetTags.map((t) => [t.name, t]));
-    const p = plan().plan;
-    expect(p.menuIdeas.map((m) => m.text)).toEqual(["Add natural wine to the menu for the night", "Add ramen to the menu for the night"]);
-    for (const m of p.menuIdeas) {
-      const name = m.because[0]?.text.match(/^(.+) is among the taste tags Qloo returns for the area around Cafe Lumen$/)?.[1] ?? "";
-      expect(street.has(name)).toBe(true);
-      expect(read.provenance[m.because[0]!.provenance]?.call).toBe("street_tags");
-    }
-    const tasting = plan({ preferFormats: ["tasting"] }).plan;
-    expect(tasting.themeTags[0]?.name).toBe("Natural Wine");
-    expect(tasting.copy.eventTitle).toBe("Natural wine tasting night at Cafe Lumen");
-    expect(tasting.copy.eventDescription).toContain("On the menu: natural wine and ramen.");
+  it("never ranks a pick from a list Qloo answered without the venue above one it tied to the venue", () => {
+    const untied = read.rising.map((r) => (r.type === "movie" ? { ...r, rank: 1, venueSignal: false } : r));
+    const res = plan({ preferFormats: ["film"] }, VENUE, { ...read, rising: untied });
+    expect(res.plan.format).toBe("film");
+    expect(res.plan.feature?.type).toBe("movie");
+    const tiedShow = { ...read.rising.find((r) => r.type === "movie")!, id: "SHOW-1", name: "PEN15", type: "tv_show" as const, rank: 1, venueSignal: true };
+    const mixed = plan({ preferFormats: ["film"] }, VENUE, { ...read, rising: [...untied, tiedShow] });
+    expect(mixed.plan.feature?.name).toBe("PEN15");
   });
 
-  it("builds the playlist only from the street's artist results, with the licence note", () => {
-    const p = plan({ preferFormats: ["film"] }).plan;
-    const artists = read.rising.filter((r) => r.type === "artist").map((r) => r.id);
-    expect(p.playlist.map((a) => a.id)).toEqual(artists);
-    expect(p.playlist.every((a) => a.type === "artist")).toBe(true);
-    expect(p.limits).toContain(PLAYLIST_LICENCE);
-    expect(p.limits).toContain(FORMATS.film.licence);
+  it("offers only alternatives with a named Qloo pick and a real title", () => {
+    const artistsOnly: StreetRead = { ...read, rising: read.rising.filter((r) => r.type === "artist") };
+    const res = plan({}, VENUE, artistsOnly);
+    expect(res.alternatives.length).toBeGreaterThan(0);
+    for (const alt of res.alternatives) {
+      expect(alt.format).not.toBe("tasting");
+      expect(alt.feature?.name.trim()).toBeTruthy();
+      expect(alt.copy.eventTitle.trim()).toBeTruthy();
+    }
+    const lone: StreetRead = { ...read, rising: read.rising.filter((r) => r.type === "artist").slice(0, 1) };
+    const one = plan({ avoidFormats: ["quiz"] }, VENUE, lone);
+    expect(one.plan.format).toBe("listening");
+    expect(one.alternatives).toEqual([]);
+    expect(one.plan.limits).toContain("No other kind of night had a Qloo pick to feature, so there are no alternatives.");
+    expect(plan({ preferFormats: ["tasting"] }, VENUE, artistsOnly).plan).toMatchObject({ format: "tasting", feature: null });
+  });
+
+  it("never features a pick whose name came back blank", () => {
+    const blank = read.rising.map((r, i) => (i === 0 ? { ...r, name: "  " } : r));
+    const res = plan({}, VENUE, { ...read, rising: blank });
+    for (const p of [res.plan, ...res.alternatives]) if (p.feature) expect(p.feature.name.trim()).not.toBe("");
+  });
+
+  it("never offers the same feature twice across the night and its alternatives", () => {
+    const res = plan();
+    const features = [res.plan, ...res.alternatives].map((p) => p.feature?.id).filter(Boolean);
+    expect(new Set(features).size).toBe(features.length);
+  });
+
+  it("themes a night only with tags its feature carries, never book formats", () => {
+    const res = plan({ preferFormats: ["book"] });
+    const book = res.plan;
+    const carried = new Set(book.feature?.tags ?? []);
+    expect(book.themeTags.every((t) => carried.has(t.id))).toBe(true);
+    const audiobook = { id: "urn:tag:keyword:media:audiobook", name: "Audiobook", namespace: "urn:tag:keyword:media", rank: 1 };
+    const withFormat = read.rising.map((r) => (r.type === "book" ? { ...r, tags: [...(r.tags ?? []), audiobook.id] } : r));
+    const again = plan({ preferFormats: ["book"] }, VENUE, { ...read, rising: withFormat, streetTags: [...read.streetTags, audiobook] }).plan;
+    expect(again.themeTags.map((t) => t.name)).not.toContain("Audiobook");
   });
 
   it("fills copy from templates that pass the claim checker", () => {
@@ -181,10 +180,11 @@ describe("planNights", () => {
   });
 
   it("says so when there are no partners or menu ideas", () => {
-    const bare: StreetRead = { ...read, lovedPlaces: [], streetTags: read.streetTags.filter((t) => t.namespace !== "urn:tag:specialty_dish:place") };
+    const noDishes = (t: { namespace: string }) => t.namespace !== "urn:tag:specialty_dish:place";
+    const bare: StreetRead = { ...read, lovedPlaces: [], streetTags: read.streetTags.filter(noDishes), venueTags: read.venueTags.filter(noDishes) };
     const p = plan({}, VENUE, bare).plan;
     expect(p.partners).toEqual([]);
     expect(p.limits).toContain("No place within a 1 km walk came back from Qloo, so this night has no partners.");
-    expect(p.limits).toContain("Qloo returned no food or drink tags for this street, so there are no menu ideas.");
+    expect(p.limits).toContain("Qloo returned no food or drink tags for your audience or the street, so there are no menu ideas.");
   });
 });

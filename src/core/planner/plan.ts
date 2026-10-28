@@ -1,18 +1,19 @@
-import type { EntityRef, MenuIdea, NightFormat, NightPlan, PlanInput, PlanResponse, QuietSlot, StreetRead, StreetTag, Venue } from "../../shared/contract.ts";
+import type { EntityRef, NightFormat, NightPlan, PlanInput, PlanResponse, QuietSlot, StreetRead, StreetTag, Venue } from "../../shared/contract.ts";
 import { checkClaims } from "../copy/claims.ts";
 import { templateCopy } from "../copy/templates.ts";
-import { listWords } from "../copy/text.ts";
-import { briefNames, buildBrief } from "../copy/write.ts";
+import { listWords } from "../../shared/words.ts";
+import { briefNames, buildBrief } from "../copy/brief.ts";
 import { RANK_LIMIT } from "../street/steps/limits.ts";
-import { streetTagLine } from "../street/words.ts";
-import { menuTags, scoreCandidates, type Candidate } from "./candidates.ts";
-import { FORMATS, FORMAT_ORDER, PLAYLIST_LICENCE, menuItem } from "./formats.ts";
+import { fmtDay } from "../street/words.ts";
+import { scoreCandidates, type Candidate } from "./candidates.ts";
+import { FORMATS, FORMAT_ORDER, PLAYLIST_LICENCE } from "./formats.ts";
+import { menuFor, menuTags } from "./menu.ts";
 import { pickPartners } from "./partners.ts";
-import { streetTagsIndex, whyFor } from "./reasons.ts";
+import { whyFor } from "./reasons.ts";
 import { nextSlotDate, parseHHMM } from "./time.ts";
 
 export { MAX_PARTNERS, WALK_M } from "./partners.ts";
-export { provIndex } from "./reasons.ts";
+export { provIndex } from "./provenance.ts";
 
 export const PLAYLIST_SIZE = 8;
 
@@ -25,33 +26,22 @@ export class PlanError extends Error {
   }
 }
 
-function menuText(t: StreetTag): string {
-  return `Add ${menuItem(t)} to the menu for the night`;
-}
+// Book formats such as Audiobook or Paperback are on every book, so they never make a theme.
+const FORMAT_TAG = /^(audiobook|e ?book|hardcover|paperback|mass market|kindle)/i;
 
+// The theme only names tags the feature itself carries, so a film night is never themed with the street's book tags.
 function themeFor(c: Candidate, read: StreetRead): StreetTag[] {
-  const def = FORMATS[c.format];
   const out: StreetTag[] = [];
   const add = (t: StreetTag | undefined) => {
-    if (t && !out.some((o) => o.id === t.id) && out.length < 3) out.push(t);
+    if (t && !FORMAT_TAG.test(t.name.trim()) && !out.some((o) => o.id === t.id) && out.length < 3) out.push(t);
   };
   const tags = new Set(c.feature?.tags ?? []);
   if (c.menuTag) add(c.menuTag);
+  if (c.format === "tasting") for (const m of menuTags(read)) add(m.tag);
   for (const g of read.gaps) if (tags.has(g.tag.id)) add(g.tag);
   for (const t of read.streetTags) if (tags.has(t.id)) add(t);
-  for (const t of read.streetTags) if (def.themeNamespaces.includes(t.namespace)) add(t);
+  for (const t of read.venueTags) if (tags.has(t.id)) add(t);
   return out;
-}
-
-function menuFor(c: Candidate, read: StreetRead, venue: Venue): MenuIdea[] {
-  const prov = streetTagsIndex(read);
-  if (prov < 0) return [];
-  const tags = menuTags(read);
-  const ordered = c.menuTag ? [c.menuTag, ...tags.filter((t) => t.id !== c.menuTag?.id)] : tags;
-  return ordered.slice(0, 3).map((t) => ({
-    text: menuText(t),
-    because: [{ kind: "tag", text: streetTagLine(t.name, venue.entity.name), provenance: prov }],
-  }));
 }
 
 function playlistFor(read: StreetRead): EntityRef[] {
@@ -68,12 +58,25 @@ function playlistFor(read: StreetRead): EntityRef[] {
     });
 }
 
-function validStart(s: string | undefined): string | undefined {
-  return s && parseHHMM(s) ? s : undefined;
+// An alternative is offered by what it features, so one without a named Qloo pick, such as a tasting night, only
+// ever leads; it is never one of the two choices beside the night.
+function featured(c: Candidate): boolean {
+  return !!c.feature && c.feature.name.trim() !== "";
 }
 
-function fmtDay(iso: string): string {
-  return iso.slice(0, 10);
+function pickNights(ranked: Candidate[]): Candidate[] {
+  const picks: Candidate[] = [];
+  for (const c of ranked) {
+    if (picks.length >= 3) break;
+    if (picks.length > 0 && !featured(c)) continue;
+    const repeats = picks.some((p) => p.format === c.format || (p.feature && c.feature && p.feature.id === c.feature.id));
+    if (!repeats) picks.push(c);
+  }
+  return picks;
+}
+
+function validStart(s: string | undefined): string | undefined {
+  return s && parseHHMM(s) ? s : undefined;
 }
 
 export function planNights(
@@ -105,11 +108,7 @@ export function planNights(
   if (!allowed.length) {
     throw new PlanError("all_avoided", "Every night format that has Qloo data for this street was ruled out by the request.");
   }
-  const picks: Candidate[] = [];
-  for (const c of allowed) {
-    if (picks.length >= 3) break;
-    if (!picks.some((p) => p.format === c.format)) picks.push(c);
-  }
+  const picks = pickNights(allowed);
 
   const shared: string[] = [];
   if (noLive) shared.push("Listening nights were left out because you asked for no live music.");
@@ -124,15 +123,19 @@ export function planNights(
   const plans = picks.map((c, i) => {
     const notes: string[] = [];
     const theme = themeFor(c, read);
-    const partners = pickPartners(c, theme, read, venue, notes);
-    const menuIdeas = menuFor(c, read, venue);
-    if (!menuIdeas.length) notes.push("Qloo returned no food or drink tags for this street, so there are no menu ideas.");
+    const partners = pickPartners(c, theme, read, venue, slot, notes);
+    const menuIdeas = menuFor(c.menuTag, read, venue);
+    if (!menuIdeas.length) notes.push("Qloo returned no food or drink tags for your audience or the street, so there are no menu ideas.");
     const playlist = playlistFor(read);
     const def = FORMATS[c.format];
     if (def.licence) notes.push(def.licence);
     if (playlist.length) notes.push(PLAYLIST_LICENCE);
     if (i === 0 && picks.length < 3) {
-      notes.push(picks.length === 1 ? "No other night format had Qloo data, so there are no alternatives." : "Only one other night format had Qloo data, so there is one alternative.");
+      notes.push(
+        picks.length === 1
+          ? "No other kind of night had a Qloo pick to feature, so there are no alternatives."
+          : "Only one other kind of night had a Qloo pick to feature, so there is one alternative.",
+      );
     }
     const plan: NightPlan = {
       id: newId(),
@@ -163,6 +166,7 @@ export function planNights(
       readAt: read.at,
       status: "proposed",
     };
+    if (cap !== undefined) plan.maxPeople = cap;
     plan.copy = templateCopy(plan, venue);
     const c2 = plan.copy;
     const text = [c2.eventTitle, c2.eventDescription, c2.posterHeadline, c2.posterSub, c2.social, c2.partnerPitch.subject, c2.partnerPitch.body].join("\n");

@@ -1,4 +1,5 @@
 import type { QuietSlot } from "../../shared/contract.ts";
+import { MONTH_NAMES, WEEKDAY_NAMES } from "../../shared/words.ts";
 
 export interface LocalParts {
   year: number;
@@ -94,6 +95,10 @@ function ymd(year: number, month: number, day: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+// Partners, posters and guests need time, so a plan never lands less than two days out.
+const NOTICE_MIN = 48 * 60;
+
+// The first occurrence of the slot at least NOTICE_MIN minutes away, counted in the venue's wall clock time.
 export function nextSlotDate(slot: QuietSlot, tz: string, now: Date): { date: string; start: string; end: string } {
   const start = parseHHMM(slot.start) ?? { h: 19, m: 0 };
   const startMin = start.h * 60 + start.m;
@@ -101,7 +106,7 @@ export function nextSlotDate(slot: QuietSlot, tz: string, now: Date): { date: st
   const local = localParts(now, tz);
   const nowMin = local.hour * 60 + local.minute;
   let add = (slot.weekday - local.weekday + 7) % 7;
-  if (add === 0 && nowMin >= startMin) add = 7;
+  if (add * 1440 + startMin - nowMin < NOTICE_MIN) add += 7;
   return {
     date: ymd(local.year, local.month, local.day + add),
     start: hhmm(startMin),
@@ -121,18 +126,9 @@ export function nextMondayNine(tz: string, now: Date): Date {
   return new Date(now.getTime() + 7 * 86400000);
 }
 
-const WEEKDAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
-export function weekdayName(n: number): string {
-  return WEEKDAY_NAMES[((n % 7) + 7) % 7] ?? "Sunday";
-}
-
 export function describeDate(date: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
   if (!m) return date;
   const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
   return `${WEEKDAY_NAMES[d.getUTCDay()]} ${d.getUTCDate()} ${MONTH_NAMES[d.getUTCMonth()]}`;
 }
-
-export { WEEKDAY_NAMES, MONTH_NAMES };

@@ -1,22 +1,10 @@
 import type { Because, EntityRef, StreetRead, StreetTag, Venue } from "../../shared/contract.ts";
-import { describeDistance, haversineM } from "../street/geo.ts";
+import { haversineM } from "../../shared/geo.ts";
+import { describeDistance } from "../street/geo.ts";
 import { streetTagLine } from "../street/words.ts";
-import type { Candidate } from "./candidates.ts";
+import { gapFor, type Candidate } from "./candidates.ts";
 import { FORMATS } from "./formats.ts";
-
-export function provIndex(read: StreetRead, calls: string[]): number {
-  for (const call of calls) {
-    for (let i = read.provenance.length - 1; i >= 0; i--) {
-      const p = read.provenance[i];
-      if (p && p.call === call && (p.resultCount > 0 || call === calls[calls.length - 1])) return i;
-    }
-  }
-  return -1;
-}
-
-export function streetTagsIndex(read: StreetRead): number {
-  return provIndex(read, ["street_tags"]);
-}
+import { provIndex, streetTagsIndex } from "./provenance.ts";
 
 // With compare, shared holds the venue's side of it, so a tag is called shared only when a loved place carries it too.
 // Without compare, shared is the overlap of the street and audience tag reads.
@@ -39,11 +27,10 @@ export function whyFor(c: Candidate, theme: StreetTag[], read: StreetRead, venue
   if (c.feature) why.push(...c.feature.because);
   const carried = new Set(c.feature?.tags ?? []);
   const relevant = theme.filter((t) => carried.has(t.id) || c.format === "tasting" || (c.format === "listening" && FORMATS.listening.themeNamespaces.includes(t.namespace)));
-  const themeGap = read.gaps.find((g) => relevant.some((t) => t.id === g.tag.id));
-  if (themeGap) {
-    for (const b of themeGap.because) {
-      if (!why.some((w) => w.kind === b.kind && w.provenance === b.provenance && w.text.includes(themeGap.tag.name))) why.push(b);
-    }
+  const gap = gapFor(c.format, read);
+  const gapProv = gap?.because[0]?.provenance;
+  if (gap && gapProv !== undefined) {
+    why.push({ kind: "compare", text: `A ${FORMATS[c.format].label} answers a gap the read found: ${gap.note.replace(/\.$/, "")}`, provenance: gapProv });
   } else {
     const prov = streetTagsIndex(read);
     const t = relevant[0];
@@ -54,7 +41,7 @@ export function whyFor(c: Candidate, theme: StreetTag[], read: StreetRead, venue
   const shared = sharedBecause(read, venue);
   if (shared) why.push(shared);
   const layer = read.heat[0];
-  const top = layer?.cells[0];
+  const top = layer?.cells.find((cell) => !cell.noRead);
   if (layer && top) {
     const d = haversineM(read.center, { lat: top.lat, lng: top.lng });
     why.push({ kind: "heatmap", text: `The strongest heatmap cell sits ${describeDistance(d)} from ${venue.entity.name}`, provenance: layer.provenance });
