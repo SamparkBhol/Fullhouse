@@ -13,7 +13,10 @@ import { publishedPage } from "./pages/published.ts";
 import { eventbritePage } from "./pages/eventbrite.ts";
 import { proofPage } from "./pages/proof.ts";
 import { settingsPage } from "./pages/settings.ts";
+import { confirmPage } from "./pages/confirm.ts";
 import { howPage, notFoundPage } from "./pages/how.ts";
+import { livePage } from "./pages/live.ts";
+import { dashboardPage } from "./pages/dashboard.ts";
 
 const root = document.getElementById("app");
 if (root) {
@@ -21,11 +24,14 @@ if (root) {
   route("/", () => landingPage());
   route("/start", () => onboardingPage());
   route("/how", () => howPage());
+  route("/live", () => livePage());
   route("/v/:id", (p) => venuePage(p.id ?? ""));
   route("/v/:id/street", (p) => streetPage(p.id ?? ""));
   route("/v/:id/proof", (p) => proofPage(p.id ?? ""));
+  route("/v/:id/dashboard", (p) => dashboardPage(p.id ?? ""));
   route("/v/:id/venue", (p) => settingsPage(p.id ?? ""));
   route("/v/:id/eventbrite", (p) => eventbritePage(p.id ?? ""));
+  route("/v/:id/confirm", (p) => confirmPage(p.id ?? ""));
   route("/v/:id/night/:planId", (p) => nightPage(p.id ?? "", p.planId ?? ""));
   route("/v/:id/night/:planId/approve", (p) => approvePage(p.id ?? "", p.planId ?? ""));
   route("/v/:id/nights/:nightId", (p) => publishedPage(p.id ?? "", p.nightId ?? ""));

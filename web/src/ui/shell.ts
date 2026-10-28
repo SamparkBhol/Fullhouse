@@ -6,7 +6,7 @@ let fascia: HTMLElement;
 let tabs: HTMLElement;
 let main: HTMLElement;
 
-export type Tab = "nights" | "street" | "proof" | "venue";
+export type Tab = "nights" | "street" | "numbers" | "proof" | "venue";
 
 export function mountShell(root: HTMLElement): HTMLElement {
   fascia = h("div", { class: "fascia-inner" });
@@ -32,10 +32,19 @@ export function page(): HTMLElement {
   return main;
 }
 
+function topRow(big: boolean): HTMLElement {
+  return h(
+    "div",
+    { class: "fascia-top" },
+    h("a", { class: big ? "wordmark wordmark-big" : "wordmark", href: "/" }, "Full House"),
+    h("a", { class: "fascia-link", href: "/live", "aria-current": location.pathname === "/live" ? "page" : null }, "Live numbers"),
+  );
+}
+
 export function plainFascia(): void {
   document.body.classList.remove("has-tabs");
   tabs.hidden = true;
-  replace(fascia, h("a", { class: "wordmark wordmark-big", href: "/" }, "Full House"));
+  replace(fascia, topRow(true));
 }
 
 export function venueFascia(venue: Venue, active: Tab | null, live?: Night | null): void {
@@ -43,7 +52,7 @@ export function venueFascia(venue: Venue, active: Tab | null, live?: Night | nul
   const base = `/v/${encodeURIComponent(venue.id)}`;
   replace(
     fascia,
-    h("a", { class: "wordmark", href: "/" }, "Full House"),
+    topRow(false),
     h("p", { class: "venue-name" }, venue.entity.name),
     h("p", { class: "venue-meta" }, `${venue.city}. ${slotLine(venue.quietSlot)}.`),
     live
@@ -51,13 +60,14 @@ export function venueFascia(venue: Venue, active: Tab | null, live?: Night | nul
           "p",
           { class: "fascia-live" },
           "On the street now: ",
-          h("a", { href: `${base}/nights/${encodeURIComponent(live.id)}` }, `${formatName(live.format)}, ${shortDate(live.date)}`),
+          h("a", { href: `${base}/nights/${encodeURIComponent(live.id)}` }, `${formatName(live.format, live.feature?.type)}, ${shortDate(live.date)}`),
         )
       : null,
   );
   const items: [Tab, string, string][] = [
     ["nights", "Nights", base],
     ["street", "Street", `${base}/street`],
+    ["numbers", "Numbers", `${base}/dashboard`],
     ["proof", "Proof", `${base}/proof`],
     ["venue", "Venue", `${base}/venue`],
   ];

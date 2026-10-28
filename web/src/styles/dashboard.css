@@ -1,0 +1,47 @@
+/* The owner's Numbers tab: the next night's yes count beside the nights, then the room, the reads and Monday. */
+.board-body-venue [data-pane="next"] .counter {
+  font-size: var(--s48);
+}
+
+.board-body-venue .log {
+  max-height: 30rem;
+}
+
+.log-published .log-line::after {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-left: 8px;
+  background: var(--lit);
+}
+
+@media (min-width: 1100px) {
+  .board-body-venue {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
+  .board-body-venue > [data-pane="next"] {
+    grid-column: 1 / 5;
+  }
+
+  .board-body-venue > [data-pane="nights"] {
+    grid-column: 5 / 13;
+  }
+
+  .board-body-venue > [data-pane="rooms"] {
+    grid-column: 1 / 7;
+  }
+
+  .board-body-venue > [data-pane="reads"] {
+    grid-column: 7 / 13;
+  }
+
+  .board-body-venue > [data-pane="mondays"] {
+    grid-column: 1 / -1;
+  }
+
+  .board-body-venue > [data-pane="mondays"] .log {
+    max-width: 52rem;
+  }
+}
