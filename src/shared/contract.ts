@@ -79,6 +79,8 @@ export interface Venue {
   noLiveMusic?: boolean;
   createdAt: string;
   eventbrite?: { organization: string };
+  verified?: boolean;
+  pendingEmail?: string;
 }
 
 export interface HeatCell {
@@ -87,6 +89,7 @@ export interface HeatCell {
   lng: number;
   affinityRank: number;
   popularity: number;
+  noRead?: true;
 }
 
 export interface HeatLayer {
@@ -102,6 +105,12 @@ export interface StreetTag {
   rank: number;
 }
 
+export interface OpeningSpan {
+  opens?: string;
+  closes?: string;
+  closed?: boolean;
+}
+
 export interface LovedPlace extends EntityRef {
   lat: number;
   lng: number;
@@ -110,6 +119,7 @@ export interface LovedPlace extends EntityRef {
   rank: number;
   tags: string[];
   because: Because[];
+  hours?: Record<string, OpeningSpan[]>;
 }
 
 export type Trend = "rising" | "steady" | "falling" | "unknown";
@@ -120,6 +130,8 @@ export interface Rising extends EntityRef {
   trendNote?: string;
   because: Because[];
   tags?: string[];
+  venueSignal?: boolean;
+  explain?: { entityId: string; share: number }[];
 }
 
 export interface Gap {
@@ -183,6 +195,7 @@ export interface NightCopy {
   social: string;
   partnerPitch: { subject: string; body: string };
   writtenBy: "model" | "template";
+  editedByOwner?: boolean;
 }
 
 export interface NightPlan {
@@ -205,6 +218,7 @@ export interface NightPlan {
   limits: string[];
   readAt: string;
   status: "proposed" | "approved" | "done" | "skipped";
+  maxPeople?: number;
 }
 
 export interface PlanResponse {
@@ -223,9 +237,12 @@ export type ActionKind =
   | "eventbrite"
   | "owner_email";
 
+export type EditableCopy = Partial<Pick<NightCopy, "eventTitle" | "eventDescription" | "posterHeadline" | "posterSub">>;
+
 export interface ApproveInput {
   actions: ActionKind[];
   partnerEmails?: Record<string, string>;
+  copy?: EditableCopy;
 }
 
 export interface ActionResult {
@@ -243,6 +260,7 @@ export interface Night extends NightPlan {
   rsvps: number;
   headcount?: number;
   resultNote?: string;
+  withdrawnAt?: string;
 }
 
 export interface VenueState {
@@ -261,6 +279,9 @@ export interface BaselineName {
   kind: "place" | "artist" | "other";
   status: VerifyStatus;
   note?: string;
+  closed?: true;
+  tied?: boolean;
+  tieNote?: string;
 }
 
 export interface Baseline {

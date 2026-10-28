@@ -2,7 +2,7 @@ import { createQloo, findVenues } from "../core/index.ts";
 import { createApp } from "./app.ts";
 import type { Env } from "./env.ts";
 import { ARCHIVO_WOFF2 } from "./font.ts";
-import { meterStub } from "./venue_agent.ts";
+import { meterStub, statsStub } from "./venue_agent.ts";
 import type { VenueApi } from "./venue/api.ts";
 
 export { Meter } from "./meter.ts";
@@ -13,6 +13,7 @@ const app = createApp({
   findVenues,
   venue: (env, id) => env.VENUE.get(env.VENUE.idFromName(id)) as unknown as VenueApi,
   meter: meterStub,
+  stats: statsStub,
   font: ARCHIVO_WOFF2,
 });
 

@@ -1,5 +1,5 @@
 import { applyRefine, parseRefineFallback, REFINE_TOOL } from "../../src/core/index.ts";
-import type { Qloo, QlooOptions } from "../../src/core/index.ts";
+import type { Qloo, QlooCache, ReadOptions } from "../../src/core/index.ts";
 import type {
   Baseline,
   LovedPlace,
@@ -10,13 +10,8 @@ import type {
   Venue,
   VenueCandidate,
 } from "../../src/shared/contract.ts";
-import { createApp, type AppDeps } from "../../src/worker/app.ts";
-import type { AiLike, Env } from "../../src/worker/env.ts";
-import { MeterCore } from "../../src/worker/meter_core.ts";
-import { MemoryStore } from "../../src/worker/store.ts";
-import { newNightId } from "../../src/worker/tokens.ts";
+import { newNightId } from "../../src/worker/ids.ts";
 import type { CoreFns, VenueDeps } from "../../src/worker/venue/api.ts";
-import { VenueCore } from "../../src/worker/venue/core.ts";
 
 export const CANDIDATE: VenueCandidate = {
   id: "B6E7C1A4-0000-4000-8000-000000000001",
@@ -94,8 +89,22 @@ export function fakePlan(id: string, venueId: string, input: PlanInput, origin: 
   };
 }
 
+// An in memory Qloo cache for tests; it copies values the way a real store would.
+export function memoryCache(): QlooCache & { size(): number } {
+  const map = new Map<string, unknown>();
+  return {
+    async get(key) {
+      return map.has(key) ? structuredClone(map.get(key)) : undefined;
+    },
+    async put(key, body) {
+      map.set(key, structuredClone(body));
+    },
+    size: () => map.size,
+  };
+}
+
 export interface FakeCoreLog {
-  reads: Array<{ venueId: string; hadPrevious: boolean }>;
+  reads: Array<{ venueId: string; hadPrevious: boolean; exclude: string[] }>;
   plans: Array<{ input: PlanInput; origin: NightPlan["origin"] }>;
   copies: number;
 }
@@ -106,11 +115,11 @@ export function fakeCore(log: FakeCoreLog = { reads: [], plans: [], copies: 0 })
     REFINE_TOOL,
     parseRefineFallback,
     applyRefine,
-    async readStreet(_q: Qloo, venue: Venue, opts?: { previous?: StreetRead }) {
-      log.reads.push({ venueId: venue.id, hadPrevious: Boolean(opts?.previous) });
+    async readStreet(_q: Qloo, venue: Venue, opts?: ReadOptions) {
+      log.reads.push({ venueId: venue.id, hadPrevious: Boolean(opts?.previous), exclude: (opts?.exclude ?? []).map((e) => e.id) });
       return fakeRead(venue.id);
     },
-    planNights(read, venue, input, now, origin, newId): PlanResponse {
+    planNights(_read, venue, input, now, origin, newId): PlanResponse {
       log.plans.push({ input, origin });
       return {
         plan: fakePlan(newId(), venue.id, input, origin, now),
@@ -170,81 +179,4 @@ export function venueDeps(over: Partial<VenueDeps> = {}): VenueDeps {
     newId: newNightId,
     ...over,
   };
-}
-
-export interface Harness {
-  app: ReturnType<typeof createApp>;
-  env: Env;
-  venues: Map<string, VenueCore>;
-  stores: Map<string, MemoryStore>;
-  meterStore: MemoryStore;
-  deps: VenueDeps;
-  searches: Array<{ name: string; city: string }>;
-  qlooOptions: QlooOptions[];
-}
-
-export function harness(opts: { env?: Partial<Env>; deps?: Partial<VenueDeps>; candidates?: VenueCandidate[]; budget?: number; ai?: AiLike } = {}): Harness {
-  const venues = new Map<string, VenueCore>();
-  const stores = new Map<string, MemoryStore>();
-  const meterStore = new MemoryStore();
-  const meter = new MeterCore(meterStore, opts.budget ?? 1000, () => new Date("2026-10-25T10:00:00.000Z"));
-  const deps = venueDeps(opts.deps);
-  const searches: Array<{ name: string; city: string }> = [];
-  const qlooOptions: QlooOptions[] = [];
-  const appDeps: AppDeps = {
-    createQloo: (o) => {
-      qlooOptions.push(o);
-      return fakeQloo;
-    },
-    findVenues: async (_q, name, city) => {
-      searches.push({ name, city });
-      return opts.candidates ?? [CANDIDATE];
-    },
-    venue: (_env, id) => {
-      let v = venues.get(id);
-      if (!v) {
-        const store = new MemoryStore();
-        stores.set(id, store);
-        v = new VenueCore(store, deps);
-        venues.set(id, v);
-      }
-      return v;
-    },
-    meter: () => meter,
-  };
-  const env = {
-    VENUE: {} as DurableObjectNamespace,
-    METER: {} as DurableObjectNamespace,
-    TOKEN_SECRET: deps.secret,
-    QLOO_API_KEY: "test-qloo-key",
-    ...(opts.ai ? { AI: opts.ai } : {}),
-    ...opts.env,
-  } as Env;
-  return { app: createApp(appDeps), env, venues, stores, meterStore, deps, searches, qlooOptions };
-}
-
-export const ORIGIN = "https://fullhouse.example.workers.dev";
-
-export function req(h: Harness, path: string, init: { method?: string; body?: unknown; token?: string; headers?: Record<string, string> } = {}): Promise<Response> {
-  const headers: Record<string, string> = { "cf-connecting-ip": "203.0.113.7", ...init.headers };
-  if (init.body !== undefined) headers["content-type"] ??= "application/json";
-  if (init.token) headers["authorization"] = `Bearer ${init.token}`;
-  const body = init.body === undefined ? undefined : typeof init.body === "string" ? init.body : JSON.stringify(init.body);
-  return Promise.resolve(h.app.request(`${ORIGIN}${path}`, { method: init.method ?? "GET", headers, ...(body !== undefined ? { body } : {}) }, h.env));
-}
-
-export const CREATE_BODY = {
-  candidate: { id: CANDIDATE.id, name: CANDIDATE.name },
-  city: "Berlin",
-  tz: "Europe/Berlin",
-  quietSlot: { weekday: 4, start: "19:00", durationMin: 180 },
-  capacity: 40,
-  ownerEmail: "owner@example.com",
-};
-
-export async function createVenue(h: Harness): Promise<{ id: string; token: string; ownerUrl: string }> {
-  const res = await req(h, "/api/venues", { method: "POST", body: CREATE_BODY });
-  if (res.status !== 201) throw new Error(`create failed ${res.status} ${await res.text()}`);
-  const data = (await res.json()) as { venue: Venue; ownerToken: string; ownerUrl: string };
-  return { id: data.venue.id, token: data.ownerToken, ownerUrl: data.ownerUrl };
 }

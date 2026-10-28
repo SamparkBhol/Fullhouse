@@ -3,7 +3,7 @@ import { esc, safeHref } from "../../src/worker/pages/html.ts";
 import { renderEventPage, renderIcs, renderPoster, type PublicNight } from "../../src/worker/pages/event.ts";
 import { PAGE_CSS, pageHashes } from "../../src/worker/pages/style.ts";
 import { makeSlug, titleWords, venueIdFromSlug } from "../../src/worker/slug.ts";
-import { sha256base64 } from "../../src/worker/tokens.ts";
+import { sha256base64 } from "../../src/worker/crypto.ts";
 
 const EVIL = `<script>alert("x")</script><img src=x onerror=alert(1)>`;
 
@@ -25,7 +25,8 @@ function night(over: Partial<PublicNight> = {}): PublicNight {
     city: "Berlin",
     lat: 52.52,
     lng: 13.405,
-    why: ["Jazz ranks 2nd on this street."],
+    reason: "The artist Qloo ranks 1st for people who like Blue Hour Records",
+    verified: false,
     rsvps: 3,
     going: false,
     published: { page: true, poster: true, ics: true },
@@ -49,7 +50,7 @@ describe("escaping", () => {
 
   it("escapes every owner and Qloo string on the event page", () => {
     const html = renderEventPage(
-      night({ title: EVIL, description: EVIL, venueName: EVIL, address: EVIL, city: EVIL, why: [EVIL] }),
+      night({ title: EVIL, description: EVIL, venueName: EVIL, address: EVIL, city: EVIL, reason: EVIL }),
       "https://x.example",
       NOW,
     );
@@ -59,7 +60,7 @@ describe("escaping", () => {
   });
 
   it("escapes the poster and keeps only the one hashed script", () => {
-    const html = renderPoster(night({ posterHeadline: EVIL, posterSub: EVIL, venueName: EVIL, why: [EVIL] }), "https://x.example");
+    const html = renderPoster(night({ posterHeadline: EVIL, posterSub: EVIL, venueName: EVIL, reason: EVIL }), "https://x.example");
     expect(html).not.toContain("<img");
     expect(html.match(/<script>/g)).toHaveLength(1);
     expect(html).toContain("<svg");
@@ -74,7 +75,9 @@ describe("event page", () => {
     expect(html).toContain("Picked with Qloo taste data");
     expect(html).toContain('href="/how"');
     expect(html).toContain('<form method="post" action="/e/jazz-night-abcdefghijkm-abcde/rsvp">');
-    expect(html).toContain("3 going");
+    expect(html).toContain("3 said they are coming");
+    expect(html).toContain("<p>The artist Qloo ranks 1st for people who like Blue Hour Records.</p>");
+    expect(html).toContain("Times are local to the venue, Berlin time.");
     expect(html).toContain('href="/e/jazz-night-abcdefghijkm-abcde.ics"');
     expect(html).toContain("calendar.google.com");
     expect(html).toContain('<meta name="robots" content="noindex, nofollow">');
@@ -85,19 +88,34 @@ describe("event page", () => {
   it("thanks a browser that already said it is going instead of showing the button", () => {
     const html = renderEventPage(night({ going: true }), "https://x.example", NOW);
     expect(html).toContain("You are on the list");
-    expect(html).not.toContain("<form");
+    expect(html).not.toContain("/rsvp");
   });
 
   it("closes RSVPs once the night is over", () => {
     const html = renderEventPage(night(), "https://x.example", new Date("2026-11-06T12:00:00Z"));
     expect(html).toContain("This night has passed.");
-    expect(html).not.toContain("<form");
+    expect(html).not.toContain("/rsvp");
   });
 
   it("headlines the feature under the kind of night on the page and the poster", () => {
     const html = renderEventPage(night({ kind: "Listening night", feature: "Alice Coltrane" }), "https://x.example", NOW);
     expect(html).toContain('<p class="kind">Listening night</p><h1>Alice Coltrane</h1>');
     expect(renderPoster(night({ feature: "Alice Coltrane" }), "https://x.example")).toContain("<h1>Alice Coltrane</h1>");
+  });
+
+  it("does not repeat the city when the address already names it", () => {
+    const html = renderEventPage(night({ address: "12 Canal Street, Berlin" }), "https://x.example", NOW);
+    expect(html).toContain("<span>12 Canal Street, Berlin</span>");
+    expect(html).not.toContain("Berlin, Berlin");
+  });
+
+  it("says who posted the page until the venue confirms it, and offers a report button", () => {
+    const html = renderEventPage(night(), "https://x.example", NOW);
+    expect(html).toContain("Posted on Full House by whoever set up Blue Hour Records. Blue Hour Records has not confirmed it.");
+    expect(html).not.toContain("Made with Full House for");
+    expect(html).toContain('<form method="post" action="/e/jazz-night-abcdefghijkm-abcde/report">');
+    expect(renderPoster(night(), "https://x.example")).toContain("has not confirmed it");
+    expect(renderEventPage(night({ verified: true }), "https://x.example", NOW)).toContain("Made with Full House for Blue Hour Records.");
   });
 
   it("says when a model wrote the description", () => {

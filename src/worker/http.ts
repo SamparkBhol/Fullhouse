@@ -1,6 +1,6 @@
 import type { ApiError } from "../shared/contract.ts";
 import type { Env } from "./env.ts";
-import { sha256hex } from "./tokens.ts";
+import { sha256hex } from "./crypto.ts";
 
 export const BODY_LIMIT = 64 * 1024;
 
@@ -96,8 +96,21 @@ export function bearer(request: Request): string | null {
   return m ? (m[1] ?? null) : null;
 }
 
+// One IPv6 customer usually holds a whole /64, so limits count the /64 and not the single address.
 export function clientIp(request: Request): string {
-  return request.headers.get("cf-connecting-ip") ?? request.headers.get("x-real-ip") ?? "unknown";
+  const ip = request.headers.get("cf-connecting-ip") ?? request.headers.get("x-real-ip") ?? "unknown";
+  if (!ip.includes(":")) return ip;
+  const groups = expandIpv6(ip);
+  return groups ? `${groups.slice(0, 4).join(":")}::/64` : ip;
+}
+
+function expandIpv6(ip: string): string[] | null {
+  const [head = "", tail = ""] = ip.split("::");
+  const left = head ? head.split(":") : [];
+  const right = ip.includes("::") && tail ? tail.split(":") : [];
+  const fill = ip.includes("::") ? 8 - left.length - right.length : 0;
+  const groups = [...left, ...Array<string>(Math.max(0, fill)).fill("0"), ...right].map((g) => g.toLowerCase().replace(/^0+(?=.)/, ""));
+  return groups.length === 8 ? groups : null;
 }
 
 // Meter keys hold a salted hash so raw addresses never sit in storage.

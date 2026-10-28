@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { dataCodewords, encodeQr, formatBits, maskHit, qrSvg, rsDivisor, rsRemainder, versionBits } from "../../src/worker/pages/qr.ts";
+import { dataCodewords } from "../../src/worker/qr/codewords.ts";
+import { encodeQr } from "../../src/worker/qr/encode.ts";
+import { formatBits, versionBits } from "../../src/worker/qr/layout.ts";
+import { maskHit } from "../../src/worker/qr/mask.ts";
+import { rsDivisor, rsRemainder } from "../../src/worker/qr/rs.ts";
+import { qrSvg } from "../../src/worker/qr/svg.ts";
 
 // ISO/IEC 18004 table values for level M, written out here rather than derived, so the reader below
 // does not share the encoder's arithmetic.

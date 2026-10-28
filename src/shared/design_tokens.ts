@@ -1,5 +1,5 @@
 // The design tokens shared by the owner app and the worker rendered pages.
-// web/src/styles/tokens.css repeats them for the owner app, and test/shared/tokens.test.ts keeps the two equal.
+// web/src/styles/tokens.css repeats them for the owner app, and test/shared/design_tokens.test.ts keeps the two equal.
 export const TOKENS = {
   street: "#33506e",
   fascia: "#243a53",
@@ -25,8 +25,6 @@ export const TOKENS = {
   s72: "4.5rem",
   radius: "6px",
 } as const;
-
-export type TokenName = keyof typeof TOKENS;
 
 export function rootRule(): string {
   const props = Object.entries(TOKENS).map(([name, value]) => `--${name}:${value}`);

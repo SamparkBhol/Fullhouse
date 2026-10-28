@@ -1,39 +1,12 @@
-import type { Qloo, QlooCache, QlooOptions } from "../core/index.ts";
-import type { Env } from "./env.ts";
-import type { MeterApi } from "./meter_core.ts";
-import { sha256hex } from "./tokens.ts";
+import { CACHE_TTL_SEC, type QlooCache } from "../../core/index.ts";
+import { sha256hex } from "../crypto.ts";
 
-export type CreateQloo = (opts: QlooOptions) => Qloo;
-
-export const CACHE_TTL_SEC = 24 * 60 * 60;
-
-// The meter is asked for calls in chunks so a 30 call read costs a handful of meter round trips, not 30.
-export function reservingBudget(meter: MeterApi, chunk = 10): (calls: number) => Promise<boolean> {
-  let left = 0;
-  return async (calls: number) => {
-    if (calls <= left) {
-      left -= calls;
-      return true;
-    }
-    const need = calls - left;
-    if (await meter.spend(Math.max(chunk, need))) {
-      left = Math.max(chunk, need) - need;
-      return true;
-    }
-    if (need < chunk && (await meter.spend(need))) {
-      left = 0;
-      return true;
-    }
-    return false;
-  };
-}
-
-interface CacheLike {
+export interface CacheLike {
   match(request: Request): Promise<Response | undefined>;
   put(request: Request, response: Response): Promise<void>;
 }
 
-async function openCache(name: string): Promise<CacheLike | null> {
+export async function openCache(name: string): Promise<CacheLike | null> {
   try {
     const storage = (globalThis as { caches?: CacheStorage }).caches;
     if (!storage) return null;
@@ -127,19 +100,6 @@ export function sqlCache(sql: SqlLike, now: () => Date = () => new Date()): Qloo
   };
 }
 
-export function memoryCache(): QlooCache & { size(): number } {
-  const map = new Map<string, unknown>();
-  return {
-    async get(key) {
-      return map.has(key) ? structuredClone(map.get(key)) : undefined;
-    },
-    async put(key, body) {
-      map.set(key, structuredClone(body));
-    },
-    size: () => map.size,
-  };
-}
-
 export function tieredCache(near: QlooCache, far: QlooCache): QlooCache {
   return {
     async get(key) {
@@ -154,65 +114,4 @@ export function tieredCache(near: QlooCache, far: QlooCache): QlooCache {
       await far.put(key, body, ttlSec);
     },
   };
-}
-
-export function buildQloo(
-  env: Env,
-  createQloo: CreateQloo,
-  cache: QlooCache,
-  meter: MeterApi,
-  fetcher?: typeof fetch,
-): Qloo | null {
-  const apiKey = env.QLOO_API_KEY?.trim();
-  if (!apiKey) return null;
-  const opts: QlooOptions = {
-    apiKey,
-    cache,
-    budget: reservingBudget(meter),
-  };
-  const base = env.QLOO_BASE_URL?.trim();
-  if (base) opts.baseUrl = base;
-  if (fetcher) opts.fetch = fetcher;
-  return createQloo(opts);
-}
-
-export const QLOO_KEY_MISSING = {
-  status: 503,
-  error: "qloo_key_missing",
-  detail: "The Qloo API key is not set on this server, so no taste data can be fetched. Nothing is shown in its place.",
-} as const;
-
-export interface QlooErrorLike {
-  status: number;
-  kind: string;
-  message: string;
-}
-
-export function isQlooError(err: unknown): err is QlooErrorLike {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    typeof (err as { kind?: unknown }).kind === "string" &&
-    typeof (err as { status?: unknown }).status === "number"
-  );
-}
-
-export function qlooFailure(err: QlooErrorLike): { status: number; error: string; detail: string } {
-  switch (err.kind) {
-    case "budget":
-      return { status: 503, error: "qloo_budget_spent", detail: "Today's Qloo call budget is spent. It resets at midnight UTC." };
-    case "auth":
-      return { status: 502, error: "qloo_auth", detail: "Qloo refused the API key. The server owner needs to check it." };
-    case "rate":
-      return { status: 503, error: "qloo_rate_limited", detail: "Qloo asked us to slow down. Try again in a minute." };
-    case "timeout":
-    case "network":
-      return { status: 504, error: "qloo_unreachable", detail: "Qloo did not answer in time. Try again shortly." };
-    case "not_found":
-      return { status: 404, error: "qloo_not_found", detail: "Qloo has no record for what was asked." };
-    case "bad_request":
-      return { status: 502, error: "qloo_bad_request", detail: "Qloo rejected a request we built. This is our bug, and it was logged." };
-    default:
-      return { status: 502, error: "qloo_error", detail: "Qloo returned an error. Try again shortly." };
-  }
 }
