@@ -47,9 +47,10 @@ async function pickList(run: Runner, ctx: ReadContext, type: QlooType): Promise<
 function toRising(e: QEntity, rank: number, list: PickList, ctx: ReadContext): Rising {
   const n = list.entities.length;
   const kind = TYPE_PLURAL[list.type];
+  // Without the venue in the signal the scores sit level, so the order is not presented as a ranking.
   const ranked = list.tied
     ? `Ranked #${rank} of ${n} ${kind} for people who like ${ctx.name}, weighted to the area around it`
-    : `Ranked #${rank} of ${n} ${kind} Qloo returned for the area around ${ctx.name}`;
+    : `One of ${n} ${kind} Qloo returned for the area around ${ctx.name}`;
   const r: Rising = {
     id: e.id,
     name: e.name,

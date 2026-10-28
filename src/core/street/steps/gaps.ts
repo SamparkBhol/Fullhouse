@@ -1,12 +1,10 @@
-import type { Gap, LovedPlace, StreetTag } from "../../../shared/contract.ts";
+import type { Gap, LovedPlace } from "../../../shared/contract.ts";
 import { listWords } from "../../copy/text.ts";
 import type { CompareRead, SideTag } from "../../qloo/compare.ts";
 import { isNamespaceRoot } from "../../qloo/tags.ts";
-import type { Fingerprint } from "./fingerprint.ts";
 import type { ReadContext } from "./resolve.ts";
 
-export const MAX_GAPS = 8;
-const MAX_PARTNER_GAPS = 5;
+export const MAX_GAPS = 6;
 
 // Compare lists every catalogue tag of the nearby places, hotel amenities and room types included.
 // Only these namespaces describe something a venue could put on for one night.
@@ -45,7 +43,7 @@ function partnerCandidates(compare: CompareRead, ctx: ReadContext): SideTag[] {
 export function partnerGaps(compare: CompareRead, partners: LovedPlace[], ctx: ReadContext, ref: number): Gap[] {
   const n = partners.length;
   return partnerCandidates(compare, ctx)
-    .slice(0, MAX_PARTNER_GAPS)
+    .slice(0, MAX_GAPS)
     .map((t, i): Gap => {
       const carriers = partners.filter((p) => p.tags.includes(t.id)).map((p) => p.name);
       const count = Math.min(n, Math.max(t.count, carriers.length));
@@ -59,21 +57,4 @@ export function partnerGaps(compare: CompareRead, partners: LovedPlace[], ctx: R
         ],
       };
     });
-}
-
-// What the street's location read ranks that the venue's audience read does not show.
-export function tasteGaps(street: Fingerprint, audience: Fingerprint, ctx: ReadContext): Gap[] {
-  const audienceIds = new Set(audience.tags.map((t) => t.id));
-  const keep = (t: StreetTag) => !audienceIds.has(t.id) && !ctx.ownTags.has(t.id) && !isNamespaceRoot(t);
-  return street.tags
-    .filter(keep)
-    .slice(0, MAX_GAPS)
-    .map((t): Gap => ({
-      tag: t,
-      note: `The street ranks ${t.name} #${t.rank}; ${ctx.name}'s audience does not show it yet`,
-      because: [
-        { kind: "tag", text: `${t.name} ranks #${t.rank} in the street's taste profile`, provenance: street.ref },
-        { kind: "tag", text: `${t.name} is not among the tags Qloo returns for ${ctx.name}'s audience`, provenance: audience.ref },
-      ],
-    }));
 }

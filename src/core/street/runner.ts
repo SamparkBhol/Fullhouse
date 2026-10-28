@@ -2,7 +2,7 @@ import type { Provenance } from "../../shared/contract.ts";
 import { QlooError, type QlooErrorKind } from "../qloo/errors.ts";
 import type { Qloo } from "../qloo/client.ts";
 import type { Params } from "../qloo/request.ts";
-import { limiter } from "./limit.ts";
+import { limiter } from "./concurrency.ts";
 
 // A ref is the call's place in issue order. Steps cite refs; the read turns them into provenance rows at the end,
 // so the order does not depend on which answer arrived first.

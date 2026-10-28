@@ -20,6 +20,7 @@ import { briefNames, buildBrief } from "../copy/write.ts";
 import { tagLabel } from "../qloo/tags.ts";
 import { describeDistance, haversineM } from "../street/geo.ts";
 import { RANK_LIMIT } from "../street/steps/limits.ts";
+import { streetTagLine } from "../street/words.ts";
 import { FORMATS, FORMAT_ORDER, MENU_NAMESPACES, PLAYLIST_LICENCE, menuItem, type FormatDef } from "./formats.ts";
 import { nextSlotDate, parseHHMM } from "./time.ts";
 
@@ -60,20 +61,20 @@ function streetTagsIndex(read: StreetRead): number {
   return provIndex(read, ["street_tags"]);
 }
 
-// Shared tags come from compare (the venue against nearby places) or from the street and audience tag reads.
+// With compare, shared holds the venue's side of it, so a tag is called shared only when a loved place carries it too.
+// Without compare, shared is the overlap of the street and audience tag reads.
 function sharedBecause(read: StreetRead, venue: Venue): Because | null {
-  const streetIds = new Set(read.streetTags.map((t) => t.id));
-  const fromCompare = read.shared.find((t) => !streetIds.has(t.id));
   const iCompare = provIndex(read, ["compare"]);
-  if (fromCompare && iCompare >= 0) {
-    return { kind: "compare", text: `${venue.entity.name} and the nearby places its audience loves share ${fromCompare.name}`, provenance: iCompare };
+  if (iCompare >= 0) {
+    for (const t of read.shared) {
+      const place = read.lovedPlaces.find((p) => p.tags.includes(t.id));
+      if (place) return { kind: "compare", text: `${venue.entity.name} and ${place.name}, a place nearby its audience loves, are both tagged ${t.name}`, provenance: iCompare };
+    }
+    return null;
   }
-  const fromTags = read.shared.find((t) => streetIds.has(t.id));
+  const t = read.shared[0];
   const iStreet = streetTagsIndex(read);
-  if (fromTags && iStreet >= 0) {
-    return { kind: "tag", text: `The street and ${venue.entity.name}'s audience both carry ${fromTags.name}`, provenance: iStreet };
-  }
-  return null;
+  return t && iStreet >= 0 ? { kind: "tag", text: `The street and ${venue.entity.name}'s audience both carry ${t.name}`, provenance: iStreet } : null;
 }
 
 function fitsPeople(def: FormatDef, cap: number | undefined): number {
@@ -207,14 +208,14 @@ function pickPartners(
   });
 }
 
-function menuFor(c: Candidate, read: StreetRead): MenuIdea[] {
+function menuFor(c: Candidate, read: StreetRead, venue: Venue): MenuIdea[] {
   const prov = streetTagsIndex(read);
   if (prov < 0) return [];
   const tags = menuTags(read);
   const ordered = c.menuTag ? [c.menuTag, ...tags.filter((t) => t.id !== c.menuTag?.id)] : tags;
   return ordered.slice(0, 3).map((t) => ({
     text: menuText(t),
-    because: [{ kind: "tag", text: `The street ranks ${t.name} #${t.rank} in its taste profile`, provenance: prov }],
+    because: [{ kind: "tag", text: streetTagLine(t.name, venue.entity.name), provenance: prov }],
   }));
 }
 
@@ -246,7 +247,7 @@ function whyFor(c: Candidate, theme: StreetTag[], read: StreetRead, venue: Venue
     const prov = streetTagsIndex(read);
     const t = relevant[0];
     if (t && prov >= 0 && read.streetTags.some((s) => s.id === t.id) && !why.some((w) => w.kind === "tag" && w.text.includes(t.name))) {
-      why.push({ kind: "tag", text: `${t.name} ranks #${t.rank} in the street's taste profile`, provenance: prov });
+      why.push({ kind: "tag", text: streetTagLine(t.name, venue.entity.name), provenance: prov });
     }
   }
   const shared = sharedBecause(read, venue);
@@ -255,7 +256,7 @@ function whyFor(c: Candidate, theme: StreetTag[], read: StreetRead, venue: Venue
   const top = layer?.cells[0];
   if (layer && top) {
     const d = haversineM(read.center, { lat: top.lat, lng: top.lng });
-    why.push({ kind: "heatmap", text: `The strongest cell on the street heatmap sits ${describeDistance(d)} from ${venue.entity.name}`, provenance: layer.provenance });
+    why.push({ kind: "heatmap", text: `The strongest heatmap cell sits ${describeDistance(d)} from ${venue.entity.name}`, provenance: layer.provenance });
   }
   const iArtist = provIndex(read, ["insights_artist"]);
   if (playlist.length && iArtist >= 0) {
@@ -321,7 +322,7 @@ export function planNights(
     const notes: string[] = [];
     const theme = themeFor(c, read);
     const partners = pickPartners(c, theme, read, venue, notes);
-    const menuIdeas = menuFor(c, read);
+    const menuIdeas = menuFor(c, read, venue);
     if (!menuIdeas.length) notes.push("Qloo returned no food or drink tags for this street, so there are no menu ideas.");
     const playlist = playlistFor(read);
     const def = FORMATS[c.format];

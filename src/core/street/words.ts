@@ -24,3 +24,8 @@ export function fmtDay(iso: string): string {
 export function plural(n: number, one: string, many: string): string {
   return n === 1 ? `1 ${one}` : `${n} ${many}`;
 }
+
+// A location signal scores street tags almost level, so they are named as a set and never by rank.
+export function streetTagLine(tag: string, venueName: string): string {
+  return `${tag} is among the taste tags Qloo returns for the area around ${venueName}`;
+}

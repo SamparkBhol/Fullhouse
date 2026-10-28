@@ -11,7 +11,7 @@
         "disambiguation": "Richard Powers",
         "tags": [
           { "id": "urn:tag:genre:media:literary_fiction", "name": "Literary Fiction", "type": "urn:tag:genre:media", "weight": null },
-          { "id": "urn:tag:genre:media:documentary", "name": "Documentary", "type": "urn:tag:genre:media", "weight": null }
+          { "id": "urn:tag:genre:media:nature", "name": "Nature", "type": "urn:tag:genre:media", "weight": null }
         ],
         "external": { "goodreads": [{ "id": "gr-overstory" }] },
         "properties": { "publication_year": 2018, "image": { "url": "https://images.example/overstory.jpg" } },

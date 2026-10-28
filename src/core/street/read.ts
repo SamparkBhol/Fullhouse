@@ -10,7 +10,7 @@ import { demographicsStep } from "./steps/demographics.ts";
 import { streetHeat, venueHeat } from "./steps/heat.ts";
 import { readLimits } from "./steps/limits.ts";
 import { LOVED_RADIUS_M, lovedPlaces } from "./steps/loved_places.ts";
-import { applyMomentum } from "./steps/momentum.ts";
+import { noteChanges } from "./steps/momentum.ts";
 import { resolveVenue } from "./steps/resolve.ts";
 import { streetFingerprint } from "./steps/street_tags.ts";
 import { venueFingerprint } from "./steps/venue_tags.ts";
@@ -46,7 +46,7 @@ export async function readStreet(q: Qloo, venue: Venue, opts: ReadOptions = {}):
     compareStep(run, ctx, { partners: places, street: street.street, audience: audience.audience }),
     streetHeat(run, ctx, street.street?.tags.slice(0, HEAT_TAGS) ?? []),
   ]);
-  const moved = applyMomentum(cross.rising, opts.previous, ctx);
+  const moved = noteChanges(cross.rising, opts.previous, ctx);
   assertAnswered(run);
 
   const { rows, rowOf } = run.provenance();
@@ -63,8 +63,8 @@ export async function readStreet(q: Qloo, venue: Venue, opts: ReadOptions = {}):
       venueTags: audience.audience?.tags ?? [],
       shared: compared.shared,
       gaps: compared.gaps,
-      lovedPlaces: withStreetTags(places, street.street),
-      rising: withStreetTags(moved.rising, street.street),
+      lovedPlaces: withStreetTags(places, street.street, ctx.name),
+      rising: withStreetTags(moved.rising, street.street, ctx.name),
       ...(demo.demographics ? { demographics: demo.demographics } : {}),
       limits: readLimits(run.notes(), stepNotes, rows),
     },

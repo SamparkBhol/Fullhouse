@@ -3,6 +3,7 @@ export * from "./results.ts";
 export * from "./urns.ts";
 export * from "./location.ts";
 export * from "./request.ts";
+export * from "./guards.ts";
 export * from "./errors.ts";
 export * from "./cache.ts";
 export * from "./client.ts";

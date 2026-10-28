@@ -1,4 +1,4 @@
-import type { Because, LovedPlace } from "../../../shared/contract.ts";
+import type { LovedPlace } from "../../../shared/contract.ts";
 import { parseEntities, type QEntity } from "../../qloo/entities.ts";
 import { locationFilter } from "../../qloo/location.ts";
 import { TYPE_URN } from "../../qloo/urns.ts";
@@ -19,11 +19,6 @@ export interface LovedRead {
   ref: number;
 }
 
-// audience_growth is the only per place change signal Qloo returns; about a third of places carry a non zero value.
-function growthBecause(e: QEntity, ref: number): Because[] {
-  return e.audienceGrowth !== null && e.audienceGrowth > 0 ? [{ kind: "trending", text: "Qloo measures a growing audience for this place", provenance: ref }] : [];
-}
-
 function toPlace(e: QEntity, rank: number, n: number, tied: boolean, ctx: ReadContext, ref: number): LovedPlace {
   const lat = e.lat as number;
   const lng = e.lng as number;
@@ -37,7 +32,7 @@ function toPlace(e: QEntity, rank: number, n: number, tied: boolean, ctx: ReadCo
     distanceM: Math.round(e.distanceM ?? haversineM(ctx.center, { lat, lng })),
     rank,
     tags: e.tags.map((t) => t.id),
-    because: [{ kind: "affinity", text: ranked, provenance: ref }, ...explainBecause(e, ctx, ref, "place"), ...growthBecause(e, ref)],
+    because: [{ kind: "affinity", text: ranked, provenance: ref }, ...explainBecause(e, ctx, ref, "place")],
   };
   const address = e.address ?? e.disambiguation;
   if (address) p.address = address;
@@ -50,7 +45,7 @@ function placeLimits(found: number, unmapped: number, tied: boolean, ctx: ReadCo
   const out: string[] = [];
   if (!found) out.push(`Qloo returned no places ${WITHIN} of ${ctx.name}.`);
   else if (found < 3) out.push(`Only ${plural(found, "place", "places")} ${WITHIN} came back from Qloo, so this part of the read is thin.`);
-  if (found && !tied) out.push(`Qloo did not tie the nearby places to ${ctx.name}'s audience, so they are ranked for the area only.`);
+  if (found && !tied) out.push(`Qloo did not tie the nearby places to ${ctx.name}'s audience, so their order is not a ranking of taste.`);
   if (unmapped) out.push(`${plural(unmapped, "place", "places")} came back without coordinates and ${unmapped === 1 ? "is" : "are"} not on the map.`);
   return out;
 }

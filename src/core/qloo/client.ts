@@ -1,7 +1,8 @@
 import type { Provenance } from "../../shared/contract.ts";
 import { CACHE_TTL_SEC, cacheEntry, isCacheEntry, type QlooCache } from "./cache.ts";
 import { QlooError, classify, errorMessage } from "./errors.ts";
-import { QLOO_BASE_URL, buildUrl, checkParams, provenanceParams, type Params } from "./request.ts";
+import { checkParams } from "./guards.ts";
+import { QLOO_BASE_URL, buildUrl, provenanceParams, type Params } from "./request.ts";
 import { countResults } from "./results.ts";
 
 export interface QlooOptions {

@@ -1,5 +1,5 @@
 import { QLOO_BASE_URL, buildUrl, cleanParams, type Params } from "../../src/core/qloo/index.ts";
-import { limiter } from "../../src/core/street/limit.ts";
+import { limiter } from "../../src/core/street/concurrency.ts";
 import type { DiskCache } from "./cache.ts";
 import type { Ledger } from "./ledger.ts";
 import type { ArrayStyle } from "./record.ts";
