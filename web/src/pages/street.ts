@@ -9,19 +9,6 @@ import { empty, failure, limitsLine, loading } from "../ui/states.ts";
 import { refreshState, withVenue, type VenueCtx } from "../venue-context.ts";
 import { READ_LINES } from "./venue.ts";
 
-const TYPE_WORDS: Record<QlooType, string> = {
-  place: "Place",
-  artist: "Artist",
-  book: "Book",
-  movie: "Film",
-  tv_show: "TV show",
-  podcast: "Podcast",
-  videogame: "Video game",
-  brand: "Brand",
-  person: "Person",
-  destination: "Destination",
-};
-
 export function streetPage(id: string): Promise<void> {
   return withVenue(id, "street", (ctx, main) => {
     if (ctx.state.read) renderRead(ctx, main, ctx.state.read);
@@ -63,17 +50,17 @@ async function runRead(ctx: VenueCtx, main: HTMLElement, button: HTMLButtonEleme
   }
 }
 
-const TYPE_PLURAL: Record<QlooType, string> = {
-  place: "places",
-  artist: "artists",
-  book: "books",
-  movie: "films",
+const TYPE_HEADINGS: Record<QlooType, string> = {
+  place: "Places",
+  artist: "Artists",
+  book: "Books",
+  movie: "Films",
   tv_show: "TV shows",
-  podcast: "podcasts",
-  videogame: "video games",
-  brand: "brands",
-  person: "people",
-  destination: "destinations",
+  podcast: "Podcasts",
+  videogame: "Video games",
+  brand: "Brands",
+  person: "People",
+  destination: "Destinations",
 };
 
 function tagList(tags: StreetTag[], sharedIds: Set<string>, label: string, emptyText: string): HTMLElement {
@@ -103,7 +90,10 @@ function tagList(tags: StreetTag[], sharedIds: Set<string>, label: string, empty
   );
 }
 
-function risingItem(r: Rising, read: StreetRead, tz: string): HTMLElement {
+const PICKS_SHOWN = 5;
+
+// Qloo's weekly series held flat, so a trend is shown only when one actually moved.
+function pickItem(r: Rising, read: StreetRead, tz: string): HTMLElement {
   return h(
     "li",
     { class: "pick" },
@@ -111,11 +101,29 @@ function risingItem(r: Rising, read: StreetRead, tz: string): HTMLElement {
       "div",
       { class: "pick-head" },
       h("p", { class: "pick-name" }, r.name),
-      h("p", { class: `trend trend-${r.trend}` }, TREND_WORDS[r.trend] ?? "No trend data"),
+      r.trend !== "unknown" ? h("p", { class: `trend trend-${r.trend}` }, TREND_WORDS[r.trend]) : null,
     ),
-    h("p", { class: "meta" }, `${TYPE_WORDS[r.type] ?? "Entity"}, ${ordinal(r.rank)} of the ${TYPE_PLURAL[r.type] ?? "results"} Qloo returned for this street.${r.trendNote ? ` ${r.trendNote}` : ""}`),
+    r.trendNote ? h("p", { class: "meta" }, `${r.trendNote}.`) : null,
     reasons(r.because, read.provenance, tz),
   );
+}
+
+function pickGroups(read: StreetRead, tz: string): HTMLElement[] {
+  const types = [...new Set(read.rising.map((r) => r.type))];
+  return types.map((type) => {
+    const picks = read.rising.filter((r) => r.type === type).sort((a, b) => a.rank - b.rank);
+    const id = uid("picks");
+    const more = picks.slice(PICKS_SHOWN);
+    return h(
+      "div",
+      { class: "pick-group" },
+      h("h3", { id }, TYPE_HEADINGS[type] ?? type),
+      h("ol", { class: "picks", "aria-labelledby": id }, picks.slice(0, PICKS_SHOWN).map((r) => pickItem(r, read, tz))),
+      more.length
+        ? h("details", { class: "more-picks" }, h("summary", null, `${more.length} more`), h("ol", { class: "picks", start: String(PICKS_SHOWN + 1) }, more.map((r) => pickItem(r, read, tz))))
+        : null,
+    );
+  });
 }
 
 function renderRead(ctx: VenueCtx, main: HTMLElement, read: StreetRead): void {
@@ -179,7 +187,7 @@ function renderRead(ctx: VenueCtx, main: HTMLElement, read: StreetRead): void {
   const lovedSection = h(
     "section",
     { class: "block", "aria-labelledby": "loved-title" },
-    h("h2", { id: "loved-title" }, "Places nearby the street loves"),
+    h("h2", { id: "loved-title" }, "Places nearby your audience loves"),
     loved.length
       ? h(
           "ol",
@@ -196,7 +204,7 @@ function renderRead(ctx: VenueCtx, main: HTMLElement, read: StreetRead): void {
             ),
           ),
         )
-      : empty(`Qloo returned no places within ${distance(read.radiusM)} of your venue that the street loves.`),
+      : empty(`Qloo returned no places within ${distance(read.radiusM)} of your venue that your audience loves.`),
   );
 
   const evidence = h(
@@ -230,22 +238,20 @@ function renderRead(ctx: VenueCtx, main: HTMLElement, read: StreetRead): void {
     ),
     h(
       "section",
-      { class: "block", "aria-labelledby": "rising-title" },
-      h("h2", { id: "rising-title" }, "What is rising here"),
-      h("p", { class: "meta" }, "Artists, books, films, shows, podcasts and games this street leans toward, with their trend over the last eight weeks."),
-      read.rising.length
-        ? h("ul", { class: "picks" }, read.rising.map((r) => risingItem(r, read, tz)))
-        : empty("Qloo returned nothing this street leans toward in the last eight weeks."),
+      { class: "block", "aria-labelledby": "picks-title" },
+      h("h2", { id: "picks-title" }, `What people who like ${venue.entity.name} love`),
+      h("p", { class: "meta" }, "Artists, books, films, shows and podcasts Qloo ties to your venue's audience, weighted to the area around it. Ranked within each list."),
+      read.rising.length ? pickGroups(read, tz) : empty(`Qloo returned no artists, books, films, shows or podcasts for ${venue.entity.name}.`),
     ),
     lovedSection,
     read.demographics
       ? h(
           "section",
           { class: "block", "aria-labelledby": "demo-title" },
-          h("h2", { id: "demo-title" }, "Age and gender lean"),
+          h("h2", { id: "demo-title" }, "Who your audience is, in aggregate"),
           h("p", null, read.demographics.summary),
           reasons(
-            [{ text: "Qloo demographics for this location, in aggregate. It describes the street's taste, not any person.", kind: "demographics", provenance: read.demographics.provenance }],
+            [{ text: `Qloo demographics for people who like ${venue.entity.name}, in aggregate. It describes an audience, not any person.`, kind: "demographics", provenance: read.demographics.provenance }],
             read.provenance,
             tz,
           ),

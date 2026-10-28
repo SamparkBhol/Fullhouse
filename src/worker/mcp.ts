@@ -71,7 +71,7 @@ export function buildMcpServer(ports: McpPorts): McpServer {
     "read_street",
     {
       title: "Read the street",
-      description: "Run or refresh the street read for the owner's venue: heat cells, street and venue taste tags, the gap, loved places nearby and what is rising, each with its Qloo provenance.",
+      description: "Run or refresh the street read for the owner's venue: heat cells, street and venue taste tags, the gap, loved places nearby and the picks its audience loves, each with its Qloo provenance.",
       inputSchema: z.object({ ...ownerArgs, refresh: z.boolean().optional().describe("Run a fresh read even if one is stored") }),
       outputSchema: z.object({ read: loose({ venueId: z.string(), at: z.string() }) }),
       annotations: { readOnlyHint: false, openWorldHint: true, idempotentHint: true },
@@ -88,7 +88,7 @@ export function buildMcpServer(ports: McpPorts): McpServer {
       if (!out.ok) return outError(out) as CallToolResult;
       const r = out.value;
       const summary =
-        `Street read at ${r.at}: ${r.lovedPlaces.length} loved places nearby, ${r.rising.length} rising picks, ${r.gaps.length} gaps, ` +
+        `Street read at ${r.at}: ${r.lovedPlaces.length} loved places nearby, ${r.rising.length} picks, ${r.gaps.length} gaps, ` +
         `${r.provenance.length} Qloo calls. Limits: ${r.limits.join(" ")}`;
       return textAndData(summary, { read: r }, false);
     },

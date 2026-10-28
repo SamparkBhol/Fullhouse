@@ -46,7 +46,7 @@ export function landingPage(): void {
           step("Find your venue", "Type its name and city. Full House finds it on Qloo and you pick the right one."),
           step(
             "Read the street",
-            "Qloo shows what the blocks around you love, what they love that you do not serve yet, and what is rising there this month.",
+            "Qloo shows what the blocks around you love, what nearby places your crowd loves offer that you do not, and the artists, films and books your crowd is into.",
           ),
           step(
             "Approve one night",

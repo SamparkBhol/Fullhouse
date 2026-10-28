@@ -2,15 +2,14 @@ import { h, replace } from "../dom.ts";
 import { focusHeading, page, plainFascia, title } from "../ui/shell.ts";
 
 const CALLS: [string, string, string][] = [
-  ["Find your venue", "GET /search", "Your venue's name, the place type and your city. You pick the right match from the list."],
-  ["The street's taste", "GET /v2/insights, tag mode", "Your venue's map point and a radius. Qloo answers with the taste tags the area leans toward."],
-  ["Your venue's taste", "GET /v2/insights, tag mode", "Your venue's Qloo id. Qloo answers with the tags that describe the audience of places like yours."],
-  ["Places the street loves", "GET /v2/insights, places", "Your map point and about 1.2 km. Qloo answers with nearby places and why each one ranks."],
-  ["The heat map", "GET /v2/insights, heat map", "The area around you and the street's top tags. Qloo answers with small map squares ranked by how strong that taste is in each."],
-  ["Where you differ", "GET /v2/analysis/compare", "Your venue against the top loved places. Shared tags are what the street already likes you for. The rest is the gap."],
-  ["Ideas for the night", "GET /v2/insights, artists, books, films, shows, podcasts, games", "Your map point. Qloo answers with what the street leans toward in each, with reasons."],
-  ["What is rising", "GET /v2/trending", "A short list of those ideas and the last eight weeks. Qloo answers with how each one's popularity is moving."],
-  ["Age and gender lean", "GET /v2/insights, demographics", "Your map point. Qloo answers with how the area's taste leans by age and gender, in aggregate. It is shown as a lean of the street, never as a claim about a person."],
+  ["Find your venue", "GET /search", "Your venue's name and city as one search. You pick the right match from the list, with its address."],
+  ["The street's taste", "GET /v2/insights, tag mode", "Your venue's map point. Qloo answers with the taste tags the area around it carries."],
+  ["Your audience's taste", "GET /v2/insights, tag mode", "Your venue's Qloo id. Qloo answers with the tags that describe the people who like your venue."],
+  ["Places your audience loves", "GET /v2/insights, places", "Your venue's Qloo id and a 1.2 km circle around it. Qloo answers with nearby places people who like your venue also love, and why each one ranks."],
+  ["Two heat maps", "GET /v2/insights, heat map", "A 2 km circle, once with your venue as the signal and once with the street's top tags. Qloo answers with small map squares ranked by how strong that taste is in each."],
+  ["Where you differ", "GET /v2/analysis/compare", "Your venue against the five places your audience loves most. Tags you share are what you are already liked for. Tags two or more of them carry and you do not are the gap."],
+  ["Ideas for the night", "GET /v2/insights, artists, books, films, shows, podcasts", "Your venue's Qloo id and its map point, one call per kind. Qloo answers with what people who like your venue love, with the reason for each."],
+  ["Who your audience is", "GET /v2/insights, demographics", "Your venue's Qloo id. Qloo answers with how its audience leans by age and gender, in aggregate. It is never shown as a claim about a person."],
 ];
 
 export function howPage(): void {
@@ -31,7 +30,7 @@ export function howPage(): void {
         "section",
         { class: "block", "aria-labelledby": "calls-title" },
         h("h2", { id: "calls-title" }, "The Qloo calls, in order"),
-        h("p", null, "A full street read makes up to 30 calls. Each answer is kept for a day, and every screen shows which call produced what."),
+        h("p", null, "A street read makes 12 calls and never more than 30. Each answer is kept for a day, and every screen shows which call produced what. Qloo's weekly trend data for these picks held flat, so Full House shows no trend."),
         h(
           "ol",
           { class: "calls" },
@@ -56,7 +55,7 @@ export function howPage(): void {
         h(
           "p",
           null,
-          "The night is picked by plain rules from the Qloo answers: how high something ranks on your street, whether it is rising, whether it fits your venue and fills a gap. The model only writes the words: the event description, the poster lines, the social post and the note to partners.",
+          "The night is picked by plain rules from the Qloo answers: how high something ranks for your audience, whether it fits your venue and whether it fills a gap. The model only writes the words: the event description, the poster lines, the social post and the note to partners.",
         ),
         h(
           "p",
@@ -81,7 +80,7 @@ export function howPage(): void {
         h(
           "p",
           null,
-          "Playlists list artists the street leans toward. A personal streaming account does not cover playing music to customers. Your venue needs its own public performance licence or a business music service.",
+          "Playlists list artists your audience loves. A personal streaming account does not cover playing music to customers. Your venue needs its own public performance licence or a business music service.",
         ),
       ),
       h("p", { class: "actions" }, h("a", { class: "button button-big", href: "/start" }, "Find your venue")),

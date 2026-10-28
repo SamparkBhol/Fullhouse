@@ -61,7 +61,7 @@ function evidence(ctx: VenueCtx, plan: NightPlan): HTMLElement {
             "div",
             { class: "pick" },
             h("p", { class: "pick-name" }, plan.feature.name),
-            h("p", { class: "meta" }, `The feature of the night, picked from what the street leans toward.`),
+            h("p", { class: "meta" }, "The feature of the night, picked from what your audience loves."),
             reasons(plan.feature.because, calls, tz),
           )
         : h("p", null, "This night has no single feature. It is built around the street's taste tags below."),

@@ -142,7 +142,7 @@ export function templateCopy(plan: NightPlan, venue: Venue): NightCopy {
       const menuLine = menu.length ? ` On the menu: ${listWords(menu)}.` : "";
       c = {
         eventTitle: fit([`${capFirst(t)} tasting night at ${v}`, `${capFirst(t)} tasting night`, `Tasting night at ${v}`], 60),
-        eventDescription: `${when}, ${v} hosts a ${t} tasting night built around what people on this street rate highest.${menuLine} Free to come in. RSVP so we can plan portions.`,
+        eventDescription: `${when}, ${v} hosts a ${t} tasting night built around the food and drink this street goes for.${menuLine} Free to come in. RSVP so we can plan portions.`,
         posterHeadline: fit([`${capFirst(t)} tasting night`, "Tasting night"], 40),
         posterSub: fit([`${day}, ${plan.start} at ${v}`, `${dayShort} ${plan.start}`], 90),
         social: fit([`${capFirst(t)} tasting night at ${v}, ${day} at ${plan.start}. Free to come in, RSVP at the link.`, `Tasting night, ${dayShort} ${plan.start}. RSVP at the link.`], 280),

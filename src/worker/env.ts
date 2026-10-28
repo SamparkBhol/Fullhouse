@@ -28,7 +28,9 @@ export function dailyBudgetOf(env: Env): number {
   return Number.isFinite(n) && n > 0 ? n : 4000;
 }
 
+// There is no default sender: owner email stays off until both the key and a verified sender are set.
 export function resendOf(env: Env): { key: string; from: string } | null {
-  if (!env.RESEND_API_KEY) return null;
-  return { key: env.RESEND_API_KEY, from: env.RESEND_FROM?.trim() || "" };
+  const key = env.RESEND_API_KEY?.trim();
+  const from = env.RESEND_FROM?.trim();
+  return key && from ? { key, from } : null;
 }

@@ -111,7 +111,7 @@ export function renderEventPage(n: PublicNight, origin: string, now: Date): stri
   }
   const why = n.why.length
     ? `<ul>${n.why.slice(0, 4).map((w) => `<li>${esc(w)}</li>`).join("")}</ul>`
-    : `<p>This night was picked from what the streets around ${esc(n.venueName)} are into right now.</p>`;
+    : `<p>This night was picked from what people who like ${esc(n.venueName)} love.</p>`;
   const rsvp = past
     ? `<p class="count">${n.rsvps} said they would come</p><p class="going">This night has passed.</p>`
     : `<p class="count" aria-live="polite">${n.rsvps} going</p>` +
@@ -147,7 +147,7 @@ export function renderPoster(n: PublicNight, origin: string): string {
   const url = eventUrl(origin, n.slug);
   const shortUrl = url.replace(/^https?:\/\//, "");
   const when = `${longDate(n.date)}, ${n.start} to ${n.end}`;
-  const reason = n.why[0] ?? `Picked from what the streets around ${n.venueName} are into right now.`;
+  const reason = n.why[0] ?? `Picked from what people who like ${n.venueName} love.`;
   let qr = "";
   if (n.published.page) {
     try {

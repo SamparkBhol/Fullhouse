@@ -11,9 +11,9 @@ import { liveNight, refreshState, rememberPlanResponse, withVenue, type VenueCtx
 export const READ_LINES = [
   "What the street around you likes",
   "Your venue's own taste profile on Qloo",
-  "Places nearby the street loves",
+  "Places nearby that your audience loves, and what they offer that you do not",
   "Where on the map that taste is strongest",
-  "What is rising here this month",
+  "Artists, books, films, shows and podcasts your audience loves",
 ];
 
 export function venuePage(id: string): Promise<void> {
@@ -30,7 +30,7 @@ function streetSummary(ctx: VenueCtx, read: StreetRead): HTMLElement {
   const base = `/v/${encodeURIComponent(ctx.id)}`;
   const topTags = read.streetTags.slice(0, 3).map((t) => prettyTag(t.name));
   const gap = read.gaps[0];
-  const rising = read.rising.filter((r) => r.trend === "rising");
+  const topPicks = read.rising.filter((r) => r.rank === 1).map((r) => r.name);
   return h(
     "section",
     { class: "block", "aria-labelledby": "street-title" },
@@ -39,20 +39,12 @@ function streetSummary(ctx: VenueCtx, read: StreetRead): HTMLElement {
     h(
       "dl",
       { class: "facts" },
-      h("dt", null, "Loves most"),
+      h("dt", null, "The street's taste"),
       h("dd", null, topTags.length ? topTags.join(", ") : "Qloo returned no taste tags for this street."),
       h("dt", null, "You do not serve yet"),
-      h("dd", null, gap ? prettyTag(gap.tag.name) : "No gap found between you and the places the street loves."),
-      h("dt", null, "Rising this month"),
-      h(
-        "dd",
-        null,
-        rising.length
-          ? rising.slice(0, 3).map((r) => r.name).join(", ")
-          : read.rising.length
-            ? "Nothing in the read is rising right now."
-            : "Qloo returned nothing rising for this street.",
-      ),
+      h("dd", null, gap ? prettyTag(gap.tag.name) : "No gap found between you and the places your audience loves."),
+      h("dt", null, "Your audience's top picks"),
+      h("dd", null, topPicks.length ? topPicks.slice(0, 4).join(", ") : "Qloo returned no artists, books, films, shows or podcasts for your venue."),
     ),
     h("p", { class: "actions" }, h("a", { class: "button button-quiet", href: `${base}/street` }, "Open the street read")),
   );
