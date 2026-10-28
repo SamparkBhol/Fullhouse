@@ -1,0 +1,297 @@
+/* Chart marks. Chalk is the first series, haze the second, lit is RSVPs only, stop is errors only. */
+.chart-host,
+.spark-host,
+.gauge-host,
+.split-host {
+  margin-top: 12px;
+  min-width: 0;
+}
+
+.chart-frame {
+  position: relative;
+  display: block;
+  line-height: 0;
+}
+
+.chart-frame:focus-visible {
+  outline-offset: 4px;
+}
+
+.chart,
+.spark {
+  display: block;
+  overflow: visible;
+}
+
+.chart text {
+  font-family: var(--face);
+  font-size: 14px;
+  font-stretch: 80%;
+  font-weight: 500;
+  font-feature-settings: "tnum" 1;
+}
+
+.axis-label,
+.row-note {
+  fill: var(--mist);
+}
+
+.row-label {
+  fill: var(--chalk);
+  font-weight: 650;
+}
+
+.grid {
+  stroke: rgba(243, 245, 248, 0.14);
+  stroke-width: 1;
+}
+
+.baseline {
+  stroke: var(--mist);
+  stroke-width: 1;
+}
+
+.crosshair {
+  stroke: var(--chalk);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.bar-solid {
+  fill: var(--chalk);
+}
+
+.bar-hatched {
+  stroke: var(--haze);
+  stroke-width: 1;
+}
+
+.hatch-ground {
+  fill: var(--street);
+}
+
+.hatch-line {
+  stroke: var(--haze);
+  stroke-width: 2;
+}
+
+.cross {
+  stroke: var(--stop);
+  stroke-width: 2;
+  fill: none;
+}
+
+.spark-floor {
+  stroke: var(--rule);
+  stroke-width: 1;
+}
+
+.spark-line {
+  fill: none;
+  stroke: var(--chalk);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.spark-end {
+  fill: var(--chalk);
+}
+
+.spark-lit .spark-line {
+  stroke: var(--lit);
+}
+
+.spark-lit .spark-end {
+  fill: var(--lit);
+}
+
+.segment {
+  fill: rgba(243, 245, 248, 0.12);
+}
+
+.segment-on {
+  fill: var(--chalk);
+}
+
+.gauge-mark {
+  stroke: var(--mist);
+  stroke-width: 2;
+}
+
+.room-box {
+  fill: none;
+  stroke: var(--haze);
+  stroke-width: 2;
+}
+
+.rsvp-tick {
+  fill: var(--lit);
+}
+
+.today {
+  stroke: var(--mist);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.night-mark {
+  stroke-width: 2;
+}
+
+.night-lit {
+  fill: var(--lit);
+  stroke: var(--lit);
+}
+
+.night-done {
+  fill: var(--chalk);
+  stroke: var(--chalk);
+}
+
+.night-open {
+  fill: var(--street);
+  stroke: var(--chalk);
+}
+
+.night-withdrawn {
+  fill: var(--street);
+  stroke: var(--mist);
+  stroke-dasharray: 3 2;
+}
+
+.tip {
+  position: absolute;
+  top: 0;
+  z-index: 5;
+  min-width: 11rem;
+  max-width: 17rem;
+  padding: 8px 10px 9px;
+  background: var(--ink);
+  border: 1px solid var(--chalk);
+  color: var(--chalk);
+  font-size: var(--s14);
+  line-height: 1.4;
+  pointer-events: none;
+}
+
+.tip[hidden] {
+  display: none;
+}
+
+.tip-title {
+  font-weight: 650;
+  margin-bottom: 4px;
+}
+
+.tip ul,
+.legend {
+  list-style: none;
+}
+
+.tip li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tip li strong {
+  margin-left: auto;
+  padding-left: 12px;
+  font-feature-settings: "tnum" 1;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin-top: 10px;
+  font-size: var(--s16);
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend strong {
+  font-feature-settings: "tnum" 1;
+}
+
+.key {
+  flex: none;
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+}
+
+.key-solid {
+  background: var(--chalk);
+}
+
+.key-hatched {
+  border: 1px solid var(--haze);
+  background: repeating-linear-gradient(45deg, var(--haze) 0 2px, transparent 2px 4px);
+}
+
+.key-outline {
+  border: 2px solid var(--chalk);
+}
+
+.key-lit {
+  background: var(--lit);
+}
+
+.key-tick {
+  width: 4px;
+  height: 16px;
+  margin: 0 4px;
+  background: var(--lit);
+}
+
+.key-stop {
+  background: linear-gradient(45deg, transparent 42%, var(--stop) 42% 58%, transparent 58%), linear-gradient(-45deg, transparent 42%, var(--stop) 42% 58%, transparent 58%);
+}
+
+.as-table {
+  margin-top: 10px;
+}
+
+.as-table > summary {
+  font-size: var(--s16);
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--s16);
+  font-stretch: 80%;
+  font-weight: 500;
+  font-feature-settings: "tnum" 1;
+}
+
+.data-table th,
+.data-table td {
+  padding: 6px 10px 6px 0;
+  text-align: left;
+  vertical-align: top;
+  border-top: 1px solid var(--rule);
+}
+
+.data-table thead th {
+  color: var(--mist);
+  font-weight: 600;
+  border-top: 0;
+}
+
+.data-table tbody th {
+  font-weight: 600;
+}
+
+.data-table .num {
+  text-align: right;
+}
