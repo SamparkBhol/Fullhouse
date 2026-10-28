@@ -55,11 +55,11 @@ export function outlookUrl(d: Draft): string {
 }
 
 export const AGGREGATE_NOTE =
-  "Where this comes from: Qloo taste data for the streets around us. It is an aggregate signal for the area, not a statement about your customers or anyone in particular.";
+  "Where this comes from: Qloo's aggregate taste data for people who like our venue. It is a pattern across many people, not a statement about your customers or anyone in particular.";
 
 export function outreachBody(pitchBody: string, eventUrl?: string): string {
   const parts = [pitchBody.trim()];
   if (eventUrl) parts.push(`Event page: ${eventUrl}`);
-  if (!/aggregate/i.test(pitchBody)) parts.push(AGGREGATE_NOTE);
+  if (!pitchBody.includes(AGGREGATE_NOTE)) parts.push(AGGREGATE_NOTE);
   return parts.join("\n\n");
 }

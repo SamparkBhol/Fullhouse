@@ -1,4 +1,4 @@
-import type { Generate, Qloo } from "../../core/index.ts";
+import type { Generate, Qloo, ReadOptions } from "../../core/index.ts";
 import type {
   ApproveInput,
   Baseline,
@@ -12,22 +12,25 @@ import type {
   VenueCandidate,
   VenueState,
 } from "../../shared/contract.ts";
+import type { VenueDashboard } from "../../shared/stats.ts";
 import type { RefineCore } from "../ai.ts";
 import type { AiLike } from "../env.ts";
 import type { PublicNight } from "../pages/event.ts";
-import { isQlooError, qlooFailure } from "../qloo_wiring.ts";
+import { isQlooError, qlooFailure } from "../qloo/errors.ts";
+import type { StatsSink } from "../stats/events.ts";
 
 export interface CoreFns extends RefineCore {
-  readStreet(q: Qloo, venue: Venue, opts?: { previous?: StreetRead }): Promise<StreetRead>;
+  readStreet(q: Qloo, venue: Venue, opts?: ReadOptions): Promise<StreetRead>;
   planNights(read: StreetRead, venue: Venue, input: PlanInput, now: Date, origin: NightPlan["origin"], newId: () => string): PlanResponse;
   writeCopy(plan: NightPlan, venue: Venue, read: StreetRead, generate: Generate | null): Promise<NightPlan>;
   runBaseline(q: Qloo, venue: Venue, read: StreetRead, plan: NightPlan, generate: Generate, model: string): Promise<Baseline>;
   nextMondayNine(tz: string, now: Date): Date;
 }
 
+
 export interface VenueDeps {
   core: CoreFns;
-  qloo(): Qloo | null;
+  qloo(established?: boolean): Qloo | null;
   generate: Generate | null;
   ai: AiLike | null;
   model: string;
@@ -37,25 +40,41 @@ export interface VenueDeps {
   now(): Date;
   newId(): string;
   slugRand?(): string;
+  stats?: StatsSink;
 }
 
 export type Out<T> = { ok: true; value: T } | { ok: false; status: number; error: string; detail?: string };
 
 export interface VenueApi {
-  init(id: string, input: CreateVenueInput, candidate: VenueCandidate, origin: string): Promise<Out<Venue>>;
+  init(id: string, input: CreateVenueInput, candidate: VenueCandidate, origin: string): Promise<Out<{ venue: Venue; ownerToken: string }>>;
+  ownerCheck(venueId: string, token: string | null): Promise<boolean>;
+  newOwnerLink(origin: string): Promise<Out<{ ownerUrl: string; ownerToken: string }>>;
+  requestEmail(email: string, origin: string): Promise<Out<Venue>>;
+  confirmEmail(code: string): Promise<Out<Venue>>;
   state(): Promise<Out<VenueState>>;
   read(): Promise<Out<StreetRead>>;
   plan(input: PlanInput): Promise<Out<PlanResponse>>;
   refine(planId: string, request: string): Promise<Out<PlanResponse>>;
   approve(planId: string, input: ApproveInput, origin: string): Promise<Out<Night>>;
-  result(nightId: string, headcount: number, note?: string): Promise<Out<Night>>;
+  result(nightId: string, headcount: number, note?: string, capacity?: number): Promise<Out<Night>>;
+  unpublish(nightId: string): Promise<Out<Night>>;
+  republish(nightId: string): Promise<Out<Night>>;
+  report(slug: string): Promise<Out<{ hidden: boolean }>>;
   connectEventbrite(token: string): Promise<Out<{ organization: string }>>;
   disconnectEventbrite(): Promise<Out<{ disconnected: true }>>;
   destroy(): Promise<Out<{ deleted: true }>>;
   baseline(): Promise<Out<Baseline>>;
   publicNight(slug: string, browser: string | null): Promise<Out<PublicNight>>;
   rsvp(slug: string, browser: string): Promise<Out<{ count: number; already: boolean }>>;
-  monday(): Promise<Out<{ planned: boolean; emailed: boolean; nextAlarm: string }>>;
+  monday(): Promise<Out<MondayRun>>;
+  dashboard(): Promise<Out<VenueDashboard>>;
+}
+
+export interface MondayRun {
+  planned: boolean;
+  emailed: boolean;
+  nextAlarm: string | null;
+  idle?: "paused" | "deleted";
 }
 
 export const ok = <T>(value: T): Out<T> => ({ ok: true, value });

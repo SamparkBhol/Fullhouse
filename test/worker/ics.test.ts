@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildIcs, escapeIcsText, foldLine } from "../../src/worker/actions/ics.ts";
-import { nightWindow, zonedToUtc } from "../../src/worker/zones.ts";
+import { localToUtc, nightWindow } from "../../src/worker/zones.ts";
 
 const enc = new TextEncoder();
 
@@ -31,8 +31,8 @@ describe("ics text", () => {
 });
 
 describe("buildIcs", () => {
-  const start = zonedToUtc("2026-11-05", "19:00", "Europe/Berlin");
-  const end = zonedToUtc("2026-11-05", "22:00", "Europe/Berlin");
+  const start = localToUtc("2026-11-05", "19:00", "Europe/Berlin");
+  const end = localToUtc("2026-11-05", "22:00", "Europe/Berlin");
   const ics = buildIcs({
     uid: "n1@fullhouse",
     start,
@@ -68,10 +68,10 @@ describe("buildIcs", () => {
 
 describe("venue time zones", () => {
   it("converts local times to UTC across a DST change", () => {
-    expect(zonedToUtc("2026-07-02", "19:00", "Europe/Berlin").toISOString()).toBe("2026-07-02T17:00:00.000Z");
-    expect(zonedToUtc("2026-11-05", "19:00", "Europe/Berlin").toISOString()).toBe("2026-11-05T18:00:00.000Z");
-    expect(zonedToUtc("2026-11-05", "19:00", "America/New_York").toISOString()).toBe("2026-11-06T00:00:00.000Z");
-    expect(zonedToUtc("2026-11-05", "19:00", "Asia/Kolkata").toISOString()).toBe("2026-11-05T13:30:00.000Z");
+    expect(localToUtc("2026-07-02", "19:00", "Europe/Berlin").toISOString()).toBe("2026-07-02T17:00:00.000Z");
+    expect(localToUtc("2026-11-05", "19:00", "Europe/Berlin").toISOString()).toBe("2026-11-05T18:00:00.000Z");
+    expect(localToUtc("2026-11-05", "19:00", "America/New_York").toISOString()).toBe("2026-11-06T00:00:00.000Z");
+    expect(localToUtc("2026-11-05", "19:00", "Asia/Kolkata").toISOString()).toBe("2026-11-05T13:30:00.000Z");
   });
 
   it("moves the end to the next day when a night runs past midnight", () => {

@@ -1,8 +1,10 @@
 import type { ActionKind, ActionResult, NightPlan, PlanInput, Venue } from "../../shared/contract.ts";
 import { esc } from "../pages/html.ts";
 import { eventUrl, placeLine } from "../pages/event.ts";
+import { guestLine } from "../pages/guest.ts";
 import { makeSlug } from "../slug.ts";
-import { eventbriteUtc, longDate, nightWindow } from "../zones.ts";
+import { describeDate } from "../../core/index.ts";
+import { eventbriteUtc, nightWindow } from "../zones.ts";
 import { sendOwnerEmail } from "./email.ts";
 import { createEventbriteEvent, currencyForZone, type EventbriteDraft } from "./eventbrite.ts";
 import { gcalUrl, gmailUrl, isEmail, mailtoUrl, outlookUrl, outreachBody } from "./links.ts";
@@ -27,6 +29,7 @@ export interface ActionContext {
   eventbrite: { token: string; organizationId: string } | null;
   resend: { key: string; from: string } | null;
   ownerLink: string;
+  mailCapped?: boolean;
   slugRand?: () => string;
 }
 
@@ -39,21 +42,19 @@ export interface ActionRun {
 const DEFAULT_TICKETS = 50;
 
 function whenLine(night: NightPlan): string {
-  return `${longDate(night.date)}, ${night.start} to ${night.end}`;
+  return `${describeDate(night.date)}, ${night.start} to ${night.end}`;
 }
 
-function eventbriteHtml(night: NightPlan, url: string | undefined): string {
+function eventbriteHtml(night: NightPlan, venueName: string, url: string | undefined): string {
   const paras = night.copy.eventDescription
     .split(/\n{2,}/)
     .map((p) => p.trim())
     .filter(Boolean)
     .map((p) => `<p>${esc(p)}</p>`)
     .join("");
-  const why = night.why.slice(0, 3).map((b) => `<li>${esc(b.text)}</li>`).join("");
   return (
     paras +
-    (why ? `<p>Why this night, here:</p><ul>${why}</ul>` : "") +
-    `<p>Picked with Qloo taste data for the area. These are patterns for the neighbourhood, not facts about any one person.</p>` +
+    `<p>${esc(guestLine(night, venueName))}. Qloo's taste data is a pattern across many people, not a fact about any one person.</p>` +
     (url ? `<p>More details: <a href="${esc(url)}">${esc(url)}</a></p>` : "")
   );
 }
@@ -187,7 +188,7 @@ export async function runActions(ctx: ActionContext): Promise<ActionRun> {
           organizationId: ctx.eventbrite.organizationId,
           name: ctx.night.copy.eventTitle,
           summary: (ctx.night.copy.posterSub || ctx.night.copy.eventDescription).replace(/\s+/g, " ").slice(0, 140),
-          descriptionHtml: eventbriteHtml(ctx.night, publicPageUrl),
+          descriptionHtml: eventbriteHtml(ctx.night, ctx.venue.entity.name, publicPageUrl),
           timezone: ctx.venue.tz,
           startUtc: eventbriteUtc(window.start),
           endUtc: eventbriteUtc(window.end),
@@ -219,7 +220,11 @@ export async function runActions(ctx: ActionContext): Promise<ActionRun> {
           break;
         }
         if (!ctx.resend) {
-          results.push({ kind, ok: false, label: "Email to you", detail: "Email is not set up on this server, so nothing was sent." });
+          results.push({ kind, ok: false, label: "Email to you", detail: "Email is off on this server, so nothing was sent." });
+          break;
+        }
+        if (ctx.mailCapped) {
+          results.push({ kind, ok: false, label: "Email to you", detail: "Full House already sent this venue three emails today, so this one was held back." });
           break;
         }
         const sent = await sendOwnerEmail(ctx.resend, ctx.venue.ownerEmail, ownerMail(ctx, results), ctx.fetch);

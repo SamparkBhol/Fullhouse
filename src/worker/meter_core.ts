@@ -1,14 +1,21 @@
 import type { Store } from "./store.ts";
 import { secondsToUtcMidnight, utcDay } from "./zones.ts";
 
-export type LimitKind = "create" | "search" | "rsvp" | "baseline";
+export type LimitKind = "create" | "search" | "rsvp" | "rsvp_night" | "baseline" | "read" | "plan" | "report";
 
 export const IP_LIMITS: Record<LimitKind, number> = {
   create: 20,
   search: 120,
   rsvp: 60,
+  rsvp_night: 3,
   baseline: 10,
+  read: 30,
+  plan: 60,
+  report: 10,
 };
+
+// New sign ups can spend only this share of the daily budget, so they never starve venues that already run.
+export const NEW_VENUE_SHARE = 0.8;
 
 export interface HitResult {
   ok: boolean;
@@ -23,7 +30,7 @@ export interface MeterUsage {
 }
 
 export interface MeterApi {
-  spend(calls: number): Promise<boolean>;
+  spend(calls: number, established?: boolean): Promise<boolean>;
   hit(key: string, kind: LimitKind): Promise<HitResult>;
   usage(): Promise<MeterUsage>;
 }
@@ -45,13 +52,21 @@ export class MeterCore implements MeterApi {
     return day;
   }
 
-  async spend(calls: number): Promise<boolean> {
+  async spend(calls: number, established = false): Promise<boolean> {
     if (!Number.isFinite(calls) || calls <= 0) return true;
     await this.today();
     const used = (await this.store.get<number>("qloo")) ?? 0;
-    if (used + calls > this.budget) return false;
+    const cap = established ? this.budget : Math.floor(this.budget * NEW_VENUE_SHARE);
+    if (used + calls > cap) return false;
     await this.store.put("qloo", used + calls);
     return true;
+  }
+
+  // Calls a request set aside and never used go back to the day they were taken from, never to a later one.
+  async refund(calls: number, day: string): Promise<void> {
+    if (!Number.isFinite(calls) || calls <= 0 || (await this.today()) !== day) return;
+    const used = (await this.store.get<number>("qloo")) ?? 0;
+    await this.store.put("qloo", Math.max(0, used - Math.floor(calls)));
   }
 
   async hit(key: string, kind: LimitKind): Promise<HitResult> {

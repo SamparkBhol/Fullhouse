@@ -1,14 +1,18 @@
 import { DurableObject } from "cloudflare:workers";
 import { applyRefine, createQloo, nextMondayNine, parseRefineFallback, planNights, readStreet, REFINE_TOOL, runBaseline, writeCopy } from "../core/index.ts";
 import type { ApproveInput, Baseline, CreateVenueInput, Night, PlanInput, PlanResponse, StreetRead, Venue, VenueCandidate, VenueState } from "../shared/contract.ts";
+import type { VenueDashboard } from "../shared/stats.ts";
 import { makeGenerate } from "./ai.ts";
-import { modelOf, resendOf, type Env } from "./env.ts";
+import { modelOf, resendOf, tokenSecretOf, type Env } from "./env.ts";
+import { newNightId } from "./ids.ts";
 import type { MeterApi } from "./meter_core.ts";
 import type { PublicNight } from "./pages/event.ts";
-import { buildQloo, cacheApiCache, sqlCache, tieredCache, type SqlLike } from "./qloo_wiring.ts";
+import { buildQloo } from "./qloo/build.ts";
+import { cacheApiCache, sqlCache, tieredCache, type SqlLike } from "./qloo/caches.ts";
+import { StatsBuffer, type StatsApi } from "./stats/buffer.ts";
+import { settleVenueStats } from "./stats/venue_history.ts";
 import { doStore } from "./store.ts";
-import { newNightId } from "./tokens.ts";
-import type { CoreFns, Out, VenueApi } from "./venue/api.ts";
+import type { CoreFns, MondayRun, Out, VenueApi } from "./venue/api.ts";
 import { VenueCore } from "./venue/core.ts";
 
 export const CORE_FNS: CoreFns = { readStreet, planNights, writeCopy, runBaseline, nextMondayNine, REFINE_TOOL, parseRefineFallback, applyRefine };
@@ -17,46 +21,84 @@ export function meterStub(env: Env): MeterApi {
   return env.METER.get(env.METER.idFromName("global")) as unknown as MeterApi;
 }
 
+export function statsStub(env: Env): StatsApi {
+  return meterStub(env) as unknown as StatsApi;
+}
+
 export class VenueAgent extends DurableObject<Env> implements VenueApi {
   // Built per call so each invocation gets its own cache operation allowance and budget reservation.
-  private core(): VenueCore {
+  private core(stats?: StatsBuffer): VenueCore {
     const env = this.env;
     const sql = this.ctx.storage.sql as unknown as SqlLike;
     const model = modelOf(env);
     return new VenueCore(doStore(this.ctx.storage), {
       core: CORE_FNS,
-      qloo: () => buildQloo(env, createQloo, tieredCache(sqlCache(sql), cacheApiCache(10)), meterStub(env)),
+      qloo: (established) => buildQloo(env, createQloo, tieredCache(sqlCache(sql), cacheApiCache(10)), meterStub(env), established, stats),
       generate: makeGenerate(env.AI, model),
       ai: env.AI ?? null,
       model,
       fetch: (input, init) => fetch(input, init),
-      secret: env.TOKEN_SECRET ?? "",
+      secret: tokenSecretOf(env),
       resend: resendOf(env),
       now: () => new Date(),
       newId: newNightId,
+      ...(stats ? { stats } : {}),
     });
   }
 
-  init(id: string, input: CreateVenueInput, candidate: VenueCandidate, origin: string): Promise<Out<Venue>> {
-    return this.core().init(id, input, candidate, origin);
+  // Methods that can count something run through here, so their events reach the Meter in one call at the end.
+  // The answer does not wait for the Meter, except in the alarm, which has no answer to send.
+  private async run<T>(work: (core: VenueCore) => Promise<T>, waitForMeter = false): Promise<T> {
+    const stats = new StatsBuffer();
+    try {
+      return await work(this.core(stats));
+    } finally {
+      await settleVenueStats(stats, doStore(this.ctx.storage), statsStub(this.env), waitForMeter ? undefined : (sent) => this.ctx.waitUntil(sent));
+    }
+  }
+
+  init(id: string, input: CreateVenueInput, candidate: VenueCandidate, origin: string): Promise<Out<{ venue: Venue; ownerToken: string }>> {
+    return this.run((c) => c.init(id, input, candidate, origin));
+  }
+  ownerCheck(venueId: string, token: string | null): Promise<boolean> {
+    return this.core().ownerCheck(venueId, token);
+  }
+  newOwnerLink(origin: string): Promise<Out<{ ownerUrl: string; ownerToken: string }>> {
+    return this.core().newOwnerLink(origin);
+  }
+  requestEmail(email: string, origin: string): Promise<Out<Venue>> {
+    return this.core().requestEmail(email, origin);
+  }
+  confirmEmail(code: string): Promise<Out<Venue>> {
+    return this.core().confirmEmail(code);
   }
   state(): Promise<Out<VenueState>> {
     return this.core().state();
   }
   read(): Promise<Out<StreetRead>> {
-    return this.core().read();
+    return this.run((c) => c.read());
   }
   plan(input: PlanInput): Promise<Out<PlanResponse>> {
-    return this.core().plan(input);
+    return this.run((c) => c.plan(input));
   }
   refine(planId: string, request: string): Promise<Out<PlanResponse>> {
-    return this.core().refine(planId, request);
+    return this.run((c) => c.refine(planId, request));
   }
+  // Input gates do not hold across the Eventbrite and email fetches, so a second tap must wait for the first.
   approve(planId: string, input: ApproveInput, origin: string): Promise<Out<Night>> {
-    return this.core().approve(planId, input, origin);
+    return this.ctx.blockConcurrencyWhile(() => this.run((c) => c.approve(planId, input, origin)));
   }
-  result(nightId: string, headcount: number, note?: string): Promise<Out<Night>> {
-    return this.core().result(nightId, headcount, note);
+  result(nightId: string, headcount: number, note?: string, capacity?: number): Promise<Out<Night>> {
+    return this.run((c) => c.result(nightId, headcount, note, capacity));
+  }
+  unpublish(nightId: string): Promise<Out<Night>> {
+    return this.run((c) => c.unpublish(nightId));
+  }
+  republish(nightId: string): Promise<Out<Night>> {
+    return this.core().republish(nightId);
+  }
+  report(slug: string): Promise<Out<{ hidden: boolean }>> {
+    return this.run((c) => c.report(slug));
   }
   connectEventbrite(token: string): Promise<Out<{ organization: string }>> {
     return this.core().connectEventbrite(token);
@@ -65,22 +107,26 @@ export class VenueAgent extends DurableObject<Env> implements VenueApi {
     return this.core().disconnectEventbrite();
   }
   destroy(): Promise<Out<{ deleted: true }>> {
-    return this.core().destroy();
+    return this.run((c) => c.destroy());
   }
   baseline(): Promise<Out<Baseline>> {
-    return this.core().baseline();
+    return this.run((c) => c.baseline());
   }
   publicNight(slug: string, browser: string | null): Promise<Out<PublicNight>> {
     return this.core().publicNight(slug, browser);
   }
   rsvp(slug: string, browser: string): Promise<Out<{ count: number; already: boolean }>> {
-    return this.core().rsvp(slug, browser);
+    return this.run((c) => c.rsvp(slug, browser));
   }
-  monday(): Promise<Out<{ planned: boolean; emailed: boolean; nextAlarm: string }>> {
-    return this.core().monday();
+  monday(): Promise<Out<MondayRun>> {
+    return this.run((c) => c.monday());
+  }
+
+  dashboard(): Promise<Out<VenueDashboard>> {
+    return this.core().dashboard();
   }
 
   override async alarm(): Promise<void> {
-    await this.core().monday();
+    await this.run((c) => c.monday(), true);
   }
 }

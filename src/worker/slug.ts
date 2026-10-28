@@ -1,4 +1,4 @@
-import { randomId, VENUE_ID_RE } from "./tokens.ts";
+import { randomId, VENUE_ID_RE } from "./ids.ts";
 
 const SLUG_RE = /^[a-z0-9-]{1,120}$/;
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { applyRefine, parseRefineFallback, REFINE_TOOL } from "../../src/core/index.ts";
-import { extractJsonObject, makeGenerate, refineInput, responseText, toolArguments } from "../../src/worker/ai.ts";
+import { extractJson } from "../../src/core/index.ts";
+import { makeGenerate, refineInput, responseText, toolArguments } from "../../src/worker/ai.ts";
 import type { AiLike } from "../../src/worker/env.ts";
 
 const CORE = { REFINE_TOOL, parseRefineFallback, applyRefine };
@@ -65,9 +66,9 @@ describe("refine pipeline", () => {
 
 describe("model output helpers", () => {
   it("pull the first JSON object out of prose or a fence", () => {
-    expect(extractJsonObject('ok ```json\n{"a": {"b": "}"}}\n``` done')).toEqual({ a: { b: "}" } });
-    expect(extractJsonObject('prefix {"weekday": 2} suffix {"x":1}')).toEqual({ weekday: 2 });
-    expect(extractJsonObject("no json here")).toBeUndefined();
+    expect(extractJson('ok ```json\n{"a": {"b": "}"}}\n``` done')).toEqual({ a: { b: "}" } });
+    expect(extractJson('prefix {"weekday": 2} suffix {"x":1}')).toEqual({ weekday: 2 });
+    expect(extractJson("no json here")).toBeNull();
   });
 
   it("read text from the Workers AI and OpenAI response shapes", () => {

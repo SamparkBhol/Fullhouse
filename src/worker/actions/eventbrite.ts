@@ -1,4 +1,7 @@
+import { esc } from "../pages/html.ts";
+
 export const EVENTBRITE_API = "https://www.eventbriteapi.com/v3";
+const EVENT_URL = /^https:\/\/www\.eventbrite\.[a-z.]+\//;
 
 export interface EventbriteOrg {
   id: string;
@@ -72,7 +75,7 @@ export function venueBody(d: EventbriteDraft): Record<string, unknown> {
 
 export function eventBody(d: EventbriteDraft, venueId: string | null): Record<string, unknown> {
   const event: Record<string, unknown> = {
-    name: { html: d.name.slice(0, 250) },
+    name: { html: esc(d.name.slice(0, 250)) },
     summary: d.summary.slice(0, 140),
     description: { html: d.descriptionHtml },
     start: { timezone: d.timezone, utc: d.startUtc },
@@ -107,12 +110,13 @@ export async function createEventbriteEvent(token: string, d: EventbriteDraft, f
 
   const draft = venueId
     ? d
-    : { ...d, descriptionHtml: `${d.descriptionHtml}<p>Where: ${escapeBasic(d.venue.name)}${d.venue.address ? `, ${escapeBasic(d.venue.address)}` : ""}, ${escapeBasic(d.venue.city)}</p>` };
+    : { ...d, descriptionHtml: `${d.descriptionHtml}<p>Where: ${esc(d.venue.name)}${d.venue.address ? `, ${esc(d.venue.address)}` : ""}, ${esc(d.venue.city)}</p>` };
   const e = await post(`/organizations/${encodeURIComponent(d.organizationId)}/events/`, eventBody(draft, venueId));
   if (!e) return { ok: false, reason: "Eventbrite could not be reached while creating the event." };
   if (!e.res.ok) return { ok: false, reason: reasonOf(e.res.status, e.json, "create the event") };
   const eventId = typeof e.json["id"] === "string" || typeof e.json["id"] === "number" ? String(e.json["id"]) : "";
-  const url = typeof e.json["url"] === "string" ? e.json["url"] : "";
+  // The link goes into the owner's email, so only an Eventbrite address is trusted.
+  const url = typeof e.json["url"] === "string" && EVENT_URL.test(e.json["url"]) ? e.json["url"] : "";
   if (!eventId) return { ok: false, reason: "Eventbrite created something but did not return an event id." };
 
   const t = await post(`/events/${encodeURIComponent(eventId)}/ticket_classes/`, ticketBody(d));
@@ -125,10 +129,6 @@ export async function createEventbriteEvent(token: string, d: EventbriteDraft, f
     return { ok: false, reason: `${reasonOf(p.res.status, p.json, "publish the event")} The draft is at ${url}` };
   }
   return { ok: true, url: url || `https://www.eventbrite.com/e/${eventId}`, eventId, venueAttached: venueId !== null };
-}
-
-function escapeBasic(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 const CURRENCY_BY_ZONE: Array<[RegExp, string]> = [

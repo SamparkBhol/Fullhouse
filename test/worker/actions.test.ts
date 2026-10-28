@@ -63,9 +63,10 @@ describe("mail drafts", () => {
     expect(o.searchParams.get("to")).toBe("bar@example.com");
   });
 
-  it("add the aggregate data note unless the pitch already says it", () => {
+  it("always add the aggregate data note, even when the pitch uses the word aggregate", () => {
     expect(outreachBody("Hi", "https://x.example/e/s")).toBe(`Hi\n\nEvent page: https://x.example/e/s\n\n${AGGREGATE_NOTE}`);
-    expect(outreachBody("Hi, this is an aggregate signal.")).toBe("Hi, this is an aggregate signal.");
+    expect(outreachBody("Hi, this is an aggregate signal.")).toBe(`Hi, this is an aggregate signal.\n\n${AGGREGATE_NOTE}`);
+    expect(outreachBody(`Hi\n\n${AGGREGATE_NOTE}`)).toBe(`Hi\n\n${AGGREGATE_NOTE}`);
   });
 
   it("checks email addresses", () => {

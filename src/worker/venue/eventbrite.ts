@@ -1,6 +1,6 @@
 import type { Venue } from "../../shared/contract.ts";
 import { eventbriteOrganization } from "../actions/eventbrite.ts";
-import { seal, unseal } from "../tokens.ts";
+import { seal, unseal } from "../crypto.ts";
 import { fail, noVenue, ok, type Out, type VenueDeps } from "./api.ts";
 import type { EventbriteRecord, VenueRecords } from "./records.ts";
 

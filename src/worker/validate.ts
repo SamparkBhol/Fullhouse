@@ -1,8 +1,8 @@
 import { z } from "zod";
 import type { ActionKind, NightFormat, PlanInput, QuietSlot } from "../shared/contract.ts";
 import { isEmail } from "./actions/links.ts";
-import { NIGHT_ID_RE } from "./tokens.ts";
-import { isTimeZone } from "./zones.ts";
+import { NIGHT_ID_RE } from "./ids.ts";
+import { isValidTimeZone } from "../core/index.ts";
 
 export const FORMATS = ["listening", "film", "quiz", "book", "games", "podcast", "tasting"] as const satisfies readonly NightFormat[];
 export const ACTIONS = ["event_page", "poster", "ics", "gcal", "outreach", "eventbrite", "owner_email"] as const satisfies readonly ActionKind[];
@@ -23,7 +23,7 @@ export const QuietSlotSchema = z.object({
 export const CreateVenueSchema = z.object({
   candidate: z.object({ id: text(80), name: text(200) }),
   city: text(120),
-  tz: z.string().trim().refine(isTimeZone, "not a known time zone"),
+  tz: z.string().trim().refine((tz) => tz.length <= 64 && isValidTimeZone(tz), "not a known time zone"),
   quietSlot: QuietSlotSchema,
   capacity: z.number().int().min(1).max(5000).optional(),
   ownerEmail: email.optional(),
@@ -53,11 +53,24 @@ export const ApproveSchema = z.object({
     .max(ACTIONS.length)
     .transform((a) => [...new Set(a)]),
   partnerEmails: z.record(z.string().regex(/^[A-Za-z0-9:_-]{1,80}$/), email).optional(),
+  copy: z
+    .object({
+      eventTitle: z.string().max(200).optional(),
+      eventDescription: z.string().max(2000).optional(),
+      posterHeadline: z.string().max(200).optional(),
+      posterSub: z.string().max(300).optional(),
+    })
+    .optional(),
 });
+
+export const EmailSchema = z.object({ email });
+
+export const ConfirmSchema = z.object({ code: z.string().regex(/^[A-Za-z0-9_-]{20,64}$/, "that is not a confirmation code") });
 
 export const ResultSchema = z.object({
   headcount: z.number().int().min(0).max(100000),
   note: z.string().trim().max(500).optional(),
+  capacity: z.number().int().min(1).max(5000).optional(),
 });
 
 export const EventbriteSchema = z.object({

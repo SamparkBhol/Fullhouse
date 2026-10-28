@@ -3,6 +3,7 @@ import type { CreateVenueInput, Night } from "../../src/shared/contract.ts";
 import { MemoryStore } from "../../src/worker/store.ts";
 import { VenueCore } from "../../src/worker/venue/core.ts";
 import { mondayInput } from "../../src/worker/venue/monday.ts";
+import { confirmsVenue } from "../../src/worker/venue/owner.ts";
 import { CANDIDATE, fakeCore, fakeFetch, type FakeCoreLog, venueDeps } from "./helpers.ts";
 
 const INPUT: CreateVenueInput = {
@@ -43,10 +44,13 @@ describe("VenueAgent core", () => {
     const mail = fakeFetch(() => ({ body: { id: "m1" } }));
     const { venue, store, log } = setup({ fetch: mail, resend: { key: "re_x", from: "Full House <a@b.example>" } });
     await venue.init("abcdefghijkm", INPUT, CANDIDATE, "https://x.example");
+    const code = /#c=([A-Za-z0-9_-]+)/.exec(JSON.stringify(mail.calls[0]!.body))?.[1] ?? "";
+    expect((await venue.confirmEmail(code)).ok).toBe(true);
+    mail.calls.length = 0;
     await venue.read();
     const out = await venue.monday();
     expect(out).toMatchObject({ ok: true, value: { planned: true, emailed: true } });
-    expect(log.reads.at(-1)).toEqual({ venueId: "abcdefghijkm", hadPrevious: true });
+    expect(log.reads.at(-1)).toEqual({ venueId: "abcdefghijkm", hadPrevious: true, exclude: [] });
     expect(log.plans.at(-1)).toMatchObject({ origin: "monday", input: { weekday: 4, start: "19:00", durationMin: 180, maxPeople: 40 } });
     expect(store.alarm).toBeGreaterThan(new Date("2026-10-25T10:00:00Z").getTime());
     const state = await venue.state();
@@ -57,6 +61,36 @@ describe("VenueAgent core", () => {
     expect((mail.calls[0]!.body as { to: string[] }).to).toEqual(["owner@example.com"]);
     expect((mail.calls[0]!.body as { text: string }).text).toContain("https://x.example/v/abcdefghijkm#t=");
     expect((mail.calls[0]!.body as { text: string }).text).toContain("Nothing is published until you approve it.");
+  });
+
+  it("never emails an address nobody confirmed", async () => {
+    const mail = fakeFetch(() => ({ body: { id: "m1" } }));
+    const { venue } = setup({ fetch: mail, resend: { key: "re_x", from: "Full House <a@b.example>" } });
+    await venue.init("abcdefghijkm", INPUT, CANDIDATE, "https://x.example");
+    mail.calls.length = 0;
+    expect(await venue.monday()).toMatchObject({ ok: true, value: { planned: true, emailed: false } });
+    expect(mail.calls).toHaveLength(0);
+  });
+
+  it("asks Qloo to leave out the features of nights from the last eight weeks", async () => {
+    const { venue, store, log } = setup();
+    await venue.init("abcdefghijkm", INPUT, CANDIDATE, "https://x.example");
+    const feature = { id: "FILM-1", name: "The Farewell", type: "movie", rank: 1, trend: "unknown", because: [] };
+    await store.put("night:n1", { night: { id: "n1", date: "2026-10-22", feature }, input: {}, published: { page: true, poster: true, ics: true } });
+    await store.put("night:n0", { night: { id: "n0", date: "2026-07-01", feature: { ...feature, id: "OLD" } }, input: {}, published: { page: true, poster: true, ics: true } });
+    await venue.monday();
+    expect(log.reads.at(-1)?.exclude).toEqual(["FILM-1"]);
+  });
+
+  it("pauses the Monday runs of a venue nobody opened for eight weeks and deletes it after six months", async () => {
+    const { venue, store, deps, log } = setup();
+    await venue.init("abcdefghijkm", INPUT, CANDIDATE, "https://x.example");
+    deps.now = () => new Date("2026-12-25T10:00:00Z");
+    expect(await venue.monday()).toMatchObject({ ok: true, value: { planned: false, idle: "paused" } });
+    expect(log.reads).toHaveLength(0);
+    deps.now = () => new Date("2027-05-01T10:00:00Z");
+    expect(await venue.monday()).toMatchObject({ ok: true, value: { idle: "deleted" } });
+    expect(store.data.size).toBe(0);
   });
 
   it("the Monday run still re-arms when Qloo is unavailable", async () => {
@@ -152,6 +186,12 @@ describe("mondayInput", () => {
     expect(mondayInput(venue, [])).toEqual({ weekday: 2, start: "18:30", durationMin: 120, maxPeople: 50, noLiveMusic: true });
   });
 
+  it("keeps a format whose last night filled 60 percent of the room, measured against the night's own cap", () => {
+    const capped = [{ status: "done", headcount: 18, maxPeople: 25, format: "film", date: "2026-10-20", start: "18:30" }] as unknown as Night[];
+    expect(mondayInput(venue, capped).preferFormats).toEqual(["film"]);
+    expect(mondayInput(venue, capped).avoidFormats).toBeUndefined();
+  });
+
   it("steps away from a format whose last night drew under 40 percent of capacity", () => {
     const nights = [
       { status: "done", headcount: 12, format: "quiz", date: "2026-10-20", start: "18:30" },
@@ -160,5 +200,14 @@ describe("mondayInput", () => {
     expect(mondayInput(venue, nights).avoidFormats).toEqual(["quiz"]);
     const good = [{ status: "done", headcount: 30, format: "quiz", date: "2026-10-20", start: "18:30" }] as unknown as Night[];
     expect(mondayInput(venue, good).avoidFormats).toBeUndefined();
+  });
+});
+
+describe("confirmsVenue", () => {
+  it("confirms a venue when the owner's address is on the venue's own website domain", () => {
+    const withSite = { ...CANDIDATE, url: "https://www.bluehour.example/shop" };
+    expect(confirmsVenue("anna@bluehour.example", withSite)).toBe(true);
+    expect(confirmsVenue("anna@mail.example", withSite)).toBe(false);
+    expect(confirmsVenue("anna@bluehour.example", CANDIDATE)).toBe(false);
   });
 });
