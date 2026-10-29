@@ -22,18 +22,6 @@ Qloo can see both. Asked with the venue itself as the signal, it returns the rea
 6. **Their yes is the action.** Your screen flips to "Angelika Film Center is in" within seconds. Only then does the public event page, the poster and the calendar file carry both names. Before a yes, nothing public mentions them.
 7. **It comes back every Monday** with a fresh read and the next joint night, leaves out what you already ran, and waits for your yes.
 
-| Type your venue | Your crowd lands |
-| --- | --- |
-| ![The landing page with a real pair from a Qloo read](media/landing.png) | ![The crowd's picks and the night map](media/crowd.png) |
-| **Your match down the street** | **The night both crowds want** |
-| ![Angelika Film Center, 2 minutes from Housing Works Bookstore](media/match.png) | ![A watch night around The Other Two with the split between the two crowds](media/joint-night.png) |
-| **The neighbour's invite** | **Their yes flips your screen** |
-| ![The invite page with We're in and Not this time](media/invite-page.png) | ![The owner's screen after the neighbour said yes](media/the-flip.png) |
-| **Both names go up only after the yes** | **The demo video** |
-| ![The public event page with both names](media/event-page.png) | [temp/fullhouse-demo.mp4](temp/fullhouse-demo.mp4), 2:12 |
-
-Every screenshot is from the live site on 29 October 2026. In the video the neighbour's phone is played by us, and the test venue was deleted afterwards.
-
 ## Who pays
 
 The buyer is the owner of an independent cafe, bar, bookshop, record shop, cinema or gallery with a slow night and nobody to plan it. The price is about 79 dollars a month per venue. Every invite is distribution: the neighbour's first joint night is free, and it sees its own crowd read on the invite page, which is how it becomes the next customer. One plan costs 12 Qloo calls for the read, 5 more for the joint read and two small model calls for the words, on the Cloudflare Workers free plan. There are no paying venues or pilots yet.
