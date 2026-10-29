@@ -68,7 +68,13 @@ export async function verifyPlace(q: Qloo, name: string, venue: Venue): Promise<
   return { name: { name, kind: "place", status: "found_far", note: `${first.name} is in Qloo's catalog, but without a location to measure` }, id: first.id };
 }
 
+const NOT_A_BUSINESS = /locality|destination|neighbou?rhood|city|country|region|borough/i;
+
+// A city or a neighbourhood is in Qloo's catalog too, but naming one is not naming a partner or a work.
 function inCatalog(name: string, kind: BaselineName["kind"], match: QEntity): Checked {
+  if (match.typeName && NOT_A_BUSINESS.test(match.typeName)) {
+    return { name: { name, kind, status: "not_found", note: `${match.name} is a place name (${match.typeName}), not a business or a work, so it is not counted` } };
+  }
   const what = match.typeName ? ` (${match.typeName})` : "";
   return { name: { name, kind, status: "found_nearby", note: `In Qloo's catalog as ${match.name}${what}; distance does not apply` }, id: match.id };
 }

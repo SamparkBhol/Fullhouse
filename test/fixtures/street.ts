@@ -43,7 +43,8 @@ function insightsRoute(p: URLSearchParams): Reply | undefined {
   if (type === "urn:tag") return ok(p.get("signal.interests.entities") ? "insights_venue_tags" : "insights_street_tags");
   if (type === "urn:heatmap") return ok(p.get("signal.interests.entities") ? "heatmap_venue" : "heatmap_street");
   if (type === "urn:demographics") return ok("demographics");
-  if (type === "urn:entity:place") return ok("insights_place");
+  // The loves you back read: another place as the signal, inside the circle round the venue.
+  if (type === "urn:entity:place") return ok(p.get("signal.interests.entities") && p.get("signal.interests.entities") !== VENUE_ID ? "insights_place_back" : "insights_place");
   const cross = /^urn:entity:(artist|book|movie|tv_show|podcast)$/.exec(type ?? "");
   if (cross) return ok(`insights_${cross[1]}`);
   return { status: 400, body: { errors: [{ message: `The value ${type} is not supported for filter.type`, path: "filter.type", subtype: type }] } };

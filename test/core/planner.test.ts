@@ -1,10 +1,12 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { FORMATS, PlanError, checkClaims, briefNames, buildBrief } from "../../src/core/index.ts";
-import type { Because, NightPlan, PlanInput, PlanResponse, StreetRead } from "../../src/shared/contract.ts";
+import type { Because, NightPlan, PlanInput, PlanResponse, StreetRead, Venue } from "../../src/shared/contract.ts";
 import { NOW, VENUE } from "../fixtures/street.ts";
 import { fixtureRead, planFrom } from "./plan_setup.ts";
 
 let read: StreetRead;
+
+const CINEMA: Venue = { ...VENUE, entity: { ...VENUE.entity, tags: ["urn:tag:genre:place:movie_theater"] } };
 
 function plan(input: PlanInput = {}, venue = VENUE, r = read): PlanResponse {
   return planFrom(r, input, venue);
@@ -82,23 +84,26 @@ describe("planNights", () => {
     expect(err?.code).toBe("all_avoided");
   });
 
-  it("lets the gap pick the night when it matches a format: a Movie Theater gap makes it a film night", () => {
+  it("never shows a film at a cafe, even when the street lacks a cinema, and never makes a TV show a watch night", () => {
     const gap = read.gaps[0]!;
     const cinemaGap = { tag: { id: "urn:tag:category:place:movie_theater", name: "Movie Theater", namespace: "urn:tag:category:place", rank: 1 }, note: "3 of the 5 places nearby that Cafe Lumen's audience also loves are tagged Movie Theater.", because: gap.because };
     expect(plan({}, VENUE, { ...read, gaps: [] }).plan.format).toBe("listening");
-    const film = plan({}, VENUE, { ...read, gaps: [cinemaGap] }).plan;
-    expect(film.format).toBe("film");
-    expect(film.why.map((b) => b.text)).toContain("A film night answers a gap the read found: 3 of the 5 places nearby that Cafe Lumen's audience also loves are tagged Movie Theater");
+    const res = plan({ preferFormats: ["film"] }, VENUE, { ...read, gaps: [cinemaGap] });
+    for (const p of [res.plan, ...res.alternatives]) expect(p.format).not.toBe("film");
+    const show = { ...read.rising.find((r) => r.type === "movie")!, id: "SHOW-1", name: "PEN15", type: "tv_show" as const, rank: 1, venueSignal: true };
+    const atCinema = plan({ preferFormats: ["film"] }, CINEMA, { ...read, rising: [...read.rising, show] });
+    expect(atCinema.plan.format).toBe("film");
+    expect(atCinema.plan.feature?.type).toBe("movie");
   });
 
   it("never ranks a pick from a list Qloo answered without the venue above one it tied to the venue", () => {
     const untied = read.rising.map((r) => (r.type === "movie" ? { ...r, rank: 1, venueSignal: false } : r));
-    const res = plan({ preferFormats: ["film"] }, VENUE, { ...read, rising: untied });
+    const res = plan({ preferFormats: ["film"] }, CINEMA, { ...read, rising: untied });
     expect(res.plan.format).toBe("film");
     expect(res.plan.feature?.type).toBe("movie");
-    const tiedShow = { ...read.rising.find((r) => r.type === "movie")!, id: "SHOW-1", name: "PEN15", type: "tv_show" as const, rank: 1, venueSignal: true };
-    const mixed = plan({ preferFormats: ["film"] }, VENUE, { ...read, rising: [...untied, tiedShow] });
-    expect(mixed.plan.feature?.name).toBe("PEN15");
+    const tied = { ...read.rising.find((r) => r.type === "movie")!, id: "FILM-2", name: "The Farewell", rank: 2, venueSignal: true };
+    const mixed = plan({ preferFormats: ["film"] }, CINEMA, { ...read, rising: [...untied, tied] });
+    expect(mixed.plan.feature?.name).toBe("The Farewell");
   });
 
   it("offers only alternatives with a named Qloo pick and a real title", () => {
@@ -185,6 +190,6 @@ describe("planNights", () => {
     const p = plan({}, VENUE, bare).plan;
     expect(p.partners).toEqual([]);
     expect(p.limits).toContain("No place within a 1 km walk came back from Qloo, so this night has no partners.");
-    expect(p.limits).toContain("Qloo returned no food or drink tags for your audience or the street, so there are no menu ideas.");
+    expect(p.limits).toContain("No food or drink tags came back for your audience or the street, so there are no menu ideas.");
   });
 });

@@ -53,14 +53,25 @@ function isNightTitle(name: string, events: string[], venue: Venue): boolean {
   return events.some((e) => sameName(e, name)) || normalizeName(name).split(" ").includes(day);
 }
 
+// "a local author" and "New York" are not names of businesses or works: one is a lower case phrase, the other is
+// the venue's own city, so neither counts for or against the model.
+export function isNotAName(name: string, venue: Venue): boolean {
+  const n = normalizeName(name);
+  if (!/\p{Lu}/u.test(name.trim())) return true;
+  const city = normalizeName(venue.city);
+  if (n === city || (city && normalizeName(venue.entity.address ?? "").includes(n) && n.split(" ").length <= 2)) return true;
+  return /^(the )?(city|downtown|neighbou?rhood|local|nearby|area)( of .+)?$/.test(n);
+}
+
 export async function extractNames(text: string, generate: Generate, venue: Venue): Promise<Extracted> {
   const raw = await generate(EXTRACT_SYSTEM, text.slice(0, 6000)).catch(() => "");
   const obj = extractJson(raw);
+  const named = (v: unknown, max: number) => cleanList(v, max + 3).filter((n) => !isNotAName(n, venue)).slice(0, max);
   if (obj && typeof obj === "object" && !Array.isArray(obj)) {
     const o = obj as Record<string, unknown>;
     const events = cleanList(o.events, 4);
-    const other = cleanList(o.other, MAX_OTHER + 2).filter((n) => !isNightTitle(n, events, venue)).slice(0, MAX_OTHER);
-    return { places: cleanList(o.places, MAX_PLACES), artists: cleanList(o.artists, MAX_ARTISTS), other, method: "model" };
+    const other = named(o.other, MAX_OTHER + 2).filter((n) => !isNightTitle(n, events, venue)).slice(0, MAX_OTHER);
+    return { places: named(o.places, MAX_PLACES), artists: named(o.artists, MAX_ARTISTS), other, method: "model" };
   }
   const found = findNames(text).filter((f) => f.multi).map((f) => f.text);
   const other = cleanList(found, MAX_PLACES + MAX_OTHER + 2).filter((n) => !isNightTitle(n, [], venue)).slice(0, MAX_PLACES + MAX_OTHER);

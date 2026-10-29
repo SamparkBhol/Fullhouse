@@ -38,9 +38,9 @@ describe("partners, menu ideas and the playlist", () => {
   });
 
   it("does not pick a partner only because it shares a tag the venue already has", () => {
-    const shared = read.shared[0];
+    const shared = VENUE.entity.tags.find((t) => read.lovedPlaces.some((p) => p.tags.includes(t)));
     expect(shared).toBeDefined();
-    const office = { ...read.lovedPlaces[0]!, id: "OFFICE-1", name: "Sutter Office Tower", rank: read.lovedPlaces.length + 1, distanceM: 200, tags: [shared!.id] };
+    const office = { ...read.lovedPlaces[0]!, id: "OFFICE-1", name: "Sutter Office Tower", rank: read.lovedPlaces.length + 1, distanceM: 200, tags: [shared!] };
     const withOffice: StreetRead = { ...read, lovedPlaces: [...read.lovedPlaces, office] };
     expect(plan({}, VENUE, withOffice).plan.partners.map((x) => x.name)).not.toContain("Sutter Office Tower");
   });
@@ -72,7 +72,7 @@ describe("partners, menu ideas and the playlist", () => {
 
   it("drops partners Qloo lists as closed for the night and shows the hours of the rest", () => {
     const listening = plan().plan;
-    expect(listening.partners[0]?.because.map((b) => b.text)).toContain("Open Thursdays 17:00 to 23:30, from Qloo's listing");
+    expect(listening.partners[0]?.because.map((b) => b.text)).toContain("Open Thursdays 17:00 to 23:30, by its listing");
     const closedTonight = read.lovedPlaces.map((p) => (p.name === "Blue Hour Wine Bar" ? { ...p, hours: { thursday: [{ closed: true }] } } : p));
     const res = plan({}, VENUE, { ...read, lovedPlaces: closedTonight }).plan;
     expect(res.partners.map((p) => p.name)).not.toContain("Blue Hour Wine Bar");
@@ -80,11 +80,11 @@ describe("partners, menu ideas and the playlist", () => {
     const shutEarly = read.lovedPlaces.map((p) => (p.name === "Kettle Books" ? { ...p, hours: { thursday: [{ opens: "10:00", closes: "18:00" }] } } : p));
     expect(plan({ preferFormats: ["book"] }, VENUE, { ...read, lovedPlaces: shutEarly }).plan.partners.map((p) => p.name)).not.toContain("Kettle Books");
     const noHours = plan().plan.partners.find((p) => !p.hours);
-    if (noHours) expect(noHours.because.map((b) => b.text)).toContain(`Qloo has no opening hours for ${noHours.name}, check before you send`);
+    if (noHours) expect(noHours.because.map((b) => b.text)).toContain(`${noHours.name} has no opening hours listed, so check before you send`);
   });
 
   it("builds the playlist only from the street's artist results, with the licence note", () => {
-    const p = plan({ preferFormats: ["film"] }).plan;
+    const p = plan({ preferFormats: ["film"] }, { ...VENUE, entity: { ...VENUE.entity, tags: ["urn:tag:genre:place:movie_theater"] } }).plan;
     const artists = read.rising.filter((r) => r.type === "artist").map((r) => r.id);
     expect(p.playlist.map((a) => a.id)).toEqual(artists);
     expect(p.playlist.every((a) => a.type === "artist")).toBe(true);

@@ -21,7 +21,8 @@ let film: NightPlan;
 beforeAll(async () => {
   const f = fakeFetch([streetRoute]);
   read = await readStreet(createQloo({ apiKey: "k", fetch: f.fetch, now: () => NOW }), VENUE);
-  film = planNights(read, VENUE, { preferFormats: ["film"] }, NOW, "owner", () => "p1").plan;
+  const cinema = { ...VENUE, entity: { ...VENUE.entity, tags: ["urn:tag:genre:place:movie_theater"] } };
+  film = { ...planNights(read, cinema, { preferFormats: ["film"] }, NOW, "owner", () => "p1").plan, venueId: VENUE.id };
 });
 
 function themed(tags: StreetTag[], type: QlooType = "tv_show"): NightPlan {

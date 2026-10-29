@@ -163,7 +163,7 @@ describe("partner pitch template", () => {
     expect(paragraphs[0]).toBe("Hi there,");
     expect(paragraphs[1]).toMatch(/^We run Cafe Lumen, a short walk from you\. On Thursday 29 October from 19:00 to 22:00 we are putting on a listening night around Alice Coltrane\.$/);
     expect(paragraphs[2]).toBe(
-      "Qloo's aggregate taste data puts your place among the spots nearby that people who like Cafe Lumen also like, which is why we are writing to you.",
+      "Taste data puts your place among the spots nearby that people who like Cafe Lumen also like, which is why we are writing to you.",
     );
     expect(paragraphs[3]).toMatch(/^Would you cross promote it with us\?/);
     expect(paragraphs.at(-1)).toBe("Thanks,\nCafe Lumen");

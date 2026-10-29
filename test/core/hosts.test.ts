@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { canHost, foodLed } from "../../src/core/street/hosts.ts";
-import { competes, matchCandidates } from "../../src/core/match/candidates.ts";
+import { pairCandidates } from "../../src/core/pair/candidates.ts";
+import { rivals } from "../../src/core/pair/groups.ts";
 import type { LovedPlace } from "../../src/shared/contract.ts";
 import { VENUE } from "../fixtures/street.ts";
 
@@ -45,17 +46,22 @@ describe("places that can host a night", () => {
 describe("the match candidates", () => {
   const bookshop = { entity: { ...VENUE.entity, tags: kinds("restaurant", "event_venue", "restaurant:cafe", "book_store", "cafe", "tourist_attraction") } };
 
-  it("drop places that cannot host, keep Qloo's order and put direct competitors last", () => {
+  it("drop places that cannot host and the venue's rivals, and keep Qloo's order", () => {
     const loved = [place("Angelika", ANGELIKA.tags, 1), { ...LIBRARY, rank: 2 }, { ...BOOKS, rank: 3 }, { ...IFC, rank: 4 }, { ...CHURCH, rank: 5 }, { ...GALLERY, rank: 6 }];
-    expect(matchCandidates(loved, bookshop).map((p) => p.name)).toEqual(["Angelika", "IFC Center", "Soho Photo Gallery"]);
-    expect(competes(BOOKS, bookshop)).toBe(true);
-    expect(competes(ANGELIKA, bookshop)).toBe(false);
+    expect(pairCandidates(loved, bookshop).map((p) => p.name)).toEqual(["Angelika", "IFC Center", "Soho Photo Gallery"]);
+    expect(rivals(BOOKS, bookshop.entity)).toBe(true);
+    expect(rivals(ANGELIKA, bookshop.entity)).toBe(false);
   });
 
-  it("call two plain cafes competitors, and a cafe and a cinema not", () => {
+  it("call two plain cafes rivals, and a cafe and a cinema not", () => {
     const cafe = { entity: { ...VENUE.entity, tags: kinds("restaurant:cafe", "cafe", "restaurant") } };
-    expect(competes(place("Other cafe", kinds("cafe", "restaurant:cafe")), cafe)).toBe(true);
-    expect(competes(ANGELIKA, cafe)).toBe(false);
+    expect(rivals(place("Other cafe", kinds("cafe", "restaurant:cafe")), cafe.entity)).toBe(true);
+    expect(rivals(ANGELIKA, cafe.entity)).toBe(false);
+  });
+
+  it("stop at eight", () => {
+    const many = Array.from({ length: 12 }, (_, i) => place(`Cinema ${i + 1}`, kinds("movie_theater"), i + 1));
+    expect(pairCandidates(many, bookshop).map((p) => p.rank)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   });
 });
 
