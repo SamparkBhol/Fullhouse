@@ -1,0 +1,55 @@
+/* Taste tags in the Receipts drawer: the street as a set, the venue ranked, marked where they meet. */
+.tag-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-top: 14px;
+}
+
+.tag-col h4 {
+  font-size: var(--s18);
+  overflow-wrap: anywhere;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--ink);
+}
+
+.ranked {
+  list-style: none;
+}
+
+.ranked li {
+  display: grid;
+  grid-template-columns: 26px 1fr 14px;
+  gap: 6px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(29, 49, 80, 0.2);
+  font-size: var(--s16);
+  color: var(--ink-soft);
+}
+
+.tag-set li {
+  grid-template-columns: 1fr 14px;
+}
+
+.rank-no {
+  font-feature-settings: "tnum" 1;
+  font-size: var(--s14);
+}
+
+.rank-name {
+  overflow-wrap: anywhere;
+}
+
+.ranked li.shared {
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.shared-mark {
+  width: 10px;
+  height: 10px;
+  background: var(--ink);
+  align-self: center;
+}
+

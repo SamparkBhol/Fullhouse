@@ -1,41 +1,24 @@
-import type { LovedPlace, StreetRead } from "../../../src/shared/contract.ts";
+import type { StreetRead } from "../../../src/shared/contract.ts";
 import { h } from "../dom.ts";
-import { distance, walk } from "../format.ts";
-import { describingTags } from "../tags.ts";
-import { listReason, moreRows, ownReasons, sharedLine } from "./lists.ts";
-import { reasons } from "./receipt.ts";
-import { empty } from "./states.ts";
+import { distance } from "../format.ts";
+import { postcards } from "./postcard.ts";
+import { ledge } from "./ledge.ts";
 
-// The map numbers the same places the list shows before "more", so a pin always has a row above the fold.
+// The map shows the same places the postcards show before "more", so a photo pin always has a postcard.
 export const PLACES_ON_MAP = 10;
 
-function placeRow(p: LovedPlace, read: StreetRead, tz: string, shared: ReturnType<typeof sharedLine>): HTMLElement {
-  const tags = describingTags(p.tags, 3);
-  return h(
-    "li",
-    { class: "pick" },
-    h("span", { class: "pin-no", "aria-hidden": "true" }, String(p.rank)),
-    h("div", { class: "pick-head" }, h("p", { class: "pick-name" }, p.name), h("p", { class: "pick-dist" }, distance(p.distanceM))),
-    h("p", { class: "meta pick-where" }, [p.address, walk(p.distanceM)].filter(Boolean).join(", ")),
-    tags.length ? h("p", { class: "pick-tags" }, tags.join(", ")) : null,
-    reasons(ownReasons(p, shared), read.provenance, tz),
-  );
-}
-
-export function lovedSection(read: StreetRead, tz: string): HTMLElement {
+export function lovedSection(read: StreetRead): HTMLElement {
   const loved = read.lovedPlaces;
-  const shared = sharedLine(loved);
-  const rows = loved.map((p) => placeRow(p, read, tz, shared));
-  return h(
-    "section",
-    { class: "block", "aria-labelledby": "loved-title" },
-    h("h2", { id: "loved-title" }, "Places nearby your audience loves"),
+  const rest = loved.slice(PLACES_ON_MAP);
+  return ledge(
+    { label: "Places nearby your audience loves", className: "ledge-loved" },
     loved.length
       ? [
-          listReason(shared, read.provenance, tz),
-          h("ol", { class: "picks numbered top-places" }, rows.slice(0, PLACES_ON_MAP)),
-          moreRows(rows, PLACES_ON_MAP, (n) => `${n} more places, not on the map`, "picks numbered"),
+          postcards(loved.slice(0, PLACES_ON_MAP)),
+          rest.length
+            ? h("details", { class: "more" }, h("summary", null, `${rest.length} more places, not on the map`), postcards(rest, () => null, { start: PLACES_ON_MAP + 1 }))
+            : null,
         ]
-      : empty(`Qloo returned no places within ${distance(read.radiusM)} of your venue that your audience loves.`),
+      : h("p", { class: "ledge-empty" }, `Qloo returned no places within ${distance(read.radiusM)} of your venue that your audience loves.`),
   );
 }

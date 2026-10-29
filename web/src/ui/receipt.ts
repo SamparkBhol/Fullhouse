@@ -1,14 +1,15 @@
 import type { Because, Provenance } from "../../../src/shared/contract.ts";
 import { callName } from "../calls.ts";
 import { h } from "../dom.ts";
-import { count, moment } from "../format.ts";
+import { plural } from "../../../src/shared/words.ts";
+import { moment } from "../format.ts";
 
 let open: HTMLDialogElement | null = null;
 
 function line(p: Provenance, index: number, tz?: string): HTMLElement {
   const params = Object.entries(p.params ?? {});
   const facts = [
-    count(p.resultCount, "result", "results"),
+    plural(p.resultCount, "result", "results"),
     typeof p.ms === "number" ? `${Math.round(p.ms)} ms` : null,
     p.cached ? `cached, first read ${moment(p.at, tz)}` : `live, ${moment(p.at, tz)}`,
   ].filter(Boolean);

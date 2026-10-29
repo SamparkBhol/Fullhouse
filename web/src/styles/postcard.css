@@ -1,0 +1,115 @@
+/* Picture postcards: white card, the photo inset with a border, ink type, the walk as the stamp. */
+.postcards {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 12px;
+}
+
+.postcard {
+  position: relative;
+  min-width: 0;
+  padding: 7px 7px 12px;
+  background: var(--chalk);
+  color: var(--ink);
+  transform: rotate(-0.7deg);
+}
+
+.postcard:nth-child(2n) {
+  transform: rotate(0.6deg);
+}
+
+.postcard:nth-child(3n) {
+  transform: rotate(-0.3deg);
+}
+
+.postcard-photo {
+  width: 100%;
+  background: var(--ink);
+}
+
+.postcard-photo .cover-paper {
+  font-size: var(--s18);
+}
+
+.postcard-text {
+  min-width: 0;
+  padding: 8px 2px 0;
+}
+
+.postcard-text > p {
+  margin: 0;
+}
+
+.postcard-name {
+  font-size: var(--s16);
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: break-word;
+}
+
+.postcard-walk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+  margin-top: 4px;
+  font-feature-settings: "tnum" 1;
+}
+
+.stamp-min {
+  font-size: var(--s16);
+  font-stretch: 75%;
+  font-weight: 760;
+}
+
+.stamp-m {
+  color: var(--ink-soft);
+  font-size: var(--s14);
+}
+
+.postcard-text > .postcard-line {
+  margin-top: 4px;
+  color: var(--ink-soft);
+  font-size: var(--s14);
+  line-height: 1.35;
+}
+
+.postcard :focus-visible {
+  outline-color: var(--ink);
+}
+
+/* Across: the photo on the left, as a card propped in a narrow window. */
+.postcard-across {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 7px 10px 7px 7px;
+}
+
+.postcard-across .postcard-text {
+  padding-top: 2px;
+}
+
+.postcard-across .postcard-name {
+  font-size: var(--s18);
+}
+
+.postcards:has(.postcard-across) {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+@media (min-width: 720px) {
+  .postcards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22px 18px;
+  }
+}
+
+@media (min-width: 1100px) {
+  .postcards {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}

@@ -159,6 +159,12 @@ details > summary {
   }
 }
 
+/* Shown only with JavaScript off, outside every page layout, so it brings its own gutter. */
+.noscript {
+  max-width: 40rem;
+  padding: 16px 16px 0;
+}
+
 @media print {
   .fascia,
   .tabs,

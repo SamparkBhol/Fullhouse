@@ -1,10 +1,13 @@
 import type { NightPlan, Venue } from "../../../src/shared/contract.ts";
+import { listWords, plainName } from "../../../src/shared/words.ts";
 import { h } from "../dom.ts";
 import { dayOnly, formatName, hours, longDate } from "../format.ts";
+import { cover, hasImage } from "./cover.ts";
 
 export interface FlyerOptions {
   live?: boolean;
   taped?: boolean;
+  pinned?: boolean;
   justTaped?: boolean;
   compact?: boolean;
   headingLevel?: "h1" | "h2" | "h3";
@@ -12,7 +15,7 @@ export interface FlyerOptions {
 
 // The feature is a real Qloo pick, so it heads the flyer; a model headline can drift to one word like "Film".
 function headline(plan: NightPlan): string {
-  return plan.feature?.name || plan.copy?.posterHeadline?.trim() || plan.copy?.eventTitle || formatName(plan.format);
+  return plan.feature?.name || plan.copy?.posterHeadline?.trim() || plan.copy?.eventTitle || formatName(plan.format, plan.feature?.type);
 }
 
 // The band already prints the date, so a poster line that repeats it is left off.
@@ -29,14 +32,22 @@ function lengthClass(text: string): string {
   return "flyer-title";
 }
 
+// The feature's cover is printed beside the headline in the flyer's one ink, like a gig poster run off on a copier.
+function flyerHead(plan: NightPlan, heading: HTMLElement): HTMLElement {
+  const f = plan.feature;
+  if (!f || !hasImage(f)) return heading;
+  return h("div", { class: "flyer-head" }, heading, h("span", { class: "flyer-print" }, cover(f, { className: "flyer-art", eager: true })));
+}
+
 export function flyer(plan: NightPlan, venue: Venue, opts: FlyerOptions = {}): HTMLElement {
   const title = headline(plan);
   const sub = subLine(plan);
   const Heading = opts.headingLevel ?? "h2";
-  const partners = (plan.partners ?? []).map((p) => p.name);
+  const partners = (plan.partners ?? []).map((p) => plainName(p.name));
   const classes = ["flyer"];
   const taped = opts.live || opts.taped;
   if (taped) classes.push("flyer-taped");
+  else if (opts.pinned) classes.push("flyer-pinned");
   if (opts.live) classes.push("flyer-live");
   if (opts.justTaped) classes.push("flyer-taped-now");
   if (opts.compact) classes.push("flyer-compact");
@@ -44,12 +55,13 @@ export function flyer(plan: NightPlan, venue: Venue, opts: FlyerOptions = {}): H
     "article",
     { class: classes.join(" "), "aria-label": `Flyer for ${title}` },
     taped ? [h("span", { class: "tape tape-left", "aria-hidden": "true" }), h("span", { class: "tape tape-right", "aria-hidden": "true" })] : null,
+    !taped && opts.pinned ? h("span", { class: "tape tape-mid", "aria-hidden": "true" }) : null,
     h("p", { class: "flyer-when" }, h("span", null, longDate(plan.date)), h("span", null, hours(plan.start, plan.end))),
-    h("p", { class: "flyer-format" }, formatName(plan.format)),
-    h(Heading, { class: lengthClass(title) }, title),
+    h("p", { class: "flyer-format" }, formatName(plan.format, plan.feature?.type)),
+    flyerHead(plan, h(Heading, { class: lengthClass(title) }, title)),
     sub ? h("p", { class: "flyer-sub" }, sub) : null,
     !opts.compact && plan.copy?.eventDescription ? h("p", { class: "flyer-body" }, plan.copy.eventDescription) : null,
-    !opts.compact && partners.length ? h("p", { class: "flyer-with" }, `With ${joinNames(partners)}`) : null,
+    !opts.compact && partners.length ? h("p", { class: "flyer-with" }, `With ${listWords(partners)}`) : null,
     h(
       "p",
       { class: "flyer-where" },
@@ -57,11 +69,6 @@ export function flyer(plan: NightPlan, venue: Venue, opts: FlyerOptions = {}): H
       !opts.compact && venue.entity.address ? h("span", null, venue.entity.address) : null,
     ),
   );
-}
-
-export function joinNames(names: string[]): string {
-  if (names.length <= 1) return names.join("");
-  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
 
 export function fitHeadlines(root: ParentNode): void {

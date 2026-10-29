@@ -1,4 +1,4 @@
-/* The same values as src/shared/tokens.ts, which the worker's public pages use. test/shared/tokens.test.ts keeps them equal. */
+/* The same values as src/shared/design_tokens.ts, which the worker's public pages use. test/shared/design_tokens.test.ts keeps them equal. */
 :root {
   --street: #33506e;
   --fascia: #243a53;
@@ -12,6 +12,11 @@
   --rule: rgba(243, 245, 248, 0.18);
   --tape: rgba(236, 228, 204, 0.86);
   --glow: rgba(255, 194, 74, 0.42);
+  --interior: #2a1e17;
+  --lamp: #ffc66b;
+  --sill: #8a6a4f;
+  --chalkboard: #24332b;
+  --frame: rgba(243, 245, 248, 0.35);
   --face: "Archivo Variable", "Archivo", "Helvetica Neue", Arial, sans-serif;
   --s14: 0.875rem;
   --s16: 1rem;

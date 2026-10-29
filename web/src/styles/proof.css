@@ -75,6 +75,17 @@
   font-size: var(--s14);
 }
 
+.verify-tied {
+  color: var(--lit);
+}
+
+.proof-tied {
+  margin: 16px 0 0;
+  font-size: var(--s18);
+  font-weight: 650;
+  color: var(--chalk);
+}
+
 .proof-result h2 {
   margin-top: 28px;
 }

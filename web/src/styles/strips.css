@@ -72,27 +72,31 @@
   padding-top: 14px;
 }
 
+/* On venue home the numbers are a line written on the street under the window, not a box beside it. */
 .numbers-strip {
-  background: var(--fascia);
-  padding: 14px 16px 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 28px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
 }
 
-/* Three cells, or two when the night out is shown above the strip. */
+.numbers-strip .strip-title {
+  margin: 0;
+}
+
 .numbers-strip .strip-cells {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
-  gap: 12px;
+  gap: 4px 28px;
 }
 
 .numbers-strip .strip-cell {
-  display: block;
+  align-items: baseline;
 }
 
 .numbers-strip dt {
   color: var(--mist);
-  font-size: var(--s14);
-  margin-bottom: 6px;
+  font-size: var(--s16);
 }
 
 .numbers-strip dd {
@@ -100,6 +104,10 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 8px;
+}
+
+.numbers-strip .strip-when {
+  flex-basis: 100%;
 }
 
 .strip-none {

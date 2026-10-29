@@ -3,6 +3,7 @@ import { api } from "../api.ts";
 import { h, replace, uid } from "../dom.ts";
 import { navigate } from "../router.ts";
 import { failure, loading } from "./states.ts";
+import { ledge } from "./ledge.ts";
 import { refreshState, rememberPlanResponse, type VenueCtx } from "../venue-context.ts";
 
 const EXAMPLES = ["Make it Friday", "No live music", "Under 40 people", "Start at 20:00", "Something with films instead"];
@@ -51,7 +52,7 @@ export function refineBox(ctx: VenueCtx, plan: NightPlan): HTMLElement {
     }
     const button = form.querySelector<HTMLButtonElement>("button[type=submit]");
     if (button) button.disabled = true;
-    replace(slot, loading("Changing the plan", ["Reading your request", "Planning again from the same street read", "Writing the copy and checking every name"]));
+    replace(slot, loading("Changing the plan", ["Reading your request", "Planning again from the same street read", "Writing the words and checking every name, which can take half a minute"]));
     try {
       const response = await api.refine(ctx.id, ctx.token, plan.id, request);
       rememberPlanResponse(response);
@@ -62,5 +63,5 @@ export function refineBox(ctx: VenueCtx, plan: NightPlan): HTMLElement {
       replace(slot, failure(err, () => form.requestSubmit()));
     }
   });
-  return h("section", { class: "block", "aria-labelledby": "refine-title" }, h("h2", { id: "refine-title" }, "Change it"), form);
+  return ledge({ label: "Change it", className: "ledge-refine" }, form);
 }

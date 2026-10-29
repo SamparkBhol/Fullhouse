@@ -1,0 +1,154 @@
+/* Things taped up: one strip in the middle for a note or a small flyer, two at the corners for a published night. */
+.tape-mid {
+  left: 50%;
+  width: 84px;
+  transform: translateX(-50%) rotate(-2deg);
+}
+
+.taped-note {
+  position: relative;
+  max-width: 21rem;
+  margin: -6px 10px 0 auto;
+  padding: 20px 16px 14px;
+  background: var(--chalk);
+  color: var(--ink);
+  font-size: var(--s16);
+  line-height: 1.4;
+  transform: rotate(1.2deg);
+}
+
+.taped-note-title {
+  margin: 0 0 4px;
+  font-size: var(--s18);
+  font-stretch: 87.5%;
+  font-weight: 700;
+}
+
+.taped-note p + p {
+  margin-top: 6px;
+}
+
+.taped-note .meta {
+  color: var(--ink-soft);
+  font-size: var(--s14);
+}
+
+.taped-note :focus-visible {
+  outline-color: var(--ink);
+}
+
+/* Plans for the night as small flyers on pink stock, taped above the big window. */
+.options {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(9.5rem, 1fr);
+  gap: 14px;
+  margin: 4px calc(-1 * var(--gutter)) 0;
+  padding: 18px var(--gutter) 6px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 112px;
+  padding: 16px 12px 10px;
+  border: 0;
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transform: rotate(-1deg);
+}
+
+.option:nth-child(2) {
+  transform: rotate(0.8deg);
+}
+
+.option:nth-child(3) {
+  transform: rotate(-0.4deg);
+}
+
+.option-kind {
+  font-size: var(--s14);
+  font-weight: 650;
+}
+
+.option-name {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: var(--s24);
+  font-stretch: 62%;
+  font-weight: 820;
+  line-height: 0.95;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
+}
+
+.option-state {
+  margin-top: auto;
+  padding-top: 8px;
+  color: var(--ink-soft);
+  font-size: var(--s14);
+}
+
+.option[aria-pressed="false"] {
+  opacity: 0.78;
+}
+
+.option[aria-pressed="true"] {
+  outline: 3px solid var(--chalk);
+  outline-offset: 4px;
+}
+
+.option[aria-pressed="true"] .option-state {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.option:hover {
+  opacity: 1;
+}
+
+.option:focus-visible {
+  outline: 3px solid var(--chalk);
+  outline-offset: 4px;
+}
+
+@media (min-width: 720px) {
+  .options {
+    grid-auto-columns: minmax(0, 13rem);
+    margin: 4px 0 0;
+    padding: 18px 0 6px;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 719px) {
+  .options {
+    grid-auto-columns: minmax(8.5rem, 42%);
+    gap: 12px;
+    padding-top: 16px;
+  }
+
+  .option {
+    min-height: 0;
+    padding: 14px 10px 8px;
+  }
+
+  .option-name {
+    font-size: var(--s21);
+    -webkit-line-clamp: 2;
+  }
+
+  .option[aria-pressed="false"] .option-state {
+    display: none;
+  }
+}

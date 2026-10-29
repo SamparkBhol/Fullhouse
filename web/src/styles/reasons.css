@@ -24,48 +24,16 @@
   line-height: 1.25;
 }
 
-.pick-dist {
-  color: var(--mist);
-  font-size: var(--s16);
-  font-feature-settings: "tnum" 1;
-  white-space: nowrap;
-}
 
-.pick-tags {
-  margin-top: 4px;
-  font-size: var(--s16);
-}
 
 .pick-note {
   margin-top: 4px;
 }
 
-.pick-where {
-  margin-top: 2px;
-}
 
-.pick-ranked {
-  position: relative;
-  padding-left: 36px;
-}
 
-.pick-ranked > .rank-no {
-  position: absolute;
-  left: 0;
-  top: 17px;
-  color: var(--mist);
-  font-size: var(--s16);
-  font-weight: 650;
-  font-feature-settings: "tnum" 1;
-}
 
-.list-reason .because {
-  margin: 0 0 4px;
-}
 
-.list-reason .because-row {
-  border-top: 0;
-}
 
 .more {
   margin-top: 4px;
@@ -75,25 +43,7 @@
   margin-top: 4px;
 }
 
-.numbered .pick {
-  position: relative;
-  padding-left: 42px;
-}
 
-.pin-no {
-  position: absolute;
-  left: 0;
-  top: 17px;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--paper);
-  color: var(--ink);
-  font-size: var(--s14);
-  font-weight: 750;
-}
 
 .trend {
   font-size: var(--s16);

@@ -1,0 +1,60 @@
+import type { Gap, LovedPlace, QlooType, Rising } from "../../../src/shared/contract.ts";
+import { TYPE_SINGULAR, capFirst, ordinal } from "../../../src/shared/words.ts";
+import { prettyTag } from "../format.ts";
+
+export type CoverShape = "square" | "portrait";
+
+// Record sleeves, podcast tiles and shop photos are square; books, posters and box art stand portrait.
+export function shapeOf(type: QlooType): CoverShape {
+  return type === "artist" || type === "podcast" || type === "place" || type === "brand" || type === "person" ? "square" : "portrait";
+}
+
+// The shelf's heading already says who the picks are for, so each cover carries only its place in the list.
+// A list Qloo answered for the area alone carries no taste rank, so its picks say where they came from instead.
+export function pickLine(r: Pick<Rising, "rank" | "venueSignal">): string {
+  return r.venueSignal === false ? "Liked around you, not ranked" : ordinal(r.rank);
+}
+
+export function mixedLine(r: Pick<Rising, "rank" | "venueSignal" | "type">): string {
+  const kind = TYPE_SINGULAR[r.type];
+  if (r.venueSignal === false) return `A ${kind} liked around you`;
+  return r.rank === 1 ? `Top ${kind}` : `${ordinal(r.rank)} ${kind}`;
+}
+
+// The planner writes "About 400 m from <venue>, tagged Jazz, which ..."; the card already shows the walk, so it keeps the rest.
+export function partnerReason(p: Pick<LovedPlace, "rank" | "because">, venueName: string): string {
+  const marker = `from ${venueName}, `;
+  for (const b of p.because.slice(1)) {
+    const at = b.text.indexOf(marker);
+    if (at >= 0) return capFirst(b.text.slice(at + marker.length).trim());
+  }
+  return `${ordinal(p.rank)} nearby for your audience`;
+}
+
+// The read names each layer in full ("Where the taste for Caffe Reggio runs strongest"); the switch under the
+// window's own lettering needs only who the light follows, so both fit one row on a phone.
+export function layerWord(label: string): string {
+  if (/^Where the taste for .+ runs strongest$/.test(label)) return "Your crowd";
+  if (/^Where places like .+ run strongest$/.test(label)) return "Places like yours";
+  return label;
+}
+
+export interface BoardLine {
+  text: string;
+  note?: string;
+  count?: string;
+}
+
+const GAP_NOTE = /^(\d+) of the (\d+) places nearby that (.+) also loves (?:is|are) tagged .+\.$/;
+
+// Every gap note repeats one sentence with only the count changing, so the board says it once and each tag keeps its count.
+export function gapLines(gaps: Gap[]): { intro?: string; lines: BoardLine[] } {
+  const parsed = gaps.map((g) => GAP_NOTE.exec(g.note));
+  const first = parsed[0];
+  const same = first && parsed.every((m) => m && m[2] === first[2] && m[3] === first[3]);
+  if (!same || !first) return { lines: gaps.map((g) => ({ text: prettyTag(g.tag.name), note: g.note })) };
+  return {
+    intro: `Of the ${first[2]} places nearby that ${first[3]} also loves, how many carry each tag. Your venue carries none of them.`,
+    lines: gaps.map((g, i) => ({ text: prettyTag(g.tag.name), count: `${parsed[i]?.[1]} of ${first[2]}` })),
+  };
+}

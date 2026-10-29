@@ -106,6 +106,18 @@
   margin-top: 26px;
 }
 
+/* A draft is held up by one strip while the owner looks at it. */
+.flyer-pinned {
+  margin-top: 22px;
+  transform: rotate(0.4deg);
+}
+
+/* Room under the tape, so it never covers the date. */
+.flyer-pinned .flyer-when,
+.flyer-taped .flyer-when {
+  padding-top: 18px;
+}
+
 .flyer-live::before {
   opacity: 1;
 }

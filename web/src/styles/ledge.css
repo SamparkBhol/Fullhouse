@@ -1,0 +1,67 @@
+/* Under the one lit window: objects at rest on the street side, with a plain label only where they need naming. */
+.ledge {
+  min-width: 0;
+  margin-top: 40px;
+}
+
+.ledge-label {
+  margin: 0 0 14px;
+  font-size: var(--s21);
+  font-stretch: 87.5%;
+  font-weight: 700;
+}
+
+.ledge-sub {
+  margin: 28px 0 12px;
+  font-size: var(--s18);
+}
+
+.ledge-shared,
+.ledge-empty {
+  margin-top: 14px;
+  max-width: 36ch;
+  color: var(--mist);
+  font-size: var(--s16);
+  text-wrap: pretty;
+}
+
+.ledge-note {
+  max-width: 40ch;
+  margin-top: 18px;
+  padding-left: 12px;
+  border-left: 3px solid var(--sill);
+  color: var(--mist);
+  font-size: var(--s14);
+}
+
+.ledge-row {
+  display: grid;
+  align-items: start;
+}
+
+.ledge-row > .ledge {
+  max-width: 34rem;
+}
+
+.ledge-down {
+  max-width: 44rem;
+  padding-top: 18px;
+  border-top: 2px dashed var(--frame);
+}
+
+.ledge-down p {
+  max-width: 44ch;
+  color: var(--mist);
+  font-size: var(--s16);
+}
+
+@media (min-width: 960px) {
+  .ledge-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 40px;
+  }
+
+  .ledge-row > .ledge {
+    max-width: none;
+  }
+}

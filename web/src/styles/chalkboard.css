@@ -1,0 +1,70 @@
+/* Chalk on a dark green board in a wooden frame: the menu, and what the street has that the venue does not. */
+.slate {
+  padding: 16px 18px 18px;
+  border: 7px solid var(--sill);
+  border-radius: 2px;
+  background: var(--chalkboard);
+  color: rgba(243, 245, 248, 0.92);
+}
+
+.slate-title {
+  margin: 0 0 10px;
+  max-width: none;
+  color: rgba(243, 245, 248, 0.92);
+  font-size: var(--s24);
+  font-stretch: 75%;
+  font-weight: 760;
+  line-height: 1.1;
+}
+
+.slate-lines {
+  list-style: none;
+}
+
+.slate-intro {
+  max-width: 44ch;
+  margin: 0 0 8px;
+  color: rgba(243, 245, 248, 0.78);
+  font-size: var(--s16);
+}
+
+/* Written up like a menu board: the item on the left, its count on the right, a chalk line between. */
+.slate-lines li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 16px;
+  padding: 8px 0;
+  font-size: var(--s18);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.slate-count {
+  font-stretch: 75%;
+  font-weight: 760;
+  font-feature-settings: "tnum" 1;
+  white-space: nowrap;
+}
+
+.slate-lines li + li {
+  border-top: 1px solid rgba(243, 245, 248, 0.16);
+}
+
+.slate-note {
+  flex: 1 0 100%;
+  margin-top: 2px;
+  color: rgba(243, 245, 248, 0.74);
+  font-size: var(--s16);
+  font-weight: 400;
+}
+
+.slate-empty {
+  color: rgba(243, 245, 248, 0.8);
+  font-size: var(--s16);
+}
+
+.slate :focus-visible {
+  outline-color: var(--chalk);
+}

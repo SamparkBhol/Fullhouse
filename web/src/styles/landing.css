@@ -1,3 +1,4 @@
+/* The landing street: three shop fronts, one lit with the flyer taped inside, then the pavement board. */
 .landing {
   max-width: 76rem;
   margin: 0 auto;
@@ -6,39 +7,193 @@
   gap: 8px;
 }
 
-.flyer-landing {
-  margin-top: 20px;
+.fronts {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 22px;
+  gap: 10px;
+  align-items: stretch;
+  margin-top: 10px;
 }
 
-.landing-cta {
-  margin: 20px 0 4px;
+.front {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* A blank sign board: painted fascia with a moulding round it, like the one at the top of this page. */
+.front-sign {
+  height: 28px;
+  margin: 0 -4px;
+  background: var(--fascia);
+  border-bottom: 4px solid #1c2f45;
+  box-shadow: inset 0 0 0 4px var(--fascia), inset 0 0 0 6px rgba(243, 245, 248, 0.16);
+}
+
+.front .win {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+}
+
+.front .win-frame {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.front .win-room {
+  flex: 1;
+}
+
+.front-riser {
+  height: 28px;
+  margin: 0 2px;
+  background: #1c2f45;
+}
+
+.front-lit .win-inside {
+  padding: 30px 6px 14px;
+}
+
+.flyer-landing {
+  margin: 14px auto 0;
+}
+
+.flyer-landing {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.flyer-landing .flyer-when {
+  margin-left: -16px;
+  margin-right: -16px;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.flyer-landing .flyer-format {
+  font-size: var(--s18);
 }
 
 .flyer-landing .flyer-title {
-  font-size: 5.25rem;
-  margin: 8px 0 16px;
+  font-size: 3.5rem;
+  margin: 4px 0 10px;
+  text-wrap: balance;
 }
 
 .flyer-landing .flyer-sub {
   max-width: 26ch;
+  font-size: var(--s16);
+  line-height: 1.35;
 }
 
-.landing-steps {
-  margin-top: 28px;
+.landing-cta {
+  margin: 18px 0 4px;
+}
+
+/* On a phone, a returning owner's own covers take the place of the line written for new visitors. */
+@media (max-width: 719px) {
+  .flyer-landing:has(.flyer-wall-slot:not([hidden])) .flyer-format {
+    display: none;
+  }
+
+  .flyer-landing .flyer-wall-line {
+    font-size: var(--s14);
+  }
+}
+
+.a-board {
+  margin-top: 32px;
+  max-width: 34rem;
+  transform: rotate(-0.4deg);
+}
+
+.a-board .steps > li {
+  border-top-color: rgba(243, 245, 248, 0.18);
+  padding-left: 50px;
+}
+
+.a-board .steps > li::before {
+  color: rgba(243, 245, 248, 0.92);
+}
+
+.a-board .steps h3 {
+  color: rgba(243, 245, 248, 0.92);
+  font-size: var(--s18);
+}
+
+.a-board .steps p {
+  color: rgba(243, 245, 248, 0.78);
+}
+
+.a-board a {
+  color: rgba(243, 245, 248, 0.92);
 }
 
 .aside-link {
+  margin-top: 8px;
   font-size: var(--s16);
 }
 
 .landing-mine {
-  margin-top: 28px;
+  margin-top: 22px;
+}
+
+.landing-mine h2 {
+  margin-bottom: 4px;
+  font-size: var(--s18);
+}
+
+.landing-mine .row-link {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 0;
+  min-height: 48px;
+}
+
+.landing-mine .row-link strong {
+  font-size: var(--s18);
 }
 
 @media (min-width: 720px) {
+  .fronts {
+    margin-top: 18px;
+    grid-template-columns: minmax(0, 0.42fr) minmax(0, 1.9fr) minmax(0, 0.42fr);
+    gap: 16px;
+  }
+
+  .front-lit .win-inside {
+    padding: 44px 22px 30px;
+  }
+
+  .flyer-landing {
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+
+  .flyer-landing .flyer-when {
+    margin-left: -28px;
+    margin-right: -28px;
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+
+  .flyer-landing .flyer-title {
+    font-size: 5.25rem;
+  }
+
+  .flyer-landing .flyer-sub {
+    font-size: var(--s18);
+  }
+}
+
+@media (min-width: 1100px) {
   .landing {
-    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
-    column-gap: 56px;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
+    column-gap: 48px;
     align-items: start;
   }
 
@@ -46,24 +201,15 @@
     grid-column: 1 / -1;
   }
 
-  .landing-hero {
-    grid-column: 1;
-    grid-row: span 2;
+  .landing-side {
+    padding-top: 40px;
   }
 
-  .flyer-landing,
-  .landing-steps {
-    margin-top: 40px;
+  .landing-cta {
+    margin-top: 12px;
   }
 
-  .landing-steps,
-  .landing-mine {
-    grid-column: 2;
-  }
-}
-
-@media (min-width: 960px) {
   .flyer-landing .flyer-title {
-    font-size: 7.5rem;
+    font-size: 6rem;
   }
 }

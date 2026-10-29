@@ -1,5 +1,20 @@
-import { explain } from "../api.ts";
+import { explain } from "../errors.ts";
 import { h } from "../dom.ts";
+
+// A plan waits on the model, which can take half a minute, so a long wait shows it is still going.
+function elapsed(): HTMLElement {
+  const line = h("p", { class: "state-time", "aria-hidden": "true" });
+  const started = Date.now();
+  const timer = window.setInterval(() => {
+    if (!line.isConnected) {
+      window.clearInterval(timer);
+      return;
+    }
+    const s = Math.round((Date.now() - started) / 1000);
+    line.textContent = s >= 4 ? `${s} seconds so far.` : "";
+  }, 1000);
+  return line;
+}
 
 export function loading(heading: string, lines: string[] = []): HTMLElement {
   return h(
@@ -8,6 +23,7 @@ export function loading(heading: string, lines: string[] = []): HTMLElement {
     h("span", { class: "lamp", "aria-hidden": "true" }, h("span"), h("span"), h("span")),
     h("p", { class: "state-title" }, heading),
     lines.length ? h("ul", { class: "state-lines" }, lines.map((line) => h("li", null, line))) : null,
+    elapsed(),
   );
 }
 
@@ -24,15 +40,4 @@ export function failure(err: unknown, retry?: () => void): HTMLElement {
 
 export function empty(text: string, ...extra: (Node | string)[]): HTMLElement {
   return h("div", { class: "empty" }, h("p", null, text), ...extra);
-}
-
-export function limitsLine(limits: string[] | undefined): HTMLElement | null {
-  const items = (limits ?? []).filter((l) => l && l.trim());
-  if (!items.length) return null;
-  return h(
-    "aside",
-    { class: "limits", "aria-label": "Limits of this read" },
-    h("p", { class: "limits-head" }, "What this does not tell you"),
-    h("ul", null, items.map((l) => h("li", null, l))),
-  );
 }

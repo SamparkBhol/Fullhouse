@@ -20,11 +20,12 @@
 
 .results {
   list-style: none;
+  display: grid;
+  gap: 14px;
 }
 
-.result {
-  padding: 12px 0;
-  border-top: 1px solid var(--rule);
+.result-detail {
+  max-width: 40ch;
 }
 
 .result-label {
@@ -53,6 +54,10 @@ a.result-label {
   color: var(--stop);
 }
 
+.ledge-shared-top {
+  margin: -4px 0 10px;
+}
+
 .compose-links {
   display: flex;
   flex-wrap: wrap;
@@ -66,4 +71,10 @@ a.result-label {
   align-items: center;
   min-height: 44px;
   font-weight: 600;
+}
+
+.monday-line {
+  border-left: 4px solid var(--lit);
+  padding: 8px 14px;
+  margin: 12px 0;
 }

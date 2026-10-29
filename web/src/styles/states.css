@@ -110,3 +110,11 @@
     opacity: 0.7;
   }
 }
+
+.state-time {
+  margin-top: 8px;
+  min-height: 1.5em;
+  color: var(--mist);
+  font-size: var(--s14);
+  font-feature-settings: "tnum" 1;
+}
