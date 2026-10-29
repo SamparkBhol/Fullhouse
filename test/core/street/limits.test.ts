@@ -24,9 +24,9 @@ describe("cacheLine", () => {
 describe("readLimits", () => {
   it("puts failed calls first, then what the steps found, then the standing lines and the cache line", () => {
     const rows = [row("2026-10-25T09:00:00.000Z", true)];
-    expect(readLimits(["Nearby places failed (timed out), so that part of the read is missing."], ["Qloo returned no TV shows for Cafe Lumen."], rows)).toEqual([
+    expect(readLimits(["Nearby places failed (timed out), so that part of the read is missing."], ["No TV shows came back for Cafe Lumen."], rows)).toEqual([
       "Nearby places failed (timed out), so that part of the read is missing.",
-      "Qloo returned no TV shows for Cafe Lumen.",
+      "No TV shows came back for Cafe Lumen.",
       RANK_LIMIT,
       AGGREGATE_LIMIT,
       "1 of 1 Qloo call came from the cache, fetched 2026-10-25 09:00 UTC.",

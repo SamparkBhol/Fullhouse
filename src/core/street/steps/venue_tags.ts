@@ -9,6 +9,6 @@ export async function venueFingerprint(run: Runner, ctx: ReadContext): Promise<{
   const params = { ...tagModeParams(VENUE_TAG_TYPES, 40), "signal.interests.entities": ctx.entityId };
   const fp = await fetchFingerprint(run, "venue_tags", params, "Venue audience tags");
   if (!fp) return { audience: null, limits: [] };
-  if (!fp.tags.length) return { audience: null, limits: [`Qloo returned no audience taste tags for ${ctx.name}.`] };
+  if (!fp.tags.length) return { audience: null, limits: [`No audience taste tags came back for ${ctx.name}.`] };
   return { audience: fp, limits: [] };
 }

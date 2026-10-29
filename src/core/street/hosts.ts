@@ -74,9 +74,30 @@ export function foodLed(p: Pick<LovedPlace, "tags">): boolean {
   return kinds.some((k) => FOOD.has(k) || k.endsWith("_restaurant") || k.endsWith("_bar")) && distinctKinds(p).size === 0;
 }
 
+// Qloo files a tennis centre, a supermarket and a members' club under "restaurant" or "cafe" too.
+// Unless it is also something that defines an evening out, such as a bookshop or a concert hall, it is not a room to host in.
+const ELSEWHERE = /(supermarket|grocery|department_store|clothing|furniture|hardware|electronics|toy_store|jewelry|tennis|padel|sports|gym|fitness|stadium|golf|swimming|personal_care|hair_salon|barber|beauty|spa$|clinic|dental|medical|hospital|pharmacy|hotel|hostel|student|dormitory|child_care|social_club|_service$|agency|shopping_mall|pedestrian_zone|_lab$|_store$|_dealer$|office$)/;
+
+export function mainlyElsewhere(p: Pick<LovedPlace, "tags">): boolean {
+  if (distinctKinds(p).size) return false;
+  return kindPaths(p).some((k) => k.split(":").some((part) => ELSEWHERE.test(part)));
+}
+
+// A fast food counter is a chain's room, not an owner's, and nobody stays for an evening. Qloo also files some espresso
+// bars as fast food, so the kind alone only counts when nothing says it is a cafe, a bar or a bakery.
+const FAST_FOOD_STYLE = "urn:tag:culinary_style:qloo:fast_food";
+const FAST_FOOD_KIND = /^urn:tag:(genre|category):place:(.*:)?fast_food(_restaurant)?$/;
+const SIT_DOWN = new Set(["cafe", "coffee_shop", "espresso_bar", "tea_house", "bar", "pub", "bakery", "wine_bar", "cocktail_bar", "lounge"]);
+
+export function fastFood(p: Pick<LovedPlace, "tags">): boolean {
+  if (distinctKinds(p).size) return false;
+  if (p.tags.includes(FAST_FOOD_STYLE)) return true;
+  return p.tags.some((t) => FAST_FOOD_KIND.test(t)) && !hostKinds(p).some((k) => SIT_DOWN.has(k));
+}
+
 // Qloo files it as a room people go to for an evening.
 export function hostsPeople(p: Pick<LovedPlace, "tags">): boolean {
-  return !neverHosts(p) && hostKinds(p).length > 0;
+  return !neverHosts(p) && hostKinds(p).length > 0 && !mainlyElsewhere(p) && !fastFood(p);
 }
 
 // A match also needs a website, so there is an owner to find and ask.

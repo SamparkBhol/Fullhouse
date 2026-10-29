@@ -4,8 +4,8 @@ import { QlooError } from "../qloo/errors.ts";
 import { withStreetTags } from "./because.ts";
 import { createRunner, type Runner } from "./runner.ts";
 import { settleProvenance } from "./settle.ts";
-import { matchCandidates } from "../match/candidates.ts";
-import { matchStep } from "../match/step.ts";
+import { pairStep } from "../pair/engine.ts";
+import { likedFor } from "../pair/taste.ts";
 import { crossDomain } from "./steps/cross_domain.ts";
 import { conceptHeat, venueHeat } from "./steps/heat.ts";
 import { readLimits } from "./steps/limits.ts";
@@ -15,7 +15,8 @@ import { resolveVenue } from "./steps/resolve.ts";
 import { streetFingerprint } from "./steps/street_tags.ts";
 import { venueFingerprint } from "./steps/venue_tags.ts";
 
-export const READ_CAP = 30;
+export { READ_CAP } from "../../shared/engine.ts";
+import { READ_CAP } from "../../shared/engine.ts";
 export const CONCURRENCY = 3;
 const CONCEPT_TAGS = 2;
 
@@ -48,7 +49,7 @@ export async function readStreet(q: Qloo, venue: Venue, opts: ReadOptions = {}):
   const concepts = venueTags.filter((t) => t.namespace === "urn:tag:genre:place").slice(0, CONCEPT_TAGS);
   const readAt = ctx.now.toISOString();
   const [matched, conceptMap, cross] = await Promise.all([
-    matchStep(run, ctx, matchCandidates(places, venue), venueTags, loved.loved?.ref ?? null, readAt),
+    pairStep(run, ctx, venue, places, loved.loved?.ref ?? null, readAt),
     conceptHeat(run, ctx, concepts),
     crossDomain(run, ctx, { exclude: opts.exclude ?? [], anchors: [] }),
   ]);
@@ -67,6 +68,7 @@ export async function readStreet(q: Qloo, venue: Venue, opts: ReadOptions = {}):
       heat,
       streetTags: street.street?.tags ?? [],
       venueTags: audience.audience?.tags ?? [],
+      likedFor: likedFor(audience.audience?.tags ?? [], places),
       shared: matched.match?.shared ?? [],
       gaps: matched.gaps,
       lovedPlaces: withStreetTags(places, street.street, audience.audience, ctx.name),

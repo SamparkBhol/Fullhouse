@@ -22,7 +22,7 @@ describe("lovedPlaces", () => {
       "filter.location.radius": "1200",
       "filter.type": "urn:entity:place",
       "signal.interests.entities": VENUE_ID,
-      take: "30",
+      take: "50",
     });
   });
 
@@ -57,7 +57,7 @@ describe("lovedPlaces", () => {
     const { run, ctx } = stepSetup([answer(isPlace, body)]);
     const { loved, limits } = await lovedPlaces(run, ctx);
     expect(loved?.places[0]?.because.map((b) => b.text)).toEqual(["Listed among 5 places within 1.2 km of Cafe Lumen"]);
-    expect(limits).toEqual(["Qloo did not tie the nearby places to Cafe Lumen's audience, so their order is not a ranking of taste."]);
+    expect(limits).toEqual(["The nearby places came back with no tie to Cafe Lumen's audience, so their order is not a ranking of taste."]);
   });
 
   it("says when the list is thin or a place has no coordinates", async () => {
@@ -73,6 +73,6 @@ describe("lovedPlaces", () => {
 
   it("says when no place came back", async () => {
     const { run, ctx } = stepSetup([answer(isPlace, { success: true, results: { entities: [] } })]);
-    expect((await lovedPlaces(run, ctx)).limits).toEqual(["Qloo returned no places within 1.2 km of Cafe Lumen."]);
+    expect((await lovedPlaces(run, ctx)).limits).toEqual(["No places within 1.2 km of Cafe Lumen came back."]);
   });
 });

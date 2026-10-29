@@ -26,12 +26,12 @@ describe("streetFingerprint", () => {
   it("says the tags are a set when Qloo scores them almost level", async () => {
     const { run, ctx } = stepSetup();
     const { limits } = await streetFingerprint(run, ctx);
-    expect(limits).toEqual(["Qloo scores the street's taste tags almost level, so they are shown as a set, not a ranking."]);
+    expect(limits).toEqual(["The street's taste tags score almost level, so they are shown as a set, not a ranking."]);
   });
 
   it("says plainly when the area has no tags", async () => {
     const { run, ctx } = stepSetup([answer(tagMode, { success: true, results: { tags: [] } })]);
-    expect(await streetFingerprint(run, ctx)).toEqual({ street: null, limits: ["Qloo returned no taste tags for the area around Cafe Lumen."] });
+    expect(await streetFingerprint(run, ctx)).toEqual({ street: null, limits: ["No taste tags came back for the area around Cafe Lumen."] });
   });
 });
 
@@ -61,6 +61,6 @@ describe("venueFingerprint", () => {
     const { run, ctx } = stepSetup([answer(tagMode, { success: true, results: { tags: [] } })]);
     const { audience, limits } = await venueFingerprint(run, ctx);
     expect(audience).toBeNull();
-    expect(limits).toEqual(["Qloo returned no audience taste tags for Cafe Lumen."]);
+    expect(limits).toEqual(["No audience taste tags came back for Cafe Lumen."]);
   });
 });

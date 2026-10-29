@@ -7,12 +7,14 @@ import { parseWarnings } from "../../qloo/warnings.ts";
 import { rankBecause, tiedToVenue } from "../because.ts";
 import { haversineM } from "../../../shared/geo.ts";
 import { rankBy } from "../rank.ts";
+import { hostsPeople } from "../hosts.ts";
+import { kindOf } from "../../pair/groups.ts";
 import type { Runner } from "../runner.ts";
 import { plural, possessive } from "../../../shared/words.ts";
 import type { ReadContext } from "./resolve.ts";
 
-export const LOVED_RADIUS_M = 1200;
-const LOVED_TAKE = 30;
+export { LOVED_RADIUS_M, LOVED_TAKE } from "../../../shared/engine.ts";
+import { LOVED_RADIUS_M, LOVED_TAKE } from "../../../shared/engine.ts";
 const WITHIN = `within ${LOVED_RADIUS_M / 1000} km`;
 
 export interface LovedRead {
@@ -47,14 +49,17 @@ function toPlace(e: QEntity, rank: number, n: number, tied: boolean, ctx: ReadCo
   if (e.image) p.image = e.image;
   if (e.url) p.url = e.url;
   if (e.hours) p.hours = e.hours;
+  const kind = kindOf(p);
+  if (kind.group) p.kind = kind.word;
+  p.hosts = hostsPeople(p);
   return p;
 }
 
 function placeLimits(found: number, unmapped: number, tied: boolean, ctx: ReadContext): string[] {
   const out: string[] = [];
-  if (!found) out.push(`Qloo returned no places ${WITHIN} of ${ctx.name}.`);
+  if (!found) out.push(`No places ${WITHIN} of ${ctx.name} came back.`);
   else if (found < 3) out.push(`Only ${plural(found, "place", "places")} ${WITHIN} came back from Qloo, so this part of the read is thin.`);
-  if (found && !tied) out.push(`Qloo did not tie the nearby places to ${possessive(ctx.name)} audience, so their order is not a ranking of taste.`);
+  if (found && !tied) out.push(`The nearby places came back with no tie to ${possessive(ctx.name)} audience, so their order is not a ranking of taste.`);
   if (unmapped) out.push(`${plural(unmapped, "place", "places")} came back without coordinates and ${unmapped === 1 ? "is" : "are"} not on the map.`);
   return out;
 }

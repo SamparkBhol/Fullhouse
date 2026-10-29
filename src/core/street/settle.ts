@@ -1,4 +1,5 @@
 import type { Because, Provenance, StreetRead } from "../../shared/contract.ts";
+import { settleMatch } from "../pair/settle.ts";
 
 export type DraftRead = Omit<StreetRead, "provenance">;
 
@@ -20,10 +21,6 @@ export function settleProvenance(draft: DraftRead, rows: Provenance[], rowOf: (r
     gaps: rest.gaps.map((g) => ({ ...g, because: remap(g.because, rowOf) })),
     provenance: rows,
   };
-  if (match) {
-    const provenance = match.provenance.map(rowOf).filter((row) => row >= 0);
-    const settle = <T extends { because: Because[] }>(p: T): T => ({ ...p, because: remap(p.because, rowOf) });
-    read.match = { ...match, partner: settle(match.partner), runnersUp: match.runnersUp.map(settle), provenance };
-  }
+  if (match) read.match = settleMatch(match, rowOf);
   return read;
 }

@@ -21,6 +21,8 @@ export interface CrossInput {
   // Places read beside the venue as signals. The street read sends none, so its picks are the venue's own;
   // the joint night sends the one partner, so explainability can split each pick between the two crowds.
   anchors: LovedPlace[];
+  // The joint night only reads the types its format needs.
+  types?: QlooType[];
 }
 
 interface PickList {
@@ -57,6 +59,12 @@ async function pickList(run: Runner, ctx: ReadContext, type: QlooType, anchors: 
   };
 }
 
+// A book's disambiguation reads "2008, Matt Haig": the year, then the author.
+export function authorOf(disambiguation: string | undefined): string | null {
+  const m = /^\s*\d{3,4}\s*,\s*(.+?)\s*$/.exec(disambiguation ?? "");
+  return m?.[1] ?? null;
+}
+
 type Names = Map<string, string>;
 
 function nameOf(names: Names, id: string): string {
@@ -78,6 +86,8 @@ function listLine(list: PickList, ctx: ReadContext, anchors: LovedPlace[], names
 
 function toRising(e: QEntity, rank: number, list: PickList, line: string, names: Names, ctx: ReadContext): Rising {
   const explained = e.explain.length > 1;
+  // On a joint read a lone share still says whose pick it is when Qloo could not read the other place.
+  const whose = explained || (e.explain.length === 1 && names.size > 1);
   const r: Rising = {
     id: e.id,
     name: e.name,
@@ -89,11 +99,15 @@ function toRising(e: QEntity, rank: number, list: PickList, line: string, names:
     venueSignal: list.tied,
   };
   if (e.channel && list.type === "podcast" && e.channel.trim().toLowerCase() !== e.name.trim().toLowerCase()) r.by = e.channel.trim();
+  const author = list.type === "book" ? authorOf(e.disambiguation) : null;
+  if (author) r.by = author;
   // Every result shares the list line, so a screen can say it once; this line is the pick's own receipt.
-  if (explained) r.explain = e.explain.map((x) => ({ entityId: x.entityId, share: x.score }));
-  if (explained) r.because.push({ kind: "explainability", text: `Qloo's explainability share for this one: ${shares(e.explain, names)}`, provenance: list.ref });
+  if (whose) r.explain = e.explain.map((x) => ({ entityId: x.entityId, share: x.score }));
+  if (explained) r.because.push({ kind: "explainability", text: `How much of this one comes from each place: ${shares(e.explain, names)}`, provenance: list.ref });
   if (e.image) r.image = e.image;
   if (e.url) r.url = e.url;
+  if (e.popularity !== null) r.popularity = e.popularity;
+  if (e.minutes && list.type === "movie") r.minutes = e.minutes;
   return r;
 }
 
@@ -101,18 +115,18 @@ function crossLimits(lists: PickList[], ctx: ReadContext, names: Names): string[
   const empty = lists.filter((l) => !l.entities.length).map((l) => TYPE_PLURAL[l.type]);
   const areaOnly = lists.filter((l) => l.entities.length && !l.tied).map((l) => TYPE_PLURAL[l.type]);
   const limits: string[] = [];
-  if (empty.length) limits.push(`Qloo returned no ${listWords(empty)} for ${ctx.name}.`);
-  if (areaOnly.length) limits.push(`Qloo did not use ${ctx.name} itself for the ${listWords(areaOnly)}, so those picks reflect the area only and are not ranked.`);
+  if (empty.length) limits.push(`No ${listWords(empty)} came back for ${ctx.name}.`);
+  if (areaOnly.length) limits.push(`The ${listWords(areaOnly)} came back without ${ctx.name} itself in the read, so those picks reflect the area only and are not ranked.`);
   const ignored = new Map<string, string[]>();
   for (const l of lists) for (const id of l.ignored) ignored.set(nameOf(names, id), [...(ignored.get(nameOf(names, id)) ?? []), TYPE_PLURAL[l.type]]);
-  for (const [name, types] of ignored) limits.push(`Qloo could not use ${name} for the ${listWords(types)}, so those lists lean on the others.`);
+  for (const [name, types] of ignored) limits.push(`There is no read of ${name} for the ${listWords(types)}, so those lists lean on the others.`);
   return limits;
 }
 
 export async function crossDomain(run: Runner, ctx: ReadContext, input: CrossInput): Promise<{ rising: Rising[]; anchors: LovedPlace[]; limits: string[] }> {
   const anchors = input.anchors;
   const names: Names = new Map([[ctx.entityId.toUpperCase(), ctx.name], ...anchors.map((a): [string, string] => [a.id.toUpperCase(), plainName(a.name)])]);
-  const lists = (await Promise.all(CROSS_TYPES.map((t) => pickList(run, ctx, t, anchors, input.exclude)))).filter((l): l is PickList => l !== null);
+  const lists = (await Promise.all((input.types ?? CROSS_TYPES).map((t) => pickList(run, ctx, t, anchors, input.exclude)))).filter((l): l is PickList => l !== null);
   const rising = lists.flatMap((l) => {
     const line = listLine(l, ctx, anchors, names);
     return l.entities.map((e, i) => toRising(e, i + 1, l, line, names, ctx));

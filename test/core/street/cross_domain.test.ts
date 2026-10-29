@@ -77,8 +77,8 @@ describe("crossDomain", () => {
     expect(podcast.venueSignal).toBe(false);
     expect(podcast.because.map((b) => b.text)).toEqual(["One of 2 podcasts Qloo returned for the area around Cafe Lumen"]);
     expect(limits).toEqual([
-      "Qloo returned no TV shows for Cafe Lumen.",
-      "Qloo did not use Cafe Lumen itself for the podcasts, so those picks reflect the area only and are not ranked.",
+      "No TV shows came back for Cafe Lumen.",
+      "The podcasts came back without Cafe Lumen itself in the read, so those picks reflect the area only and are not ranked.",
     ]);
   });
 
@@ -90,13 +90,13 @@ describe("crossDomain", () => {
     const top = rising.find((r) => r.type === "movie")!;
     expect(top.because.map((b) => b.text)).toEqual([
       "Ranked among 2 films for people who like Cafe Lumen and Grand Street Cinema, read with the streets around it. Across the top 10, Qloo's explainability share is Cafe Lumen 0.60 and Grand Street Cinema 0.40",
-      "Qloo's explainability share for this one: Cafe Lumen 0.61 and Grand Street Cinema 0.39",
+      "How much of this one comes from each place: Cafe Lumen 0.61 and Grand Street Cinema 0.39",
     ]);
     expect(top.explain).toEqual([
       { entityId: VENUE_ID, share: 0.61 },
       { entityId: CINEMA_ID, share: 0.39 },
     ]);
-    expect(limits).toContain("Qloo could not use Blue Hour Wine Bar for the films, so those lists lean on the others.");
+    expect(limits).toContain("There is no read of Blue Hour Wine Bar for the films, so those lists lean on the others.");
   });
 
   it("treats a list as the area's when Qloo says it could not use the venue", async () => {

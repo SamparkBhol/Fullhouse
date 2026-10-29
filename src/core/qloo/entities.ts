@@ -25,6 +25,9 @@ export interface QEntity {
   closed: boolean;
   hours?: WeekHours;
   channel?: string;
+  neighborhood?: string;
+  // A film's running time in minutes.
+  minutes?: number;
 }
 
 export interface OpenSpan {
@@ -121,8 +124,12 @@ export function parseEntity(raw: unknown): QEntity | null {
   if (disambiguation) e.disambiguation = disambiguation;
   const image = str(obj(props.image).url);
   if (image) e.image = image;
+  const neighborhood = str(props.neighborhood);
+  if (neighborhood) e.neighborhood = neighborhood;
   const channel = str(props.channel);
   if (channel) e.channel = channel;
+  const minutes = num(props.duration);
+  if (minutes !== null && minutes > 0 && minutes < 600) e.minutes = Math.round(minutes);
   const url = str(props.website);
   if (url && /^https?:\/\//i.test(url)) e.url = url;
   return e;

@@ -21,7 +21,8 @@ function expectValidProvenance(read: StreetRead) {
     expect(b.provenance, b.text).toBeLessThan(read.provenance.length);
   }
   for (const h of read.heat) expect(read.provenance[h.provenance]?.call).toMatch(/^heat_/);
-  for (const i of read.match?.provenance ?? []) expect(["loved_places", "compare", "partner_tags"]).toContain(read.provenance[i]?.call);
+  for (const i of read.match?.provenance ?? []) expect(["loved_places", "compare", "loves_back"]).toContain(read.provenance[i]?.call);
+  for (const c of read.match?.fit?.checks ?? []) if (c.provenance !== undefined) expect(["loved_places", "compare", "loves_back"]).toContain(read.provenance[c.provenance]?.call);
 }
 
 const WINE_BAR = "A1B2C3D4-1111-4A2B-9C3D-0E1F2A3B4C11";
@@ -29,24 +30,25 @@ const WINE_BAR = "A1B2C3D4-1111-4A2B-9C3D-0E1F2A3B4C11";
 const paramsOf = (calls: Array<{ url: URL }>, match: (p: URLSearchParams) => boolean) => calls.find((c) => match(c.url.searchParams))?.url.searchParams;
 
 describe("readStreet", () => {
-  it("follows the call plan: twelve calls, the venue alone as the signal for its picks, no demographics, no trending", async () => {
+  it("follows the call plan: thirteen calls, the venue alone as the signal for its picks, no demographics, no trending", async () => {
     const { q, calls } = setup();
     const read = await readStreet(q, VENUE);
 
-    expect(calls).toHaveLength(12);
+    expect(calls).toHaveLength(13);
     expect(read.provenance.map((p) => p.call)).toEqual([
       "street_tags",
       "venue_tags",
       "loved_places",
       "heat_venue",
-      "compare",
-      "partner_tags",
+      "loves_back",
+      "loves_back",
       "heat_street",
       "insights_artist",
       "insights_book",
       "insights_movie",
       "insights_tv_show",
       "insights_podcast",
+      "compare",
     ]);
     for (const c of calls) {
       expect(c.headers["x-api-key"]).toBe(KEY);
@@ -73,7 +75,18 @@ describe("readStreet", () => {
     expect(read.match?.partner.name).toBe("Blue Hour Wine Bar");
     expect(read.match?.runnersUp.map((p) => p.name)).toEqual(["Grand Street Cinema"]);
     expect(read.match?.readAt).toBe(read.at);
-    expect(read.shared.map((t) => t.name)).toEqual(["Jazz", "indie", "Documentary", "Cozy", "Working", "Coffee", "Cafe"]);
+    expect(read.match?.reverseRank).toEqual({ checked: true, rank: 2, of: 4 });
+    expect(read.match?.fit?.checks.map((c) => [c.key, c.points])).toEqual([
+      ["crowd", 25],
+      ["back", 19],
+      ["partners", 11],
+      ["open", 6],
+      ["walk", 10],
+      ["taste", 0],
+    ]);
+    expect(read.match?.fit?.score).toBe(71);
+    expect(read.shared).toEqual([]);
+    expect(read.match?.fit?.checks.find((c) => c.key === "taste")?.sentence).toBe("They share only what the whole street shares.");
     expect(read.match?.shared).toEqual(read.shared);
     expect(read.gaps[0]?.because.map((b) => b.text)).toEqual(["Carried by Blue Hour Wine Bar, not by Cafe Lumen"]);
 
@@ -103,9 +116,10 @@ describe("readStreet", () => {
     expect(read.demographics).toBeUndefined();
 
     expect(read.limits).toEqual([
-      "Qloo scores the street's taste tags almost level, so they are shown as a set, not a ranking.",
-      "Qloo returned no TV shows for Cafe Lumen.",
-      "Qloo did not use Cafe Lumen itself for the podcasts, so those picks reflect the area only and are not ranked.",
+      "The street's taste tags score almost level, so they are shown as a set, not a ranking.",
+      "Cafe Lumen and Blue Hour Wine Bar share no tags that say what their crowds go for, so the match rests on Cafe Lumen's crowd loving Blue Hour Wine Bar.",
+      "No TV shows came back for Cafe Lumen.",
+      "The podcasts came back without Cafe Lumen itself in the read, so those picks reflect the area only and are not ranked.",
       FIRST_READ_LIMIT,
       NO_DEMOGRAPHICS,
       RANK_LIMIT,
@@ -123,7 +137,9 @@ describe("readStreet", () => {
     const read = await readStreet(setup([broken]).q, VENUE);
     expect(read.limits[0]).toBe("Cafe Lumen compared with Blue Hour Wine Bar failed (Qloo server error), so that part of the read is missing.");
     expect(read.provenance.some((p) => p.call === "compare")).toBe(false);
-    expect(read.shared.map((t) => t.name)).toEqual(["Jazz", "indie", "Documentary", "Cozy", "Working", "Cafe"]);
+    expect(read.match?.partner.name).toBe("Blue Hour Wine Bar");
+    expect(read.shared).toEqual([]);
+    expect(read.limits).toContain("Cafe Lumen and Blue Hour Wine Bar share no tags that say what their crowds go for, so the match rests on Cafe Lumen's crowd loving Blue Hour Wine Bar.");
     expect(read.gaps).toEqual([]);
     expect(read.lovedPlaces).toHaveLength(5);
     expectValidProvenance(read);
@@ -175,7 +191,7 @@ describe("readStreet", () => {
     const read = await readStreet(second.q, VENUE);
     expect(second.calls).toHaveLength(0);
     expect(read.provenance.every((p) => p.cached)).toBe(true);
-    expect(read.limits.at(-1)).toBe("12 of 12 Qloo calls came from the cache, fetched 2026-10-25 09:00 UTC.");
+    expect(read.limits.at(-1)).toBe("13 of 13 Qloo calls came from the cache, fetched 2026-10-25 09:00 UTC.");
   });
 
   it("sends the features of recent nights as exclusions", async () => {
