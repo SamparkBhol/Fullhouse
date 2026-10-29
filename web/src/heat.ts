@@ -29,3 +29,11 @@ export function rankCells(cells: HeatCell[]): RankedCell[] {
     return { cell, order, bucket };
   });
 }
+
+// Heat squares are ink at a strength that follows their rank in one layer, strongest darkest; no read, no square.
+export const HEAT_OPACITY = [0.4, 0.27, 0.17, 0.1, 0.05];
+
+export function heatOpacity(bucket: number | null): number {
+  if (bucket === null) return 0;
+  return HEAT_OPACITY[Math.max(0, Math.min(HEAT_BUCKETS - 1, bucket))] as number;
+}

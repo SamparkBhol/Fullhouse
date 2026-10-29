@@ -3,7 +3,6 @@ import { api } from "../api.ts";
 import { h, replace, uid } from "../dom.ts";
 import { navigate } from "../router.ts";
 import { failure, loading } from "./states.ts";
-import { ledge } from "./ledge.ts";
 import { refreshState, rememberPlanResponse, type VenueCtx } from "../venue-context.ts";
 
 const EXAMPLES = ["Make it Friday", "No live music", "Under 40 people", "Start at 20:00", "Something with films instead"];
@@ -17,7 +16,7 @@ function exampleChips(area: HTMLTextAreaElement): HTMLElement {
         "button",
         {
           type: "button",
-          class: "chip",
+          class: "chip-btn",
           onclick: () => {
             area.value = area.value.trim() ? `${area.value.trim()}, ${ex.toLowerCase()}` : ex;
             area.focus();
@@ -35,11 +34,8 @@ export function refineBox(ctx: VenueCtx, plan: NightPlan): HTMLElement {
   const form = h(
     "form",
     { class: "form refine" },
-    h("label", { for: area.id }, "What should change?"),
-    h("p", { class: "hint" }, "Say it in your own words, or tap an example."),
-    exampleChips(area),
-    area,
-    h("p", { class: "actions" }, h("button", { class: "button", type: "submit" }, "Change the plan")),
+    h("div", { class: "field-row" }, h("label", { for: area.id }, "What should change?"), h("p", { class: "hint" }, "Say it in your own words, or tap an example."), exampleChips(area), area),
+    h("p", { class: "actions actions-tight" }, h("button", { class: "btn", type: "submit" }, "Change the plan")),
     slot,
   );
   form.addEventListener("submit", async (event) => {
@@ -63,5 +59,5 @@ export function refineBox(ctx: VenueCtx, plan: NightPlan): HTMLElement {
       replace(slot, failure(err, () => form.requestSubmit()));
     }
   });
-  return ledge({ label: "Change it", className: "ledge-refine" }, form);
+  return h("section", { class: "panel", "aria-label": "Change the plan" }, form);
 }

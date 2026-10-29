@@ -1,8 +1,7 @@
-import "@fontsource-variable/archivo/wdth.css";
+import "@fontsource-variable/schibsted-grotesk/wght.css";
 import "./styles/index.css";
 import { notFound, route, startRouter } from "./router.ts";
 import { mountShell } from "./ui/shell.ts";
-import { fitHeadlines } from "./ui/flyer.ts";
 import { landingPage } from "./pages/landing.ts";
 import { firstRunPage } from "./pages/first-run.ts";
 import { venuePage } from "./pages/venue.ts";
@@ -41,9 +40,4 @@ if (root) {
   route("/v/:id/nights/:nightId", (p) => publishedPage(p.id ?? "", p.nightId ?? ""));
   notFound(() => notFoundPage());
   startRouter();
-  let pending = 0;
-  window.addEventListener("resize", () => {
-    window.clearTimeout(pending);
-    pending = window.setTimeout(() => fitHeadlines(document), 150);
-  });
 }

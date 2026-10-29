@@ -1,62 +1,77 @@
-import type { LovedPlace } from "../../../src/shared/contract.ts";
-import { plainName, weekdayName } from "../../../src/shared/words.ts";
-import { shortName } from "../ui/split-bar.ts";
+import type { Fit, Venue } from "../../../src/shared/contract.ts";
+import { capFirst, plainName, shortName } from "../../../src/shared/words.ts";
 import { h } from "../dom.ts";
-import { prettyTag, walkMinutes } from "../format.ts";
+import { prettyTag, streetPart, walkMinutes } from "../format.ts";
 import type { Match, MatchPartner } from "../joint.ts";
 import { describingTags } from "../tags.ts";
 import { cover } from "../ui/cover.ts";
+import { pairCard, tagList, walkWords } from "../ui/pair.ts";
 
-const DAY_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-
-export function minutesLine(p: Pick<LovedPlace, "distanceM">): string {
-  const n = walkMinutes(p.distanceM);
-  return n === null ? "a short walk away" : `${n} minute${n === 1 ? "" : "s"} away`;
+function firstSentence(text: string | undefined): string | null {
+  const m = /^(.+?[.])(\s|$)/.exec(text?.trim() ?? "");
+  return m?.[1] ?? null;
 }
 
-// Qloo's own opening hours for the night's weekday, or a plain warning when it has none.
-export function hoursFor(p: Pick<LovedPlace, "hours" | "name">, weekday: number): string {
-  const spans = (p.hours?.[DAY_KEYS[weekday] ?? ""] ?? []).filter((s) => !s.closed && s.opens && s.closes);
-  const day = `${weekdayName(weekday)}s`;
-  if (spans.length) return `Open ${day} ${spans.map((s) => `${s.opens} to ${s.closes}`).join(" and ")}.`;
-  if ((p.hours?.[DAY_KEYS[weekday] ?? ""] ?? []).some((s) => s.closed)) return `Qloo lists it as closed on ${day}. Pick another day or check first.`;
-  return "Qloo has no hours for it, check first.";
+// Why this place, in one line, from the checks it passed.
+export function matchLead(m: Match, venueName: string): string {
+  const fit = m.fit ?? m.partner.fit;
+  if (!fit) return `People who like ${plainName(venueName)} also love it.`;
+  const passed = (key: string) => fit.checks.find((c) => c.key === key)?.pass === true;
+  const said = passed("crowd") && passed("back") ? "Your crowd loves it, and its crowd loves you back." : passed("crowd") ? "Your crowd loves it." : passed("back") ? "Its crowd loves you back." : null;
+  const kinds = passed("partners") ? firstSentence(fit.checks.find((c) => c.key === "partners")?.sentence) : null;
+  return [said, kinds].filter(Boolean).join(" ") || `People who like ${plainName(venueName)} also love it.`;
 }
 
-export function matchHead(m: Match): HTMLElement {
-  return h("h1", { class: "first-line first-line-match" }, `Your crowd's other favourite place is ${shortName(m.partner.name)}, ${minutesLine(m.partner)}.`);
+export function kindOf(p: MatchPartner): string | null {
+  return p.kind ? capFirst(p.kind) : describingTags(p.tags, 1)[0] ?? null;
 }
 
-export function partnerPhoto(p: MatchPartner): HTMLElement {
-  return cover(p, { shape: "square", className: "match-photo", eager: true });
+function sub(kind: string | null | undefined, address: string | undefined, city: string): string | null {
+  return [kind ? capFirst(kind) : null, streetPart(address, city)].filter(Boolean).join(", ") || null;
 }
 
-export function sharedList(m: Match): HTMLElement {
-  const tags = m.shared.slice(0, 3).map((t) => prettyTag(t.name));
-  return h(
-    "section",
-    { class: "match-shared", "aria-labelledby": "shared-title" },
-    h("h2", { id: "shared-title" }, "What both crowds share"),
-    tags.length
-      ? h("ul", { class: "shared-tags" }, tags.map((t) => h("li", null, t)))
-      : h("p", { class: "meta" }, "Qloo's comparison of the two places returned no tags they share."),
-  );
+// The engine keeps only tags that set the pair apart, so anything here is rarer than half the street.
+function setApart(m: Match): Match["shared"] {
+  return m.shared.filter((t) => !t.pool || (t.carriers ?? 0) * 2 <= t.pool).slice(0, 3);
 }
 
-export function runnerUp(p: MatchPartner, onSwap: (button: HTMLButtonElement) => void): HTMLElement {
-  const kind = describingTags(p.tags, 2);
-  const button = h(
-    "button",
-    { type: "button", class: "runner" },
-    cover(p, { shape: "square", className: "runner-photo" }),
+export function matchPair(m: Match, venue: Venue): HTMLElement {
+  const tags = setApart(m);
+  return pairCard(
+    {
+      you: { name: venue.entity.name, ...(venue.entity.image ? { image: venue.entity.image } : {}), sub: sub(m.venueKind ?? venue.entity.kind, venue.entity.address, venue.city) },
+      them: { name: m.partner.name, ...(m.partner.image ? { image: m.partner.image } : {}), sub: sub(kindOf(m.partner), m.partner.address, venue.city) },
+      walkMin: m.partner.walkMin ?? walkMinutes(m.partner.distanceM),
+      size: "big",
+    },
     h(
-      "span",
-      { class: "runner-words" },
-      h("strong", { class: "runner-name" }, plainName(p.name)),
-      h("span", { class: "runner-meta" }, [minutesLine(p), ...kind].join(". ")),
-      h("span", { class: "runner-do" }, "Swap to this one"),
+      "div",
+      { class: "night-line" },
+      h("b", null, "What both places share."),
+      !tags.length ? " Only what the whole street shares. The night screen says what both crowds put in their top ten instead." : " These set the two of you apart from the street around you.",
+      tags.length ? tagList(tags.map((t) => ({ name: prettyTag(t.name), ...(t.carriers !== undefined ? { carriers: t.carriers } : {}), ...(t.pool !== undefined ? { pool: t.pool } : {}) }))) : null,
     ),
   );
+}
+
+export function verdictSub(m: Match): string {
+  const n = m.runnersUp.length;
+  if (!n) return "The only place nearby that could host with you.";
+  const next = m.runnersUp[0];
+  return next?.fit ? `Ahead of ${shortName(next.name)} at ${next.fit.score}, on the same six checks.` : "Ahead of the places below, on the same six checks.";
+}
+
+export function runnerRow(p: MatchPartner, onSwap: (button: HTMLButtonElement) => void): HTMLElement {
+  const button = h("button", { type: "button", class: "btn btn-quiet btn-small" }, "Swap");
+  button.setAttribute("aria-label", `Swap to ${shortName(p.name)}`);
   button.addEventListener("click", () => onSwap(button));
-  return h("li", null, button);
+  const fit: Fit | undefined = p.fit;
+  return h(
+    "li",
+    { class: "item item-swap" },
+    cover(p, { shape: "square" }),
+    h("div", null, h("span", { class: "item-name" }, shortName(p.name)), h("span", { class: "item-sub" }, [kindOf(p), walkWords(p.walkMin ?? walkMinutes(p.distanceM))].filter(Boolean).join(", "))),
+    fit ? h("span", { class: "num", "aria-label": `Fit ${fit.score} of 100` }, String(fit.score)) : h("span"),
+    button,
+  );
 }

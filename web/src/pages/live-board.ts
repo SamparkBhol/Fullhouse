@@ -1,5 +1,5 @@
 import type { StatsRange } from "../../../src/shared/stats.ts";
-import { doorCounter, type Counter, type Say } from "../charts/counter.ts";
+import { counter, type Counter, type Say, type Tone } from "../charts/counter.ts";
 import { openTables, reopenTables } from "../charts/panel.ts";
 import { h, replace } from "../dom.ts";
 import { ticket } from "../router.ts";
@@ -10,7 +10,7 @@ import { startPolling, type PollState } from "./live-poll.ts";
 export interface BoardTools {
   range: StatsRange;
   tz: string;
-  counter(key: string, say: Say, tone?: "chalk" | "lit", digits?: number): Counter;
+  counter(key: string, say: Say, tone?: Tone): Counter;
 }
 
 export interface BoardSpec<T> {
@@ -58,8 +58,8 @@ function failed(detail: string): HTMLElement {
   );
 }
 
-// The frame both dashboards share: title, pickers, the refresh line and the panes, kept fresh by one poller.
-// A quiet board keeps its own pace and shows no pickers.
+// The frame both number screens share: the screen head, the pickers and the refresh line, then the panels,
+// kept fresh by one poller. A quiet board keeps its own pace and shows no pickers.
 export function mountBoard<T>(main: HTMLElement, spec: BoardSpec<T>): void {
   let range: StatsRange = spec.withRange ? readChoice("range", RANGE_OPTIONS, "24h") : "24h";
   let refresh = spec.quiet ? spec.defaultRefresh : readChoice("refresh", REFRESH_OPTIONS, spec.defaultRefresh);
@@ -69,10 +69,10 @@ export function mountBoard<T>(main: HTMLElement, spec: BoardSpec<T>): void {
   const tools = (): BoardTools => ({
     range,
     tz: spec.tz,
-    counter(key, say, tone = "chalk", digits) {
+    counter(key, say, tone = "ink") {
       const held = counters.get(key);
       if (held) return held;
-      const made = doorCounter(say, tone, digits);
+      const made = counter(say, tone);
       counters.set(key, made);
       return made;
     },
@@ -125,31 +125,27 @@ export function mountBoard<T>(main: HTMLElement, spec: BoardSpec<T>): void {
     }
   });
 
+  const bar = spec.quiet
+    ? null
+    : h(
+        "div",
+        { class: "board-bar" },
+        h(
+          "div",
+          { class: "board-pickers" },
+          rangePicker,
+          refreshPicker,
+          h("button", { class: "btn btn-quiet btn-small board-check", type: "button", onclick: () => poller.checkNow() }, "Check now"),
+        ),
+        h("div", { class: "board-status" }, status.el, spec.extra ?? null),
+      );
+
   replace(
     main,
     h(
       "div",
-      { class: `board board-${spec.name}` },
-      h(
-        "div",
-        { class: "board-inner" },
-        h(
-          "div",
-          { class: "board-head" },
-          h("div", { class: "board-titles" }, h("h1", null, spec.heading), intro, spec.quiet ? null : status.el),
-          spec.quiet
-            ? null
-            : h(
-                "div",
-                { class: "board-controls" },
-                rangePicker,
-                refreshPicker,
-                h("button", { class: "button button-quiet board-check", type: "button", onclick: () => poller.checkNow() }, "Check now"),
-                spec.extra ?? null,
-              ),
-        ),
-        body,
-      ),
+      { class: `screen board board-${spec.name}` },
+      h("div", { class: "wrap" }, h("div", { class: "screen-head board-head" }, h("h1", null, spec.heading), intro), bar, body),
     ),
   );
 }

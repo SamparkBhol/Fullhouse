@@ -1,9 +1,9 @@
 import { api } from "../api.ts";
 import { h, replace } from "../dom.ts";
-import { noteFrame } from "../ui/note-frame.ts";
+import { screenHead } from "../first-run/crowd-screen.ts";
 import { focusHeading, title } from "../ui/shell.ts";
 import { failure, loading } from "../ui/states.ts";
-import { tapedNote } from "../ui/taped.ts";
+import { note } from "../ui/account.ts";
 import { refreshState, withVenue } from "../venue-context.ts";
 
 function codeFromFragment(): string | null {
@@ -19,7 +19,7 @@ export function confirmPage(id: string): Promise<void> {
   return withVenue(id, "venue", async (ctx, main) => {
     title("Confirm your email");
     const slot = h("div", { "aria-live": "polite" }, loading("Confirming"));
-    replace(main, h("div", { class: "wrap wrap-wide notes-page" }, h("h1", null, "Confirm your email"), noteFrame("Your email", tapedNote("Your email", slot))));
+    replace(main, h("div", { class: "screen" }, h("div", { class: "wrap" }, screenHead("Confirm your email", null), h("div", { class: "screen-one" }, note("Your email", slot)))));
     focusHeading();
     if (!code) {
       replace(slot, h("p", null, "This link has no confirmation code. Open the link from the email again."));
@@ -31,7 +31,7 @@ export function confirmPage(id: string): Promise<void> {
       replace(
         slot,
         h("p", { class: "notice", role: "status" }, `Confirmed. ${venue.ownerEmail ?? "Your email"} gets the Monday draft from now on.`),
-        h("p", { class: "actions" }, h("a", { class: "button button-big button-lamp", href: `/v/${encodeURIComponent(ctx.id)}` }, "Back to your nights")),
+        h("p", { class: "actions" }, h("a", { class: "btn", href: `/v/${encodeURIComponent(ctx.id)}` }, "Back to your nights")),
       );
     } catch (err) {
       replace(slot, failure(err));

@@ -1,8 +1,9 @@
 import type { VenueDashboard } from "../../../src/shared/stats.ts";
 import { zoneTime } from "../charts/time.ts";
-import { focusHeading, title } from "../ui/shell.ts";
+import { pairLedgerList } from "../ui/ledger.ts";
+import { credit, focusHeading, title } from "../ui/shell.ts";
 import { withVenue } from "../venue-context.ts";
-import { tallyBoard } from "./dashboard-panels.ts";
+import { venueBoard } from "./dashboard-panels.ts";
 import { mountBoard } from "./live-board.ts";
 
 export function dashboardPath(id: string): string {
@@ -13,6 +14,7 @@ export function dashboardPage(id: string): Promise<void> {
   return withVenue(id, "numbers", (ctx, main) => {
     const tz = ctx.state.venue.tz;
     title(`Your numbers, ${ctx.state.venue.entity.name}`);
+    credit("Counted by Full House from your own nights. Taste data from Qloo.");
     mountBoard<VenueDashboard>(main, {
       name: "venue",
       heading: "Your numbers",
@@ -23,7 +25,7 @@ export function dashboardPage(id: string): Promise<void> {
       withRange: false,
       defaultRefresh: "10s",
       quiet: true,
-      panes: (d, tools) => [tallyBoard(d, tools)],
+      panes: (d, tools) => venueBoard(d, tools, pairLedgerList(ctx.state.ledgers)),
     });
     focusHeading();
   });

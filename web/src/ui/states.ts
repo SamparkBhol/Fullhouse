@@ -20,7 +20,6 @@ export function loading(heading: string, lines: string[] = []): HTMLElement {
   return h(
     "section",
     { class: "state state-loading", role: "status", "aria-live": "polite" },
-    h("span", { class: "lamp", "aria-hidden": "true" }, h("span"), h("span"), h("span")),
     h("p", { class: "state-title" }, heading),
     lines.length ? h("ul", { class: "state-lines" }, lines.map((line) => h("li", null, line))) : null,
     elapsed(),
@@ -34,7 +33,7 @@ export function failure(err: unknown, retry?: () => void): HTMLElement {
     { class: "state state-failure", role: "alert" },
     h("p", { class: "state-title" }, e.title),
     h("p", null, e.body),
-    retry && e.retry ? h("button", { class: "button", type: "button", onclick: () => retry() }, "Try again") : null,
+    retry && e.retry ? h("button", { class: "btn btn-quiet", type: "button", onclick: () => retry() }, "Try again") : null,
   );
 }
 

@@ -1,39 +1,62 @@
-import { listWords } from "../../../src/shared/words.ts";
+import type { ExamplePlace } from "../../../src/shared/contract.ts";
+import { capFirst, shortName } from "../../../src/shared/words.ts";
 import { api } from "../api.ts";
 import { h, replace } from "../dom.ts";
-import { prettyTag } from "../format.ts";
+import { longDate, readDate, streetPart } from "../format.ts";
 import type { Example } from "../joint.ts";
-import { cover } from "../ui/cover.ts";
-import { shortName, splitBar } from "../ui/split-bar.ts";
+import { checksList, verdict } from "../ui/fit.ts";
+import { pairCard, splitBar } from "../ui/pair.ts";
 
-function photo(p: Example["venue"]): HTMLElement {
-  return h("figure", { class: "pair-place" }, cover(p, { shape: "square", className: "pair-photo", eager: true }), h("figcaption", { class: "pair-name" }, shortName(p.name)));
+function sub(p: ExamplePlace, city: string | null): string | null {
+  const where = p.neighborhood?.trim() || streetPart(p.address, city ?? undefined);
+  return [p.kind ? capFirst(p.kind) : null, where].filter(Boolean).join(", ") || null;
 }
 
-export function examplePair(ex: Example): HTMLElement {
-  const shared = ex.shared.map((t) => prettyTag(t).toLowerCase());
+function both(ex: Example): string | null {
+  const crowd = ex.checks.find((c) => c.key === "crowd");
+  const back = ex.checks.find((c) => c.key === "back");
+  if (crowd?.pass && back?.pass) return "Each crowd counts the other place among the ones it loves nearby.";
+  if (crowd?.pass) return `Your crowd loves ${shortName(ex.partner.name)}.`;
+  return null;
+}
+
+function nightLine(ex: Example): HTMLElement | null {
+  const [a, b] = ex.stops;
+  const when = ex.date ? `${longDate(ex.date)}.` : null;
+  const plan = a && b ? `${capFirst(a.what)} at ${shortName(a.name)} from ${a.start}, then ${b.what.charAt(0).toLowerCase()}${b.what.slice(1)} at ${shortName(b.name)} from ${b.start}.` : ex.title ? `${ex.title}.` : null;
+  if (!when && !plan) return null;
   return h(
-    "section",
-    { class: "example", "aria-labelledby": "example-title" },
-    h("h2", { id: "example-title", class: "example-title" }, "Two places whose crowds overlap, from a real Qloo read"),
-    h(
-      "div",
-      { class: "pair" },
-      photo(ex.venue),
-      h("p", { class: "pair-apart" }, ex.minutes ? `${ex.minutes} min walk` : "Nearby"),
-      photo(ex.partner),
-    ),
-    ex.title ? h("p", { class: "example-night" }, "The night both crowds would want is ", h("strong", null, ex.title), ".") : null,
+    "div",
+    { class: "night-line" },
+    when ? h("b", null, when) : null,
+    when && plan ? " " : null,
+    plan,
     ex.split ? splitBar(ex.split, ex.venue.name, ex.partner.name) : null,
-    shared.length ? h("p", { class: "example-shared" }, `Both crowds share ${listWords(shared)}.`) : null,
   );
 }
 
-// The landing shows the example only when the server holds one; otherwise the slot stays empty.
-export function loadExample(slot: HTMLElement): void {
+// A real pair from a stored read, with the checks behind its score.
+export function examplePair(ex: Example): HTMLElement {
+  return pairCard(
+    {
+      you: { name: ex.venue.name, ...(ex.venue.image ? { image: ex.venue.image } : {}), sub: sub(ex.venue, ex.city) },
+      them: { name: ex.partner.name, ...(ex.partner.image ? { image: ex.partner.image } : {}), sub: sub(ex.partner, ex.city) },
+      walkMin: ex.minutes,
+      className: "example",
+    },
+    ex.fit !== null ? verdict(ex.fit, both(ex)) : null,
+    ex.checks.length ? checksList(ex.checks) : null,
+    nightLine(ex),
+    h("figcaption", { class: "source" }, `${ex.agreed ? "A real pair, agreed by both places" : "A pair Full House proposed, not yet agreed"}${ex.readAt ? `, read on ${readDate(ex.readAt)}` : ""}. Checks by Full House.`),
+  );
+}
+
+// The landing shows the example only when the server holds one; otherwise the hero is the search alone.
+export function loadExample(slot: HTMLElement, hero: HTMLElement): void {
   void api.example().then((ex) => {
     if (!ex || !slot.isConnected) return;
     replace(slot, examplePair(ex));
     slot.hidden = false;
+    hero.classList.remove("hero-solo");
   });
 }

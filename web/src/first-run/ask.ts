@@ -1,137 +1,125 @@
-import type { ActionKind, NightPlan } from "../../../src/shared/contract.ts";
-import { plainName } from "../../../src/shared/words.ts";
+import type { NightPlan } from "../../../src/shared/contract.ts";
+import { shortName } from "../../../src/shared/words.ts";
 import { api } from "../api.ts";
 import { h, prefersReducedMotion, replace, uid } from "../dom.ts";
-import { formatName, longDate } from "../format.ts";
+import { displayTitle, longDate, nightKind, walkMinutes } from "../format.ts";
 import { planMatch, type Invite } from "../joint.ts";
-import { isCurrent, navigate, ticket } from "../router.ts";
-import { sessionSet } from "../store.ts";
-import { cover } from "../ui/cover.ts";
-import { displayTitle } from "../ui/flyer.ts";
-import { shortName, splitBar } from "../ui/split-bar.ts";
-import { failure, loading } from "../ui/states.ts";
+import { isCurrent, ticket } from "../router.ts";
+import { evening } from "../ui/evening.ts";
+import { pairCard } from "../ui/pair.ts";
+import { credit } from "../ui/shell.ts";
 import { refreshState, type VenueCtx } from "../venue-context.ts";
+import { screenHead } from "./crowd-screen.ts";
 import { firstPath, ownerLink, rememberInvite } from "./run.ts";
-import { copyButton, inviteNote, sendInvite } from "./share.ts";
+import { copyButton, inviteNote, mailHref, sendInvite } from "./share.ts";
 
 const POLL_MS = 3000;
-const PUBLISH: ActionKind[] = ["event_page", "poster", "ics", "gcal"];
 
 export function nightTitle(plan: NightPlan): string {
-  const kind = formatName(plan.format, plan.feature?.type);
+  const kind = nightKind(plan);
   return plan.feature ? `${kind} for ${displayTitle(plan.feature.name)}, ${longDate(plan.date)} at ${plan.start}` : `${kind}, ${longDate(plan.date)} at ${plan.start}`;
-}
-
-function pair(ctx: VenueCtx, invite: Invite, plan: NightPlan | null): HTMLElement {
-  const venue = ctx.state.venue.entity;
-  const split = plan ? planMatch(plan)?.split : null;
-  return h(
-    "div",
-    { class: "ask-side" },
-    h(
-      "div",
-      { class: "ask-pair" },
-    h("figure", { class: "ask-place" }, cover(venue, { shape: "square", className: "ask-photo", eager: true }), h("figcaption", null, plainName(venue.name))),
-      h("figure", { class: "ask-place ask-theirs" }, cover(invite.partner, { shape: "square", className: "ask-photo", eager: true }), h("figcaption", null, shortName(invite.partner.name))),
-    ),
-    split ? splitBar(split, venue.name, invite.partner.name) : null,
-  );
-}
-
-function linkBox(ctx: VenueCtx, invite: Invite, plan: NightPlan | null): HTMLElement {
-  const field = h("input", { type: "text", readonly: true, value: invite.url, id: uid("invite"), class: "invite-link" });
-  const copy = copyButton("Copy the link", () => invite.url, field);
-  const again = h("button", { class: "button button-quiet", type: "button" }, "Send it again");
-  again.addEventListener("click", () => void sendInvite(invite, inviteNote(invite, ctx.state.venue.entity.name, plan ? nightTitle(plan) : "a night together")));
-  return h(
-    "div",
-    { class: "ask-link" },
-    h("label", { for: field.id }, "Their invite link"),
-    field,
-    h("p", { class: "actions" }, again, copy.button),
-    copy.status,
-  );
 }
 
 function ownerNote(ctx: VenueCtx): HTMLElement {
   const url = ownerLink(ctx);
-  const field = h("input", { type: "text", readonly: true, value: url, id: uid("owner"), class: "owner-link" });
+  const field = h("input", { type: "text", readonly: true, value: url, id: uid("owner") });
   const copy = copyButton("Copy your owner link", () => url, field);
   return h(
     "details",
-    { class: "owner-note" },
+    { class: "disclose more" },
     h("summary", null, "Open your venue on another phone"),
-    h("p", null, "This phone stays signed in. Your owner link opens the venue anywhere else. Anyone who has it can publish nights for you, so keep it to yourself."),
+    h("p", { class: "meta" }, "This phone stays signed in. Your owner link opens the venue anywhere else. Anyone who has it can publish nights for you, so keep it to yourself."),
     h("label", { for: field.id, class: "sr-only" }, "Owner link"),
-    field,
-    h("p", { class: "actions" }, copy.button),
+    h("p", { class: "actions-tight actions" }, field),
+    h("p", { class: "actions actions-tight" }, copy.button),
     copy.status,
   );
 }
 
-async function publish(ctx: VenueCtx, invite: Invite, slot: HTMLElement, button: HTMLButtonElement): Promise<void> {
-  button.disabled = true;
-  replace(slot, loading("Publishing the night"));
-  try {
-    const night = await api.approve(ctx.id, ctx.token, invite.planId, { actions: PUBLISH });
-    sessionSet(`taped.${night.id}`, true);
-    sessionSet(`night.${night.id}`, night);
-    await refreshState(ctx).catch(() => undefined);
-    navigate(`/v/${encodeURIComponent(ctx.id)}/nights/${encodeURIComponent(night.id)}`, { replace: true });
-  } catch (err) {
-    button.disabled = false;
-    replace(slot, failure(err, () => void publish(ctx, invite, slot, button)));
-  }
+function waitingPanel(ctx: VenueCtx, invite: Invite, plan: NightPlan | null): HTMLElement {
+  const note = inviteNote(invite, ctx.state.venue.entity.name, plan ? nightTitle(plan) : "a night together");
+  const field = h("input", { type: "text", readonly: true, value: invite.url, id: uid("invite") });
+  const copy = copyButton("Copy the link", () => invite.url, field);
+  const again = h("button", { class: "btn", type: "button" }, "Share the invite");
+  again.addEventListener("click", () => void sendInvite(invite, note));
+  return h(
+    "section",
+    { class: "panel", "aria-labelledby": "invite-title" },
+    h("h2", { id: "invite-title" }, "The invite"),
+    h("p", { class: "pre" }, note.body.replace(invite.url, "").trim()),
+    h("p", { class: "actions" }, again, h("a", { class: "btn btn-quiet", href: mailHref(note) }, "Write it as an email")),
+    h("div", { class: "field-row" }, h("label", { for: field.id }, "Their invite link"), field),
+    h("p", { class: "actions actions-tight" }, copy.button),
+    copy.status,
+    h("p", { class: "meta live-status" }, h("span", { class: "live-dot", "aria-hidden": "true" }), `This screen checks for ${shortName(invite.partner.name)}'s answer every few seconds and changes on its own.`),
+    ownerNote(ctx),
+  );
 }
 
-function answered(ctx: VenueCtx, invite: Invite, body: HTMLElement): void {
+// The yes opens the review screen, never the publish button: the owner reads the words, the partner's own stop and
+// the licence lines before anything leaves.
+function answeredPanel(ctx: VenueCtx, invite: Invite): HTMLElement {
   const them = shortName(invite.partner.name);
   if (invite.status === "declined") {
-    replace(
-      body,
-      h("p", { class: "ask-say" }, `${them} said not this time. Nothing went out under either name.`),
-      h("p", { class: "actions" }, h("a", { class: "button button-big button-lamp", href: firstPath(ctx.id, "match") }, "Pick another place")),
+    return h(
+      "section",
+      { class: "panel", "aria-label": "Their answer" },
+      h("p", null, `${them} said not this time. Nothing went out under either name.`),
+      h("p", { class: "actions" }, h("a", { class: "btn", href: firstPath(ctx.id, "match") }, "Pick another place")),
     );
-    return;
   }
-  const slot = h("div", { "aria-live": "polite" });
-  const button = h("button", { class: "button button-big button-lamp", type: "button" }, "Publish the night");
-  button.addEventListener("click", () => void publish(ctx, invite, slot, button));
-  replace(
-    body,
-    h("p", { class: "ask-say" }, `Publishing puts up the event page with both your names, makes the poster and makes the calendar file. Nothing else goes out.`),
-    h("p", { class: "actions" }, button),
-    slot,
+  const c = invite.confirmed;
+  const said = c && (c.start || c.what) ? `${them} set its own part: ${c.what ?? "as planned"}${c.start ? ` from ${c.start}` : ""}.${c.tellsRegulars ? " It tells its regulars too." : ""}` : `${them} pressed yes without setting its part, so its stop goes up as proposed, subject to its programme.`;
+  return h(
+    "section",
+    { class: "panel panel-them", "aria-labelledby": "yes-title" },
+    h("h2", { id: "yes-title", class: "them-text" }, `${them} said yes`),
+    h("p", null, said),
+    h("p", null, "Next, one screen shows the evening as it goes out, the exact words, and everything Full House will make. Nothing leaves until you press Publish there."),
+    h("p", { class: "actions" }, h("a", { class: "btn", href: `/v/${encodeURIComponent(ctx.id)}/night/${encodeURIComponent(invite.planId)}/approve` }, "Review and publish")),
+  );
+}
+
+function sidePanel(ctx: VenueCtx, invite: Invite, plan: NightPlan | null): HTMLElement {
+  const venue = ctx.state.venue;
+  const m = plan ? planMatch(plan) : null;
+  const partner = m?.partner;
+  return h(
+    "div",
+    { class: "stack" },
+    pairCard({
+      you: { name: venue.entity.name, ...(venue.entity.image ? { image: venue.entity.image } : {}) },
+      them: { name: invite.partner.name, ...((partner?.image ?? invite.partner.image) ? { image: partner?.image ?? invite.partner.image ?? "" } : {}) },
+      walkMin: partner ? walkMinutes(partner.distanceM) : null,
+      size: "small",
+    }),
+    plan ? h("section", { class: "panel", "aria-labelledby": "ask-night" }, h("h2", { id: "ask-night" }, `${nightKind(plan)}, ${longDate(plan.date)}`), evening(plan, venue)) : null,
   );
 }
 
 export function askScreen(ctx: VenueCtx, main: HTMLElement, invite: Invite, plan: NightPlan | null): void {
   const them = shortName(invite.partner.name);
-  const heading = h("h1", { class: "first-line first-line-ask", tabindex: "-1" });
-  const body = h("div", { class: "ask-body" });
-  const view = h("div", { class: "wrap wrap-wide first ask" }, h("div", { class: "ask-grid" }, heading, pair(ctx, invite, plan), body));
+  credit("Taste data from Qloo. Plan by Full House.");
+  const head = h("div");
+  const left = h("div");
+  const view = h("div", { class: "screen" }, h("div", { class: "wrap" }, head, h("div", { class: "screen-grid" }, left, sidePanel(ctx, invite, plan))));
   const show = (inv: Invite, flipped: boolean): void => {
     view.dataset.status = inv.status;
     rememberInvite(ctx.id, inv);
     if (inv.status === "waiting") {
-      heading.textContent = `Waiting for ${them}`;
-      replace(
-        body,
-        h("p", { class: "ask-say" }, `The invite is with ${them}. When they press We're in on their page, this screen changes on its own.`),
-        plan ? h("p", { class: "ask-night" }, nightTitle(plan)) : null,
-        linkBox(ctx, inv, plan),
-        ownerNote(ctx),
-      );
-      return;
+      replace(head, screenHead(`Waiting for ${them}`, `The invite is with ${them}. When they press We're in on their page, this screen changes on its own.`));
+      replace(left, waitingPanel(ctx, inv, plan));
+    } else {
+      const yes = inv.status === "accepted";
+      replace(head, screenHead(yes ? `${them} is in` : `${them} said not this time`, yes ? `${them} said yes on their invite page. Review the night, then it can go out with both your names on it.` : null));
+      replace(left, answeredPanel(ctx, inv));
+      if (flipped && !prefersReducedMotion()) left.firstElementChild?.classList.add("flipped");
+      if (flipped) void refreshState(ctx).catch(() => undefined);
     }
-    heading.textContent = inv.status === "accepted" ? `${them} is in` : `${them} said not this time`;
-    answered(ctx, inv, body);
-    if (flipped && !prefersReducedMotion()) view.classList.add("ask-flip");
-    if (flipped) heading.focus({ preventScroll: true });
+    head.querySelector<HTMLElement>("h1")?.focus({ preventScroll: true });
   };
   replace(main, view);
   show(invite, false);
-  heading.focus({ preventScroll: true });
   if (invite.status === "waiting") poll(ctx, invite, (inv) => show(inv, true));
 }
 

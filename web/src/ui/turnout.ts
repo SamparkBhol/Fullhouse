@@ -1,12 +1,12 @@
 import type { Night, Venue } from "../../../src/shared/contract.ts";
 import { DREW_LITTLE, turnoutVerdict } from "../../../src/shared/turnout.ts";
-import { formatName } from "../format.ts";
+import { nightKind } from "../format.ts";
 
 // Says what next Monday's run will do with this turnout, using the same rule the run uses.
 export function mondayLine(night: Night, venue: Venue): string | null {
   if (night.headcount === undefined) return null;
   const cap = night.maxPeople ?? venue.capacity;
-  const kind = `${formatName(night.format, night.feature?.type).toLowerCase()}s`;
+  const kind = `${nightKind(night).toLowerCase()}s`;
   const verdict = turnoutVerdict(night.headcount, cap);
   if (!verdict || !cap) return `${night.headcount} came. Say how many fit and Monday can use the turnout to choose the next kind of night.`;
   const seats = `${night.headcount} of ${cap} seats`;

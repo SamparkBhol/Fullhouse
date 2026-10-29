@@ -1,3 +1,4 @@
+import { walkMinutes as walkFor } from "../../src/shared/walk.ts";
 import type { NightFormat, QlooType, QuietSlot, Trend } from "../../src/shared/contract.ts";
 import { weekdayName } from "../../src/shared/words.ts";
 
@@ -16,12 +17,19 @@ export const FORMAT_NAMES: Record<NightFormat, string> = {
   games: "Game night",
   podcast: "Podcast listening night",
   tasting: "Tasting night",
+  show: "Show night",
+  art: "Late view",
 };
 
 // A TV show is watched an episode at a time, so its night is a watch night rather than a film night.
-export function formatName(format: NightFormat, featureType?: QlooType): string {
-  if (format === "film" && featureType === "tv_show") return "Watch night";
+export function formatName(format: NightFormat, _featureType?: QlooType): string {
   return FORMAT_NAMES[format] ?? "Night";
+}
+
+// A two stop night says what it is, "Book then film" or "Quiz crawl"; older nights keep their format's name.
+export function nightKind(plan: { format: NightFormat; feature?: { type: QlooType } | null; pair?: { label: string } }): string {
+  if (plan.pair?.label) return plan.pair.label.charAt(0).toUpperCase() + plan.pair.label.slice(1);
+  return formatName(plan.format, plan.feature?.type);
 }
 
 function dateFromDay(day: string): Date | null {
@@ -86,6 +94,13 @@ export function moment(iso: string, tz?: string): string {
   }).format(d).replace(" at ", ", ");
 }
 
+// "29 October 2026", for the date a read was taken.
+export function readDate(iso: string, tz?: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: safeZone(tz) }).format(d);
+}
+
 export function todayIn(tz: string | undefined): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
     year: "numeric",
@@ -104,12 +119,12 @@ export function distance(m: number): string {
 
 export function walk(m: number): string {
   if (!Number.isFinite(m)) return "";
-  const minutes = Math.max(1, Math.round(m / 80));
+  const minutes = walkFor(m);
   return `about ${minutes} minute${minutes === 1 ? "" : "s"} on foot`;
 }
 
 export function walkMinutes(m: number): number | null {
-  return Number.isFinite(m) ? Math.max(1, Math.round(m / 80)) : null;
+  return Number.isFinite(m) ? walkFor(m) : null;
 }
 
 export function walkShort(m: number): string {
@@ -125,7 +140,32 @@ export const TREND_WORDS: Record<Trend, string> = {
 };
 
 
+// A long title is shown up to its subtitle.
+export function displayTitle(name: string): string {
+  const cut = /^(.{4,}?)\s*[:(]/.exec(name);
+  return name.length > 32 && cut?.[1] ? cut[1].trim() : name;
+}
+
+// Qloo addresses run "126 Crosby St New York, NY 10012"; a card beside the name needs only the street.
+export function streetPart(address: string | undefined, city?: string): string | null {
+  const a = address?.trim();
+  if (!a) return null;
+  const cut = city ? a.toLowerCase().indexOf(` ${city.toLowerCase()}`) : -1;
+  const street = (cut > 0 ? a.slice(0, cut) : a.split(",")[0] ?? a).trim();
+  return street || null;
+}
+
+// The places nearby the map shows, the same ones the list shows first.
+export const PLACES_ON_MAP = 10;
+
+// Tag words Qloo writes in lower case that read as names or initials.
+const ACRONYMS: Record<string, string> = { lgbt: "LGBT", lgbtq: "LGBTQ", uk: "UK", us: "US", usa: "USA", tv: "TV", bbq: "BBQ", diy: "DIY", nyc: "NYC", la: "LA", dj: "DJ", djs: "DJs", rnb: "R&B", edm: "EDM", vip: "VIP", bar: "bar" };
+
 export function prettyTag(name: string): string {
   const spaced = name.replace(/_/g, " ").replace(/^[^\p{L}\p{N}]+/u, "").trim();
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+  const fixed = spaced
+    .split(" ")
+    .map((w) => ACRONYMS[w.toLowerCase()] ?? w)
+    .join(" ");
+  return fixed.charAt(0).toUpperCase() + fixed.slice(1);
 }

@@ -3,15 +3,18 @@ import type {
   ApproveInput,
   Baseline,
   CreateVenueInput,
+  EditableCopy,
   Invite,
   JointExample,
   Match,
   Night,
   PlanInput,
   PlanResponse,
+  RunProgress,
   StreetRead,
   Venue,
   VenueCandidate,
+  VenueSettingsInput,
   VenueState,
 } from "../../src/shared/contract.ts";
 import { parseExample, type Example } from "./joint.ts";
@@ -89,8 +92,8 @@ export const api = {
     health ??= call<Health>("/api/health").catch(() => ({ qloo: true, ai: false, ownerEmail: false }));
     return health;
   },
-  search(name: string, city: string): Promise<VenueCandidate[]> {
-    return call<VenueCandidate[]>("/api/venues/search", { method: "POST", body: { name, city } });
+  search(name: string, city: string, near?: { lat: number; lng: number }): Promise<VenueCandidate[]> {
+    return call<VenueCandidate[]>("/api/venues/search", { method: "POST", body: near ? { name, near } : { name, city } });
   },
   create(input: CreateVenueInput): Promise<CreatedVenue> {
     return call<CreatedVenue>("/api/venues", { method: "POST", body: input });
@@ -119,6 +122,12 @@ export const api = {
   republish(id: string, token: string, nightId: string): Promise<Night> {
     return call<Night>(venuePath(id, `/nights/${encodeURIComponent(nightId)}/republish`), { method: "POST", token, body: {} });
   },
+  editNight(id: string, token: string, nightId: string, copy: EditableCopy): Promise<Night> {
+    return call<Night>(venuePath(id, `/nights/${encodeURIComponent(nightId)}/edit`), { method: "POST", token, body: { copy } });
+  },
+  settings(id: string, token: string, input: VenueSettingsInput): Promise<Venue> {
+    return call<Venue>(venuePath(id, "/settings"), { method: "POST", token, body: input });
+  },
   async eventbrite(id: string, token: string, privateToken: string): Promise<string> {
     return (await call<{ organization: string }>(venuePath(id, "/eventbrite"), { method: "POST", token, body: { token: privateToken } })).organization;
   },
@@ -145,6 +154,9 @@ export const api = {
   },
   async invite(id: string, token: string, planId: string, partnerId: string): Promise<Invite> {
     return absolute(await call<Invite>(venuePath(id, `/nights/${encodeURIComponent(planId)}/invite`), { method: "POST", token, body: { partnerId } }));
+  },
+  progress(id: string, token: string): Promise<RunProgress> {
+    return call<RunProgress>(venuePath(id, "/progress"), { token });
   },
   async invites(id: string, token: string): Promise<Invite[]> {
     return (await call<Invite[]>(venuePath(id, "/invites"), { token })).map(absolute);

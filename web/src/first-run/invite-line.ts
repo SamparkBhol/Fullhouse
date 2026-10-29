@@ -1,12 +1,12 @@
 import { api } from "../api.ts";
 import { h, replace } from "../dom.ts";
 import type { VenueCtx } from "../venue-context.ts";
-import { shortName } from "../ui/split-bar.ts";
+import { shortName } from "../../../src/shared/words.ts";
 import { firstPath, rememberInvite } from "./run.ts";
 
 // An invite still open, or answered yes for a night not yet out, is one line on venue home with the way back to it.
 export function inviteLine(ctx: VenueCtx): HTMLElement {
-  const slot = h("div", { class: "invite-line", "aria-live": "polite", hidden: true });
+  const slot = h("div", { class: "notice invite-line", "aria-live": "polite", hidden: true });
   const out = new Set(ctx.state.nights.map((n) => n.id));
   void api
     .invites(ctx.id, ctx.token)

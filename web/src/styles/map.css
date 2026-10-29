@@ -1,0 +1,33 @@
+.map { height: 420px; border-radius: 14px; overflow: hidden; background: #eef0ec; border: 1px solid var(--rule); isolation: isolate; }
+.map-tall { height: 520px; }
+.map-short { height: 260px; }
+.map .leaflet-tile-pane { filter: grayscale(1) brightness(1.08) contrast(0.82); }
+.map .leaflet-container, .map.leaflet-container { font-family: var(--face); background: #eef0ec; }
+.map .leaflet-control-attribution { font-size: 0.6875rem; background: rgba(255, 255, 255, 0.86); color: var(--ink-2); }
+.map .leaflet-control-attribution a { color: var(--ink-2); }
+.map .leaflet-bar a { width: 36px; height: 36px; line-height: 36px; color: var(--ink); }
+
+.pin { display: grid; place-items: center; border-radius: 50%; font-weight: 750; font-size: 0.75rem; font-variant-numeric: tabular-nums; color: #fff; background: var(--ink); box-shadow: 0 0 0 2px #fff, 0 2px 6px rgba(20, 32, 26, 0.3); }
+.pin-them { background: var(--them); }
+.pin-you { border-radius: 999px; background: var(--you); font-size: 0.8125rem; font-weight: 750; padding: 0 10px; }
+.pin-tip { font-family: var(--face); font-size: 0.875rem; border-radius: 8px; border: 1px solid var(--rule); box-shadow: 0 8px 20px -10px rgba(20, 32, 26, 0.4); }
+.pin-tip strong { display: block; }
+.pin-tip span { color: var(--ink-3); }
+
+.map-key { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 12px; font-size: 0.875rem; color: var(--ink-2); }
+.map-key li { display: inline-flex; align-items: center; gap: 8px; }
+.key { display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: var(--ink); flex: none; }
+.key-you { background: var(--you); }
+.key-them { background: var(--them); }
+.key-heat { border-radius: 3px; background: linear-gradient(90deg, rgba(20, 32, 26, 0.08), rgba(20, 32, 26, 0.45)); width: 28px; }
+.layer-pick { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.layer-opt { position: relative; }
+.layer-opt input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.layer-opt label { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--rule-strong); font-weight: 650; font-size: 0.9375rem; cursor: pointer; }
+.layer-opt input:checked + label { background: var(--ink); color: #fff; box-shadow: none; }
+.layer-opt input:focus-visible + label { outline: 3px solid var(--you); outline-offset: 2px; }
+
+@media (max-width: 560px) {
+  .map, .map-tall { height: 340px; }
+  .map-short { height: 220px; }
+}

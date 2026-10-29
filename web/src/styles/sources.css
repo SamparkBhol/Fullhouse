@@ -1,0 +1,39 @@
+.sources { margin-top: 48px; border-top: 1px solid var(--rule); padding-top: 8px; }
+.sources > summary { font-size: 1.0625rem; }
+.sources-what { font-weight: 450; color: var(--ink-2); font-size: 0.9375rem; }
+.sources-body { display: grid; gap: 16px; padding: 8px 0 12px; }
+.fold { background: var(--surface); border: 1px solid var(--rule); border-radius: 14px; padding: 20px; }
+.fold h3 { font-size: 1.0625rem; font-weight: 700; }
+.fold-plain { margin-top: 8px; color: var(--ink-2); font-size: 0.9375rem; max-width: 46em; }
+.fold-head { margin-top: 16px; font-size: 0.9375rem; font-weight: 700; }
+.fold-sub { margin-top: 12px; }
+.fold-sub > summary { min-height: 44px; display: flex; align-items: center; font-weight: 600; font-size: 0.9375rem; }
+.because, .fold-calls { margin-top: 8px; display: grid; }
+.because li, .fold-calls li { border-top: 1px solid var(--rule); }
+.because li:first-child, .fold-calls li:first-child { border-top: 0; }
+.because-text { display: block; padding: 10px 0; font-size: 0.9375rem; }
+.because-row, .fold-call { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; min-height: 44px; padding: 8px 0; border: 0; background: none; text-align: left; font: inherit; font-size: 0.9375rem; color: var(--ink); cursor: pointer; }
+.because-row .because-text { padding: 0; }
+.because-call, .fold-call-no { font-size: 0.8125rem; font-weight: 650; color: var(--you); white-space: nowrap; text-decoration: underline; text-underline-offset: 3px; }
+.fold-call { grid-template-columns: auto minmax(0, 1fr); }
+.limits { background: var(--surface); border: 1px solid var(--rule); border-radius: 14px; padding: 20px; }
+.limits h3 { font-size: 1.0625rem; font-weight: 700; }
+.limits ul { margin-top: 8px; display: grid; gap: 6px; color: var(--ink-2); font-size: 0.9375rem; }
+.limits-line { margin-top: 32px; font-size: var(--t-small); color: var(--ink-3); max-width: 46em; }
+
+.sheet-dialog { width: min(720px, calc(100vw - 24px)); max-height: calc(100vh - 48px); padding: 0; border: 0; border-radius: var(--r-panel); background: var(--surface); color: var(--ink); box-shadow: 0 30px 80px -30px rgba(20, 32, 26, 0.5); }
+.sheet-dialog::backdrop { background: rgba(20, 32, 26, 0.45); }
+.sheet-head { position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 22px; background: var(--surface); border-bottom: 1px solid var(--rule); }
+.sheet-head h2 { font-size: 1.25rem; font-weight: 750; }
+.sheet-body { padding: 8px 22px 22px; }
+.sheet-note { margin: 12px 0 4px; color: var(--ink-2); font-size: 0.9375rem; }
+.call { padding: 16px 0; border-top: 1px solid var(--rule); }
+.call:first-child { border-top: 0; }
+.call-name { font-weight: 700; }
+.call-no { display: inline-block; min-width: 4.5em; color: var(--ink-3); font-weight: 650; font-variant-numeric: tabular-nums; }
+.call-endpoint { margin-top: 2px; font-size: 0.875rem; color: var(--ink-2); overflow-wrap: anywhere; }
+.call-params { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); gap: 2px 12px; margin-top: 8px; font-size: 0.8125rem; }
+.call-params dt { color: var(--ink-3); }
+.call-params dd { overflow-wrap: anywhere; }
+.call-facts { margin-top: 6px; font-size: 0.8125rem; color: var(--ink-3); }
+.call-focus { margin: 0 -12px; padding: 16px 12px; border-radius: 10px; background: var(--you-tint); border-top-color: transparent; }

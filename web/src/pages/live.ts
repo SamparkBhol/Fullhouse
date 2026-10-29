@@ -1,7 +1,7 @@
 import { STATS_MAX_AGE_S, type StatsBody } from "../../../src/shared/stats.ts";
 import { longDay, viewerZone, zoneName } from "../charts/time.ts";
 import { h } from "../dom.ts";
-import { focusHeading, page, plainFascia, title } from "../ui/shell.ts";
+import { credit, focusHeading, page, publicHeader, title } from "../ui/shell.ts";
 import { mountBoard } from "./live-board.ts";
 import { callsPane, statRow } from "./live-panels.ts";
 import { budgetPane, copyPane } from "./live-side.ts";
@@ -15,7 +15,8 @@ function intro(body: StatsBody | null, zone: string): string {
 }
 
 export function livePage(): void {
-  plainFascia();
+  publicHeader();
+  credit("Counted by Full House on this server. Taste data from Qloo.");
   title("Live numbers");
   const tz = viewerZone();
   mountBoard<StatsBody>(page(), {
@@ -27,14 +28,15 @@ export function livePage(): void {
     withRange: true,
     defaultRefresh: "30s",
     extra: h("p", { class: "board-plain" }, h("a", { href: "/live.txt" }, "The same numbers as plain text")),
+    // Two columns on a wide screen, the charts and tables on the left; on a phone they read in this order.
     panes: (body, tools) => [
       statRow(body, tools),
-      callsPane(body, tools),
-      budgetPane(body),
-      copyPane(body, tools),
-      endpointsPane(body),
-      agentsPane(body),
-      logPane(body, tz),
+      h(
+        "div",
+        { class: "board-cols" },
+        h("div", { class: "board-col board-main" }, callsPane(body, tools), endpointsPane(body), agentsPane(body)),
+        h("div", { class: "board-col board-side" }, budgetPane(body), copyPane(body, tools), logPane(body, tz)),
+      ),
     ],
   });
   focusHeading();

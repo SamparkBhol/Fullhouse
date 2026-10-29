@@ -5,20 +5,24 @@ import { h, replace, uid } from "../dom.ts";
 import { longDate, todayIn } from "../format.ts";
 import { failure } from "./states.ts";
 import { mondayLine } from "./turnout.ts";
-import { ledge } from "./ledge.ts";
 import { refreshState, type VenueCtx } from "../venue-context.ts";
+
+function turnoutPanel(...body: (Node | null)[]): HTMLElement {
+  const id = uid("turnout");
+  return h("section", { class: "panel", "aria-labelledby": id }, h("h2", { id }, "Turnout"), ...body);
+}
 
 export function turnoutWindow(ctx: VenueCtx, night: Night, redraw: (n: Night, notice: string) => void): HTMLElement {
   const venue = ctx.state.venue;
   if (night.date > todayIn(venue.tz)) {
-    return ledge({ label: "Turnout" }, h("p", { class: "ledge-empty" }, `After the night, come back here and log how many people came. It opens on ${longDate(night.date)}.`));
+    return turnoutPanel(h("p", null, `After the night, come back here and log how many people came. It opens on ${longDate(night.date)}.`));
   }
   const done: HTMLElement[] = [];
   if (night.headcount !== undefined) {
-    done.push(h("p", { class: "big-line" }, `${plural(night.headcount, "person", "people")} came.`));
+    done.push(h("p", { class: "big-line figure" }, `${plural(night.headcount, "person", "people")} came.`));
     const next = mondayLine(night, venue);
     if (next) done.push(h("p", { class: "monday-line" }, next));
-    if (night.resultNote) done.push(h("p", { class: "quote" }, night.resultNote));
+    if (night.resultNote) done.push(h("p", { class: "copy-quote" }, night.resultNote));
   }
   const needsCap = night.maxPeople === undefined && !venue.capacity;
   const cap = h("input", { type: "number", id: uid("cap"), min: "1", max: "5000", inputmode: "numeric" });
@@ -29,10 +33,10 @@ export function turnoutWindow(ctx: VenueCtx, night: Night, redraw: (n: Night, no
   const form = h(
     "form",
     { class: "form", novalidate: true },
-    h("div", { class: "field" }, h("label", { for: head.id }, "How many people came"), head),
-    needsCap ? h("div", { class: "field" }, h("label", { for: cap.id }, "How many fit in the room"), h("p", { class: "hint" }, "Optional. Monday measures the turnout against it."), cap) : null,
-    h("div", { class: "field" }, h("label", { for: note.id }, "Anything to remember"), h("p", { class: "hint", id: `${note.id}-hint` }, "Optional. Stays with your venue and is never sent to Qloo."), note),
-    h("p", { class: "actions" }, h("button", { class: "button", type: "submit" }, night.headcount !== undefined ? "Update the turnout" : "Save the turnout")),
+    h("div", { class: "field-row" }, h("label", { for: head.id }, "How many people came"), head),
+    needsCap ? h("div", { class: "field-row" }, h("label", { for: cap.id }, "How many fit in the room"), h("p", { class: "hint" }, "Optional. Monday measures the turnout against it."), cap) : null,
+    h("div", { class: "field-row" }, h("label", { for: note.id }, "Anything to remember"), h("p", { class: "hint", id: `${note.id}-hint` }, "Optional. It stays with your venue and is never sent anywhere."), note),
+    h("p", { class: "actions actions-tight" }, h("button", { class: "btn", type: "submit" }, night.headcount !== undefined ? "Update the turnout" : "Save the turnout")),
     slot,
   );
   note.setAttribute("aria-describedby", `${note.id}-hint`);
@@ -60,5 +64,5 @@ export function turnoutWindow(ctx: VenueCtx, night: Night, redraw: (n: Night, no
       replace(slot, failure(err, () => form.requestSubmit()));
     }
   });
-  return ledge({ label: "Turnout", className: "ledge-turnout" }, ...done, form);
+  return turnoutPanel(...done, form);
 }

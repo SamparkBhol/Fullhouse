@@ -41,7 +41,7 @@ export function columns(spec: ColumnsSpec, width: number): HTMLElement {
   const left = (i: number) => AXIS + i * bw;
   const mid = (i: number) => left(i) + bw / 2;
   const y = (v: number) => TOP + plot - (v / max) * plot;
-  const pattern = hatch("hatch-haze");
+  const pattern = hatch();
   const svg = s("svg", { class: "chart columns", width, height, viewBox: `0 0 ${width} ${height}`, "aria-hidden": "true", focusable: "false" }, s("defs", {}, pattern.def));
 
   for (const v of [max, max / 2]) {
@@ -54,10 +54,12 @@ export function columns(spec: ColumnsSpec, width: number): HTMLElement {
     svg.append(
       s("rect", { class: "uncounted", x: AXIS, y: TOP, width: edge - AXIS, height: plot }),
       s("line", { class: "counted-edge", x1: edge, x2: edge, y1: TOP, y2: TOP + plot }),
-      // Above the plot, where no column reaches: left of the edge when it fits there, right of it when not.
+      // Above the plot, where no column reaches.
       edge - AXIS >= MARKER_ROOM
         ? text(edge - 4, TOP - 3, spec.countedFrom.label, { class: "axis-label", "text-anchor": "end" })
-        : text(edge + 4, TOP - 3, spec.countedFrom.label, { class: "axis-label", "text-anchor": "start" }),
+        : width - edge >= MARKER_ROOM
+          ? text(edge + 4, TOP - 3, spec.countedFrom.label, { class: "axis-label", "text-anchor": "start" })
+          : text(width - 2, TOP - 3, spec.countedFrom.label, { class: "axis-label", "text-anchor": "end" }),
     );
   }
   for (let i = 0; i < n; i++) {

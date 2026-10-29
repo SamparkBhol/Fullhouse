@@ -6,12 +6,12 @@ import { failure, loading } from "./ui/states.ts";
 import { rememberPlanResponse } from "./venue-context.ts";
 
 export const READ_LINES = [
-  "Places nearby that your crowd also loves",
+  "The places nearby that your crowd also loves",
   "The books, shows, artists, podcasts and films they love",
   "Where on the street your crowd gathers",
 ];
 
-// One press from a new venue to its first flyer: read the street, plan the quiet night, open the plan.
+// One press from a new venue to its first plan: read the street, plan the quiet night, open the plan.
 // A caller that is still showing something the owner needs, such as the owner link, opens the plan itself.
 export async function readThenPlan(id: string, token: string, weekday: number, slot: HTMLElement, needsRead: boolean, onFail: () => void, onReady?: (href: string) => void): Promise<void> {
   try {

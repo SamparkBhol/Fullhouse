@@ -21,14 +21,15 @@ export function text(x: number, y: number, label: string, attrs: SvgAttrs = {}):
 let patternCount = 0;
 
 // Hatched marks mean reused: an answer from the cache, copy from a template. Solid means made fresh.
-export function hatch(className: string): { id: string; def: SVGPatternElement } {
+// Each chart needs its own pattern id, because two charts on one page cannot share a def that may be redrawn away.
+export function hatch(): { id: string; def: SVGPatternElement } {
   patternCount += 1;
   const id = `hatch${patternCount}`;
   const def = s(
     "pattern",
     { id, width: 5, height: 5, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" },
-    s("rect", { width: 5, height: 5, class: `${className} hatch-ground` }),
-    s("line", { x1: 0, y1: 0, x2: 0, y2: 5, class: `${className} hatch-line` }),
+    s("rect", { width: 5, height: 5, class: "hatch-ground" }),
+    s("line", { x1: 0, y1: 0, x2: 0, y2: 5, class: "hatch-line" }),
   );
   return { id, def };
 }

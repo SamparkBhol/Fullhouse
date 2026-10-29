@@ -6,15 +6,15 @@ import { nightScreen } from "../first-run/night-screen.ts";
 import { firstPath, rememberedInvite, runFor } from "../first-run/run.ts";
 import { api } from "../api.ts";
 import { navigate } from "../router.ts";
-import { runFascia, title } from "../ui/shell.ts";
+import { runHeader, title } from "../ui/shell.ts";
 import { failure, loading } from "../ui/states.ts";
 import { planGroup, withVenue, type VenueCtx } from "../venue-context.ts";
 
-export type Step = "crowd" | "match" | "night" | "ask";
+import type { Step } from "../ui/shell.ts";
 
 async function openAsk(ctx: VenueCtx, main: HTMLElement): Promise<void> {
   title("Waiting for an answer");
-  replace(main, h("div", { class: "wrap" }, loading("Opening your invite")));
+  replace(main, h("div", { class: "screen" }, h("div", { class: "wrap" }, loading("Opening your invite"))));
   try {
     const held = rememberedInvite(ctx.id);
     const all = await api.invites(ctx.id, ctx.token);
@@ -23,10 +23,14 @@ async function openAsk(ctx: VenueCtx, main: HTMLElement): Promise<void> {
       navigate(firstPath(ctx.id, "night"), { replace: true });
       return;
     }
-    const plan = planGroup(ctx.state, invite.planId).plan;
+    if (invite.status === "accepted" && ctx.state.nights.some((n) => n.id === invite.planId)) {
+      navigate(`/v/${encodeURIComponent(ctx.id)}/nights/${encodeURIComponent(invite.planId)}`, { replace: true });
+      return;
+    }
+    const plan = planGroup(ctx.state, invite.planId).plan ?? ctx.state.nights.find((n) => n.id === invite.planId) ?? null;
     askScreen(ctx, main, invite, plan);
   } catch (err) {
-    replace(main, h("div", { class: "wrap" }, h("h1", { class: "sr-only" }, "Your invite"), failure(err, () => void openAsk(ctx, main))));
+    replace(main, h("div", { class: "screen" }, h("div", { class: "wrap" }, h("h1", { class: "sr-only" }, "Your invite"), failure(err, () => void openAsk(ctx, main)))));
   }
 }
 
@@ -35,7 +39,7 @@ export function firstRunPage(id: string, step: Step): Promise<void> {
     id,
     null,
     async (ctx, main) => {
-      runFascia(ctx.state.venue);
+      runHeader(ctx.state.venue, step);
       const run = runFor(ctx);
       if (step === "ask") return openAsk(ctx, main);
       if (step === "match") return matchScreen(run, main);

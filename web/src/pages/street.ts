@@ -1,18 +1,20 @@
 import type { StreetRead } from "../../../src/shared/contract.ts";
+import { plainName } from "../../../src/shared/words.ts";
 import { api } from "../api.ts";
 import { h, replace } from "../dom.ts";
-import { distance, moment } from "../format.ts";
-import { lovedSection } from "../ui/loved.ts";
-import { pickShelves } from "../ui/picks.ts";
-import { receiptsDrawer } from "../ui/receipts.ts";
-import { focusHeading, title } from "../ui/shell.ts";
-import { failure, loading } from "../ui/states.ts";
-import { streetMapPanel } from "../ui/street-map.ts";
-import { audiencePart, gapPart, lovedPart, mapPart, picksPart, tastePart } from "../ui/street-receipts.ts";
-import { gapBoard } from "../ui/taste.ts";
-import { shopWindow } from "../ui/window.ts";
-import { refreshState, withVenue, type VenueCtx } from "../venue-context.ts";
 import { READ_LINES, readThenPlan } from "../first-night.ts";
+import { placesPanel, shelvesPanel } from "../first-run/crowd.ts";
+import { limitsLine, screenHead } from "../first-run/crowd-screen.ts";
+import { distance, moment, readDate } from "../format.ts";
+import { credit, focusHeading, title } from "../ui/shell.ts";
+import { sourcesDrawer } from "../ui/sources.ts";
+import { failure, loading } from "../ui/states.ts";
+import { gapPart, lovedPart, mapPart, picksPart, tagsPart } from "../ui/street-sources.ts";
+import { streetMapPanel } from "../ui/street-map.ts";
+import { gapPanel, tastePanel } from "../ui/taste.ts";
+import { refreshState, withVenue, type VenueCtx } from "../venue-context.ts";
+
+const PICKS_PER_KIND = 6;
 
 export function streetPage(id: string): Promise<void> {
   return withVenue(id, "street", (ctx, main) => {
@@ -21,26 +23,19 @@ export function streetPage(id: string): Promise<void> {
   });
 }
 
+function frame(main: HTMLElement, ...children: (HTMLElement | null)[]): void {
+  replace(main, h("div", { class: "screen" }, h("div", { class: "wrap" }, ...children)));
+}
+
 function renderNoRead(ctx: VenueCtx, main: HTMLElement): void {
-  title("The street");
+  title("Your street");
   const slot = h("div", { "aria-live": "polite" });
-  const button = h("button", { class: "button button-big", type: "button" }, "Read the street");
+  const button = h("button", { class: "btn", type: "button" }, "Read the street");
   button.addEventListener("click", () => void runRead(ctx, main, button, slot));
-  replace(
+  frame(
     main,
-    h(
-      "div",
-      { class: "wrap" },
-      h("h1", null, "The street around you"),
-      shopWindow(
-        { size: "big", dark: true, lettering: "Not read yet" },
-        h("p", { class: "lede" }, "Full House asks Qloo five things about the blocks around your venue:"),
-        h("ul", { class: "ticks" }, READ_LINES.map((l) => h("li", null, l))),
-        h("p", null, "Only your venue's public listing and its location are sent. Nothing about your customers."),
-        h("p", { class: "actions" }, button),
-        slot,
-      ),
-    ),
+    screenHead("Your street", "Not read yet. Only your venue's public listing and its location are sent, nothing about your customers."),
+    h("section", { class: "panel screen-one" }, h("h2", null, "A read covers"), h("ul", { class: "bullets" }, READ_LINES.map((l) => h("li", null, l))), h("p", { class: "actions" }, button), slot),
   );
   focusHeading();
 }
@@ -58,56 +53,33 @@ async function runRead(ctx: VenueCtx, main: HTMLElement, button: HTMLButtonEleme
   }
 }
 
-function picksSection(read: StreetRead, venueName: string): HTMLElement {
-  return h(
-    "section",
-    { class: "street-picks", "aria-labelledby": "picks-title" },
-    h("h2", { id: "picks-title" }, `What people who like ${venueName} love`),
-    read.rising.length
-      ? h("div", { class: "pick-windows" }, pickShelves(read))
-      : h("p", { class: "ledge-empty" }, `Qloo returned no artists, books, films, shows or podcasts for ${venueName}.`),
-  );
-}
-
 function renderRead(ctx: VenueCtx, main: HTMLElement, read: StreetRead): void {
   const venue = ctx.state.venue;
   const tz = venue.tz;
-  const name = venue.entity.name;
-  title("The street");
-  const again = h("button", { class: "link-button", type: "button" }, "Read again");
-  const againSlot = h("div", { "aria-live": "polite" });
-  again.addEventListener("click", () => void runRead(ctx, main, again, againSlot));
-  const day = venue.quietSlot.weekday;
-  const plan = h("button", { class: "button button-lamp", type: "button" }, "Plan a night from this read");
+  const name = plainName(venue.entity.name);
+  title("Your street");
+  credit(`Taste data from Qloo, read ${readDate(read.at, tz)}. Map data from OpenStreetMap contributors. Ranked by Full House.`);
+  const slot = h("div", { "aria-live": "polite" });
+  const again = h("button", { class: "btn btn-quiet", type: "button" }, "Read again");
+  again.addEventListener("click", () => void runRead(ctx, main, again, slot));
+  const plan = h("button", { class: "btn", type: "button" }, "Plan a night from this read");
   plan.addEventListener("click", () => {
     plan.disabled = true;
-    void readThenPlan(ctx.id, ctx.token, day, againSlot, false, () => (plan.disabled = false));
+    void readThenPlan(ctx.id, ctx.token, venue.quietSlot.weekday, slot, false, () => (plan.disabled = false));
   });
-
-  replace(
+  frame(
     main,
-    h(
-      "div",
-      { class: "wrap wrap-wide street-page" },
-      h(
-        "div",
-        { class: "read-meta" },
-        h("h1", { class: "page-title" }, "The street around you"),
-        h("p", { class: "meta read-line" }, `Read ${moment(read.at, tz)}, ${distance(read.radiusM)} around ${name}. `, again),
-        h("p", { class: "read-actions" }, plan),
-        againSlot,
-      ),
-      streetMapPanel(read, venue),
-      picksSection(read, name),
-      lovedSection(read),
-      gapBoard(read),
-      receiptsDrawer({
-        calls: read.provenance,
-        limits: read.limits,
-        tz,
-        parts: [mapPart(read, tz), picksPart(read, name, tz), lovedPart(read, name, tz), gapPart(read, tz), tastePart(read, name, tz), audiencePart(read, name, tz)],
-      }),
-    ),
+    screenHead("Your street", `Read ${moment(read.at, tz)}, ${distance(read.radiusM)} around ${name}.`, h("p", { class: "actions actions-tight" }, plan, again), slot),
+    h("div", { class: "screen-grid" }, streetMapPanel(read, venue), placesPanel(read, name)),
+    h("div", { class: "section-grid shelves-wide" }, shelvesPanel(read, name, PICKS_PER_KIND)),
+    h("div", { class: "screen-grid screen-grid-even section-grid" }, gapPanel(read), tastePanel(read, name)),
+    limitsLine(name),
+    sourcesDrawer({
+      calls: read.provenance,
+      limits: read.limits,
+      tz,
+      parts: [mapPart(read, tz), picksPart(read, name, tz), lovedPart(read, name, tz), gapPart(read, tz), tagsPart(read, name, tz)],
+    }),
   );
   focusHeading();
 }

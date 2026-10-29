@@ -1,5 +1,5 @@
 import { h } from "../dom.ts";
-import type { Mark } from "./hover.ts";
+import { swatch, type Mark } from "./hover.ts";
 
 type Child = Node | string | null | undefined | false;
 
@@ -7,7 +7,7 @@ export interface PaneSpec {
   key: string;
   title: string;
   line: string;
-  span: "stat" | "wide" | "side" | "full" | "half";
+  span: "stat" | "wide" | "side";
   body: Child[];
 }
 
@@ -15,7 +15,7 @@ export function pane(spec: PaneSpec): HTMLElement {
   const id = `pane-${spec.key}`;
   return h(
     "section",
-    { class: `pane pane-${spec.span}`, "aria-labelledby": id, "data-pane": spec.key },
+    { class: `panel pane pane-${spec.span}`, "aria-labelledby": id, "data-pane": spec.key },
     h("h2", { class: "pane-title", id }, spec.title),
     h("p", { class: "pane-line" }, spec.line),
     ...spec.body,
@@ -26,7 +26,7 @@ export function legend(items: { label: string; mark: Mark; value?: string }[]): 
   return h(
     "ul",
     { class: "legend" },
-    items.map((i) => h("li", null, h("span", { class: `key key-${i.mark}`, "aria-hidden": "true" }), i.label, i.value !== undefined ? h("strong", null, ` ${i.value}`) : null)),
+    items.map((i) => h("li", null, swatch(i.mark), h("span", null, i.label), i.value !== undefined ? h("strong", { class: "num" }, i.value) : null)),
   );
 }
 

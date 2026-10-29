@@ -1,6 +1,6 @@
 import { RANGE_WORDS, type StatsBody } from "../../../src/shared/stats.ts";
 import { fitChart } from "../charts/fit.ts";
-import { segmentGauge } from "../charts/gauge.ts";
+import { barGauge } from "../charts/gauge.ts";
 import { legend, pane } from "../charts/panel.ts";
 import { splitBar } from "../charts/split.ts";
 import { asTable } from "../charts/table.ts";
@@ -14,41 +14,45 @@ function costLine(body: StatsBody): HTMLElement | null {
   const t = body.totals;
   if (!t.nightsPublished) return null;
   const each = Math.round(t.qlooCalls / t.nightsPublished);
-  return h("p", { class: "pane-note" }, `In ${RANGE_WORDS[body.range]}: ${count(each)} live Qloo ${each === 1 ? "call" : "calls"} per published night.`);
+  return h("p", { class: "pane-note" }, `In ${RANGE_WORDS[body.range]}: ${count(each)} live taste data ${each === 1 ? "call" : "calls"} per published night.`);
 }
 
-// What the gauge counts and the live calls differ by: retries, failed calls, and calls set aside by requests still running.
+// Three numbers: set aside, spent live, and the difference. A request sets calls aside in blocks of ten and hands back
+// what it did not use when it ends; an answer from the cache never touches the budget.
 function gapLine(counted: number, live: number): HTMLElement | null {
   if (counted <= live) return null;
   return h(
     "p",
     { class: "pane-note" },
-    `${count(counted)} counted against the budget. Requests set calls aside in blocks of ten and hand back what they do not use, so the ${count(counted - live)} more are retries, failed calls and requests still running.`,
+    `${count(counted)} set aside, ${count(live)} spent on live calls, ${count(counted - live)} still held by requests running now or lost to retries and failed calls. Blocks go back when a request ends, and cached answers never touch the budget.`,
   );
 }
+
+const BUDGET_TITLE = "Today's call budget";
 
 export function budgetPane(body: StatsBody): HTMLElement {
   const b = body.budget;
   const newCap = Math.floor(b.budget * b.newVenueShare);
   const host = h("div", { class: "gauge-host" });
-  fitChart(host, (w) => segmentGauge({ value: b.counted, max: b.budget, mark: { at: newCap, label: "New venues stop here" } }, w));
+  fitChart(host, (w) => barGauge({ value: b.counted, max: b.budget, mark: { at: newCap, label: "New venues stop here" } }, w));
   return pane({
     key: "budget",
-    title: "Today's Qloo budget",
-    line: `One daily budget covers every Qloo call. New venues may use ${Math.round(b.newVenueShare * 100)} percent, so venues already running always have room.`,
+    title: BUDGET_TITLE,
+    line: `One daily budget covers every call for taste data. New venues may use ${Math.round(b.newVenueShare * 100)} percent, so venues already running always have room.`,
     span: "side",
     body: [
-      h("p", { class: "gauge-figure" }, h("strong", null, count(b.liveCalls)), ` live ${b.liveCalls === 1 ? "call" : "calls"} of ${count(b.budget)} today`),
+      h("p", { class: "gauge-figure" }, h("strong", { class: "figure" }, count(b.liveCalls)), ` live ${b.liveCalls === 1 ? "call" : "calls"} of ${count(b.budget)} today`),
       host,
       gapLine(b.counted, b.liveCalls),
       costLine(body),
       h("p", { class: "pane-note" }, `Resets at 00:00 UTC, in ${untilWords(Date.parse(b.resetsAt) - Date.now())}.`),
       asTable("budget", {
-        caption: "Today's Qloo budget",
+        caption: BUDGET_TITLE,
         head: ["Measure", "Calls"],
         rows: [
-          ["Live calls today", b.liveCalls],
-          ["Counted against the budget", b.counted],
+          ["Set aside today", b.counted],
+          ["Spent on live calls", b.liveCalls],
+          ["Held or lost to retries", Math.max(0, b.counted - b.liveCalls)],
           ["Daily budget", b.budget],
           ["Where new venues stop", newCap],
         ],

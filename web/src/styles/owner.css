@@ -1,0 +1,52 @@
+.panel-lead { margin-top: 6px; color: var(--ink-2); font-size: 0.9375rem; }
+.panel .stops { margin-top: 12px; }
+.panel-pair .pair { margin-top: 14px; box-shadow: none; padding: 0; }
+.panel-pair .verdict { margin-top: 18px; }
+.invite-line { margin-top: 24px; }
+.invite-line a { color: inherit; font-weight: 700; }
+.screen-head + .invite-line { margin-top: 24px; }
+.section-tight { margin-top: 20px; }
+
+.rsvp-block { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--rule); }
+.rsvp-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-top: 14px; font-weight: 600; }
+.rsvp-block .rsvp-line { margin-top: 0; }
+.rsvp-big { font-size: 3rem; font-weight: 820; letter-spacing: -0.04em; line-height: 0.95; color: var(--you); font-variant-numeric: tabular-nums; }
+.rsvp-line + .small { margin-top: 6px; }
+.count-tick { animation: tick 0.4s ease-out; }
+@keyframes tick { from { transform: translateY(-4px); opacity: 0.4; } }
+
+.results { margin-top: 10px; display: grid; }
+.result { padding: 12px 0; border-top: 1px solid var(--rule); }
+.result:first-child { border-top: 0; padding-top: 4px; }
+.result-label { font-weight: 650; display: inline-flex; align-items: center; min-height: 32px; }
+a.result-label { color: var(--you); }
+.result-detail { font-size: 0.875rem; color: var(--ink-2); }
+.result-failed .result-label { color: var(--ink); }
+.compose-links { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 4px; font-size: 0.9375rem; }
+.compose-links a { display: inline-flex; align-items: center; min-height: 44px; color: var(--you); font-weight: 600; }
+
+.copy-title { margin-top: 10px; font-size: 1.125rem; font-weight: 750; }
+.copy-body { margin-top: 8px; color: var(--ink-2); font-size: 0.9375rem; }
+.copy-head { margin-top: 18px; font-size: 0.9375rem; font-weight: 700; }
+.copy-quote { margin-top: 6px; font-size: 0.9375rem; color: var(--ink-2); }
+.copy-foot { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--rule); display: grid; gap: 6px; font-size: 0.875rem; color: var(--ink-3); }
+.claim { color: var(--ink-2); }
+.licence { margin-top: 10px; }
+.big-line { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; margin-top: 12px; }
+.monday-line { margin-top: 4px; color: var(--ink-2); font-size: 0.9375rem; }
+.panel .form { margin-top: 16px; }
+
+.proof-line { font-size: clamp(1.25rem, 1rem + 1vw, 1.625rem); font-weight: 750; letter-spacing: -0.015em; line-height: 1.3; max-width: 34em; }
+.proof-hero .small { margin-top: 10px; }
+.printout { margin-top: 14px; padding: 16px; border-radius: 12px; background: var(--page); font-size: 0.9375rem; color: var(--ink-2); }
+.printout p + p { margin-top: 10px; }
+
+/* On one column the partner follows the next night, before the numbers, because the pair is what the page is about. */
+@media (max-width: 960px) {
+  .home-grid { gap: 16px; }
+  .home-grid > .stack { display: contents; }
+  .home-grid > .stack > * { margin-top: 0; order: 5; }
+  .home-grid > .stack > :first-child { order: 1; }
+  .home-grid .panel-pair { order: 2; }
+  .home-grid .panel-pair + * { order: 3; }
+}

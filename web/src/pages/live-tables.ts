@@ -27,29 +27,51 @@ function share(part: number, whole: number): string {
   return whole > 0 ? `${Math.round((100 * part) / whole)}%` : "none";
 }
 
+// The endpoints this build calls, in the words of the How page. A row outside this list came from an earlier build.
+const THIS_BUILD: Record<string, string> = {
+  "/search": "/search, venue and book lookups",
+  "/v2/insights urn:tag": "/v2/insights, taste tags",
+  "/v2/insights urn:entity:place": "/v2/insights, places nearby and loves you back",
+  "/v2/insights urn:heatmap": "/v2/insights, heat map",
+  "/v2/insights urn:entity:artist": "/v2/insights, artists",
+  "/v2/insights urn:entity:book": "/v2/insights, books",
+  "/v2/insights urn:entity:movie": "/v2/insights, films",
+  "/v2/insights urn:entity:tv_show": "/v2/insights, TV shows",
+  "/v2/insights urn:entity:podcast": "/v2/insights, podcasts",
+  "/v2/analysis/compare": "/v2/analysis/compare, venue against partner",
+  "/entities": "/entities, the Proof tab's own picks by id",
+  other: "/entities, the Proof tab's own picks by id",
+};
+
+export function endpointLabel(endpoint: string): string {
+  return THIS_BUILD[endpoint] ?? `${endpoint}, from an earlier build`;
+}
+
 export function endpointsPane(body: StatsBody): HTMLElement {
   const errors = body.errorKinds.length
     ? `Errors by kind: ${body.errorKinds.map((e) => `${ERROR_WORDS[e.kind] ?? e.kind} ${count(e.n)}`).join(", ")}.`
-    : `No Qloo errors in ${RANGE_WORDS[body.range]}.`;
+    : `No failed calls for taste data in ${RANGE_WORDS[body.range]}.`;
+  const old = body.endpoints.some((e) => !(e.endpoint in THIS_BUILD));
   return pane({
     key: "endpoints",
-    title: "Qloo endpoints",
-    line: "Every Qloo endpoint called in this range. Times are for live calls, to the full answer, rounded up to the next step such as 200, 250 or 300 ms. p50 is a typical call, p95 the slow end.",
+    title: "Taste data endpoints",
+    line: "Every taste data endpoint called in this range. Times are for live calls, to the full answer, rounded up to the next step such as 200, 250 or 300 ms. p50 is a typical call, p95 the slow end. On a phone the times and errors are in the plain text page.",
     span: "wide",
     body: [
       body.endpoints.length
         ? h(
             "div",
-            { class: "table-scroll table-blocks" },
+            { class: "table-scroll table-blocks table-narrow" },
             dataTable({
-              caption: `Qloo endpoints in ${RANGE_WORDS[body.range]}`,
+              caption: `Taste data endpoints in ${RANGE_WORDS[body.range]}`,
               head: ["Endpoint", "Live calls", "From cache", "Cache share", "p50 ms", "p95 ms", "Errors"],
-              rows: body.endpoints.map((e) => [e.endpoint, count(e.calls), count(e.cacheHits), share(e.cacheHits, e.calls + e.cacheHits), ms(e.p50), ms(e.p95), count(e.errors)]),
+              rows: body.endpoints.map((e) => [endpointLabel(e.endpoint), count(e.calls), count(e.cacheHits), share(e.cacheHits, e.calls + e.cacheHits), ms(e.p50), ms(e.p95), count(e.errors)]),
               numeric: [false, true, true, true, true, true, true],
             }),
           )
-        : empty(`No Qloo calls in ${RANGE_WORDS[body.range]}. Each endpoint gets a row here once it is called.`),
+        : empty(`No calls for taste data in ${RANGE_WORDS[body.range]}. Each endpoint gets a row here once it is called.`),
       h("p", { class: "pane-note" }, errors),
+      old ? h("p", { class: "pane-note" }, "A row marked from an earlier build was called by a version deployed earlier in this range. This build never asks for it.") : null,
     ],
   });
 }
@@ -76,20 +98,24 @@ function agentNotes(body: StatsBody, now: Date): HTMLElement[] {
   return notes.map((n) => h("p", { class: "pane-note" }, n));
 }
 
+function fact(label: string, n: number): HTMLElement {
+  return h("div", { class: "figures-cell" }, h("dt", null, label), h("dd", { class: "figure" }, count(n)));
+}
+
 export function agentsPane(body: StatsBody): HTMLElement {
   const t = body.totals;
   return pane({
     key: "agents",
     title: "Monday runs and MCP",
     line: "Monday runs are each venue's agent waking up on its own. MCP calls come from other apps using Full House's tools, and count only when the tool did its job.",
-    span: "side",
+    span: "wide",
     body: [
       h(
         "dl",
-        { class: "pane-facts" },
-        h("div", null, h("dt", null, "Monday runs"), h("dd", null, count(t.mondayRuns))),
-        h("div", null, h("dt", null, "Drafted a night"), h("dd", null, count(t.mondayPlanned))),
-        h("div", null, h("dt", null, "MCP tool calls"), h("dd", null, count(t.mcpCalls))),
+        { class: "figures pane-facts" },
+        fact("Monday runs", t.mondayRuns),
+        fact("Drafted a night", t.mondayPlanned),
+        fact("MCP tool calls", t.mcpCalls),
       ),
       ...agentNotes(body, new Date()),
     ],
@@ -100,8 +126,8 @@ function logRow(e: LoggedEvent, tz: string): HTMLElement {
   return h(
     "li",
     { class: `log-row log-${e.kind}` },
-    h("time", { datetime: e.at }, stamp(e.at, tz)),
-    h("span", { class: "log-kind" }, h("span", { class: "key", "aria-hidden": "true" }), KIND_WORDS[e.kind] ?? "Event"),
+    h("time", { class: "log-time", datetime: e.at }, stamp(e.at, tz)),
+    h("span", { class: "log-kind" }, KIND_WORDS[e.kind] ?? "Event"),
     h("span", { class: "log-line" }, e.line),
   );
 }

@@ -22,21 +22,21 @@ export const REFRESH_OPTIONS: [RefreshChoice, string][] = [
 
 const EVERY_WORDS: Record<number, string> = { 10_000: "10 s", 20_000: "20 s", 30_000: "30 s", 60_000: "minute" };
 
-// Grafana's pickers as radio groups: one tab stop each, arrow keys move between options.
+// Pill radio groups: one tab stop each, arrow keys move between options.
 export function segmented<T extends string>(legend: string, name: string, options: [T, string][], value: T, onChange: (v: T) => void): HTMLFieldSetElement {
   return h(
     "fieldset",
     { class: "seg" },
-    h("legend", null, legend),
+    h("legend", { class: "seg-legend" }, legend),
     h(
       "div",
       { class: "seg-options" },
       options.map(([v, label]) =>
         h(
           "label",
-          null,
-          h("input", { type: "radio", name, value: v, checked: v === value, onchange: () => onChange(v) }),
-          h("span", null, label),
+          { class: "seg-option" },
+          h("input", { class: "seg-input", type: "radio", name, value: v, checked: v === value, onchange: () => onChange(v) }),
+          h("span", { class: "seg-pill" }, label),
         ),
       ),
     ),
@@ -58,13 +58,13 @@ export function keepInUrl(param: string, value: string, fallback: string): void 
 }
 
 // The line under the pickers says exactly what the page is doing: how often it checks, when it last did,
-// and whether anything changed. The square is filled only while it is polling. Screen readers hear only
+// and whether anything changed. The dot is filled only while it is polling. Screen readers hear only
 // a failure or a pause, not every routine check.
 export function refreshLine(tz = "UTC"): { el: HTMLElement; show(state: PollState, every: number | null): void } {
   const line = h("span");
-  const square = h("span", { class: "pulse pulse-off", "aria-hidden": "true" });
+  const dot = h("span", { class: "pulse pulse-off", "aria-hidden": "true" });
   const heard = h("span", { class: "sr-only", role: "status" });
-  const el = h("p", { class: "refresh-line" }, square, line, heard);
+  const el = h("p", { class: "refresh-line" }, dot, line, heard);
   let lastAt: number | null = null;
   const last = () => (lastAt ? ` Last check ${clockTime(lastAt, tz, true)}` : "");
   return {
@@ -86,7 +86,7 @@ export function refreshLine(tz = "UTC"): { el: HTMLElement; show(state: PollStat
         const what = state.changed ? "numbers updated" : "nothing new";
         words = polling ? `Checks every ${EVERY_WORDS[every] ?? `${every / 1000} s`}.${last()}, ${what}.` : `Auto refresh off.${last()}.`;
       }
-      square.className = `pulse pulse-${mode}`;
+      dot.className = `pulse pulse-${mode}`;
       line.textContent = words;
       heard.textContent = state.kind === "failed" || state.kind === "paused" ? words : "";
     },

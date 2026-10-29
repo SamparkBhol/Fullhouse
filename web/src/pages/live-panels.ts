@@ -1,3 +1,4 @@
+import { READ_CAP } from "../../../src/shared/engine.ts";
 import { RANGE_WORDS, TURNOUT_SHOWN_FROM, type SeriesName, type StatsBody } from "../../../src/shared/stats.ts";
 import { columns } from "../charts/columns.ts";
 import { saying, type Say } from "../charts/counter.ts";
@@ -21,7 +22,7 @@ interface StatDef {
 
 const STATS: StatDef[] = [
   { key: "venues", title: "Venues", say: saying("venue set up", "venues set up"), line: "Venues set up on this server." },
-  { key: "streetReads", title: "Street reads", say: saying("street read", "street reads"), line: "Reads of the street around a venue, up to 30 Qloo calls each." },
+  { key: "streetReads", title: "Street reads", say: saying("street read", "street reads"), line: `Reads of the street around a venue, up to ${READ_CAP} taste data calls each.` },
   { key: "nightsPublished", title: "Nights published", say: saying("night published", "nights published"), line: "Nights an owner approved and put out." },
   { key: "rsvps", title: "RSVPs", say: saying("RSVP", "RSVPs"), line: "Yes taps on public event pages, one per browser." },
 ];
@@ -29,6 +30,7 @@ const STATS: StatDef[] = [
 const BUCKET_WORDS: Record<number, string> = { 1: "one hour", 6: "six hours", 24: "one day" };
 const UTC_DAYS = "Days run midnight to midnight UTC.";
 const NOT_COUNTED = "not counted";
+const CALLS_TITLE = "Taste data calls";
 
 function span(body: StatsBody, tz: string, i: number): string {
   return bucketSpan(body.buckets[i] ?? "", body.bucketHours, tz);
@@ -51,17 +53,26 @@ function utcNote(body: StatsBody): string {
   return body.bucketHours >= 24 ? ` ${UTC_DAYS}` : "";
 }
 
+const WEEK_MS = 7 * 86_400_000;
+
+// A sparkline over a day of counting is one spike. The line appears once the server has a week of data behind it.
+function weekOfData(body: StatsBody): boolean {
+  return Boolean(body.since) && Date.now() - Date.parse(body.since ?? "") >= WEEK_MS;
+}
+
 function statPane(def: StatDef, body: StatsBody, tools: BoardTools): HTMLElement {
   const counter = tools.counter(def.key, def.say);
   counter.set(body.totals[def.key]);
   const values = body.series[def.key];
-  const host = h("div", { class: "spark-host" });
-  fitChart(host, (w) =>
-    sparkline({ name: def.title, values, tone: "chalk", describe: (i) => ({ title: span(body, tools.tz, i), value: count(values[i] ?? 0) }) }, w),
-  );
+  const host = weekOfData(body) ? h("div", { class: "spark-host" }) : null;
+  if (host) {
+    fitChart(host, (w) =>
+      sparkline({ name: def.title, values, describe: (i) => ({ title: span(body, tools.tz, i), value: count(values[i] ?? 0) }) }, w),
+    );
+  }
   return h(
     "section",
-    { class: "pane pane-stat", "aria-labelledby": `pane-${def.key}`, "data-pane": def.key },
+    { class: "panel pane pane-stat", "aria-labelledby": `pane-${def.key}`, "data-pane": def.key },
     h("h2", { class: "pane-title", id: `pane-${def.key}` }, def.title),
     counter.el,
     h("p", { class: "stat-caption" }, `In ${RANGE_WORDS[body.range]}. ${count(body.allTime[def.key])} since counting began.`),
@@ -85,7 +96,7 @@ function turnoutPane(body: StatsBody, tools: BoardTools): HTMLElement {
     : `Logged for ${nights} in ${RANGE_WORDS[body.range]}. Head counts show here once ${TURNOUT_SHOWN_FROM} nights are logged, so no one venue's night can be read off this page.`;
   return h(
     "section",
-    { class: "pane pane-stat", "aria-labelledby": "pane-turnoutPeople", "data-pane": "turnoutPeople" },
+    { class: "panel pane pane-stat", "aria-labelledby": "pane-turnoutPeople", "data-pane": "turnoutPeople" },
     h("h2", { class: "pane-title", id: "pane-turnoutPeople" }, "Turnout"),
     counter.el,
     h("p", { class: "stat-caption" }, caption),
@@ -96,7 +107,7 @@ function turnoutPane(body: StatsBody, tools: BoardTools): HTMLElement {
 export function statRow(body: StatsBody, tools: BoardTools): HTMLElement {
   return h(
     "div",
-    { class: "stat-row" },
+    { class: "stat-row", "data-pane": "stats" },
     h("div", { class: "stat-panes" }, ...STATS.map((d) => statPane(d, body, tools)), turnoutPane(body, tools)),
     asTable("stats", {
       caption: `Activity by bucket in ${RANGE_WORDS[body.range]}.${utcNote(body)}`,
@@ -114,10 +125,10 @@ export function callsPane(body: StatsBody, tools: BoardTools): HTMLElement {
   if (t.qlooCalls + t.qlooCacheHits + t.qlooErrors === 0) {
     return pane({
       key: "calls",
-      title: "Qloo calls",
-      line: `Live calls to Qloo and answers from the cache, ${each} to a column.${utcNote(body)}`,
+      title: CALLS_TITLE,
+      line: `Live calls for taste data and answers from the cache, ${each} to a column.${utcNote(body)}`,
       span: "wide",
-      body: [empty(`No Qloo calls in ${RANGE_WORDS[body.range]}. Columns appear here when someone searches for a venue or a venue reads its street.`)],
+      body: [empty(`No calls for taste data in ${RANGE_WORDS[body.range]}. Columns appear here when someone searches for a venue or a venue reads its street.`)],
     });
   }
   const from = firstCounted(body);
@@ -125,7 +136,7 @@ export function callsPane(body: StatsBody, tools: BoardTools): HTMLElement {
   fitChart(host, (w) =>
     columns(
       {
-        name: `Qloo calls, ${each} to a column`,
+        name: `${CALLS_TITLE}, ${each} to a column`,
         series: [
           { name: "Live calls", values: s.qlooCalls, mark: "solid" },
           { name: "From cache", values: s.qlooCacheHits, mark: "hatched" },
@@ -142,8 +153,8 @@ export function callsPane(body: StatsBody, tools: BoardTools): HTMLElement {
   );
   return pane({
     key: "calls",
-    title: "Qloo calls",
-    line: `Each column is ${each}. Solid is a live call to Qloo, hatched came from the cache, a cross marks errors.${utcNote(body)}`,
+    title: CALLS_TITLE,
+    line: `Each column is ${each}. Solid is a live call for taste data, hatched came from the cache, a cross marks errors.${utcNote(body)}`,
     span: "wide",
     body: [
       legend([
@@ -153,7 +164,7 @@ export function callsPane(body: StatsBody, tools: BoardTools): HTMLElement {
       ]),
       host,
       asTable("calls", {
-        caption: `Qloo calls by bucket.${utcNote(body)}`,
+        caption: `${CALLS_TITLE} by bucket.${utcNote(body)}`,
         head: ["Time", "Live calls", "From cache", "Errors"],
         rows: bucketRows(body, tools.tz, (i) => [s.qlooCalls[i] ?? 0, s.qlooCacheHits[i] ?? 0, s.qlooErrors[i] ?? 0]),
         numeric: [false, true, true, true],

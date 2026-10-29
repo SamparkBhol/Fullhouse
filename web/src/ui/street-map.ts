@@ -1,46 +1,40 @@
 import type { StreetRead, Venue } from "../../../src/shared/contract.ts";
-import { h, replace, uid } from "../dom.ts";
 import { haversineM } from "../../../src/shared/geo.ts";
-import { ordinal, plainName } from "../../../src/shared/words.ts";
-import { distance, walkShort } from "../format.ts";
+import { ordinal, plainName, shortName } from "../../../src/shared/words.ts";
+import { h, replace, uid } from "../dom.ts";
+import { PLACES_ON_MAP, distance, walkShort } from "../format.ts";
 import { bearingWord } from "../geo.ts";
 import { rankCells } from "../heat.ts";
 import { layerWord } from "./lines.ts";
-import { PLACES_ON_MAP } from "./loved.ts";
-import { shopWindow } from "./window.ts";
 
 function strongestCells(read: StreetRead, index: number): HTMLElement[] {
   const layer = read.heat[index];
-  if (!layer) return [h("li", null, "Qloo returned no heat map cells around your venue.")];
+  if (!layer) return [h("li", null, "No heat map came back for the streets around your venue.")];
   const ranked = rankCells(layer.cells)
     .filter((r) => r.order !== null)
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-  if (!ranked.length) return [h("li", null, `Qloo returned no heat map cells with a read for ${layer.label}.`)];
+  if (!ranked.length) return [h("li", null, `No square of this map carries a read for ${layerWord(layer.label).toLowerCase()}.`)];
   return ranked.slice(0, 5).map((r) => {
     const m = haversineM(read.center, r.cell);
     const where = m < 60 ? "around your venue" : `${distance(m)} ${bearingWord(read.center.lat, read.center.lng, r.cell.lat, r.cell.lng)} of your venue`;
-    return h("li", null, `${ordinal(r.order ?? 0)} strongest: ${where}`);
+    return h("li", null, `${ordinal(r.order ?? 0)} strongest, ${where}`);
   });
 }
 
-export function streetMapPanel(read: StreetRead, venue: Venue): HTMLElement {
-  const mapBox = h("div", { class: "map", role: "region", "aria-label": "Map of the street around your venue. The same information follows as a list." });
-  const layerPicker = read.heat.length > 1 ? h("fieldset", { class: "layer-pick" }, h("legend", { class: "sr-only" }, "Light the windows by")) : null;
-  const cellList = h("ol", { class: "plain-list cell-list" }, strongestCells(read, 0));
+// The map of where the crowd gathers: darker squares are stronger, numbered pins are the places it loves.
+// The compact form sits at the top of Your crowd: one layer, the key, and no list.
+export function streetMapPanel(read: StreetRead, venue: Venue, opts: { compact?: boolean } = {}): HTMLElement {
+  const mapBox = h("div", { class: opts.compact ? "map map-short" : "map map-tall", role: "region", "aria-label": "Map of the streets around your venue. The same information follows as a list." });
+  const picker = read.heat.length > 1 && !opts.compact ? h("fieldset", { class: "layer-pick" }, h("legend", { class: "sr-only" }, "Show the squares for")) : null;
+  const cellList = h("ol", { class: "bullets" }, strongestCells(read, 0));
   const places = read.lovedPlaces.slice(0, PLACES_ON_MAP);
-  const tileNote = h(
-    "p",
-    { class: "meta map-tiles-note", role: "status", hidden: true },
-    "The street plan from OpenStreetMap did not load, so the windows and photos show without the streets behind them.",
-  );
-  const onTiles = (shown: boolean): void => {
-    tileNote.hidden = shown;
-  };
+  const partnerId = read.match?.partner.id ?? null;
+  const tileNote = h("p", { class: "meta", role: "status", hidden: true }, "The street plan did not load, so the squares and pins show without the streets behind them.");
 
   void import("./map.ts").then(({ drawStreetMap }) => {
     if (!mapBox.isConnected) return;
-    const map = drawStreetMap(mapBox, { venue, center: read.center, radiusM: read.radiusM, heat: read.heat, loved: places, onTiles });
-    if (!layerPicker) return;
+    const map = drawStreetMap(mapBox, { venue, center: read.center, radiusM: read.radiusM, heat: read.heat, loved: places, partnerId, onTiles: (shown) => (tileNote.hidden = shown) });
+    if (!picker) return;
     const name = uid("layer");
     read.heat.forEach((layer, i) => {
       const id = `${name}-${i}`;
@@ -49,35 +43,36 @@ export function streetMapPanel(read: StreetRead, venue: Venue): HTMLElement {
         map.showLayer(i);
         replace(cellList, strongestCells(read, i));
       });
-      layerPicker.append(h("span", { class: "layer-opt" }, input, h("label", { for: id }, layerWord(layer.label))));
+      picker.append(h("span", { class: "layer-opt" }, input, h("label", { for: id }, layerWord(layer.label))));
     });
   });
 
-  return shopWindow(
-    { size: "wide", bare: true, lettering: "Where the taste runs strongest", className: "street-map" },
-    layerPicker ? h("div", { class: "map-head" }, layerPicker) : null,
-    mapBox,
+  const partner = places.find((p) => p.id === partnerId);
+  const id = uid("map");
+  return h(
+    "section",
+    { class: "panel", "aria-labelledby": id },
+    h("h2", { id }, "Where your crowd gathers"),
+    h("p", null, opts.compact ? "Darker squares are where your crowd's taste runs strongest. The numbers are the places it loves, in order." : "Darker squares are where the taste runs strongest, ranked within the one map shown. Numbers are the places your crowd loves, in order."),
+    picker,
+    h("div", { class: "map-wrap" }, mapBox),
+    tileNote,
     h(
-      "div",
-      { class: "map-foot" },
-      tileNote,
-      h(
-        "ul",
-        { class: "map-legend" },
-        h("li", null, h("span", { class: "key key-lit", "aria-hidden": "true" }), "Brighter windows are where the taste runs strongest, ranked within this one layer."),
-        h("li", null, h("span", { class: "key key-dark", "aria-hidden": "true" }), "Dark windows: Qloo has no read there."),
-        places.length ? h("li", null, h("span", { class: "key key-photo", "aria-hidden": "true" }), `Round photos are the ${places.length === 1 ? "place" : `${places.length} places`} nearby your audience loves most. Tap one for its name and walk.`) : null,
-        h("li", null, h("span", { class: "key key-door", "aria-hidden": "true" }), `The lit doorway is ${venue.entity.name}.`),
-      ),
-      h(
-        "details",
-        { class: "map-text" },
-        h("summary", null, "The map as a list"),
-        h("h3", null, read.heat.length ? "Strongest windows" : "Heat map"),
-        cellList,
-        places.length ? [h("h3", null, "Places on the map"), h("ol", { class: "plain-list cell-list" }, places.map((p) => h("li", null, `${plainName(p.name)}, ${walkShort(p.distanceM)}`)))] : null,
-        h("p", { class: "meta" }, `The dashed circle is ${distance(read.radiusM)} around ${venue.entity.name}.`),
-      ),
+      "ul",
+      { class: "map-key" },
+      h("li", null, h("span", { class: "key key-you", "aria-hidden": "true" }), plainName(venue.entity.name)),
+      partner ? h("li", null, h("span", { class: "key key-them", "aria-hidden": "true" }), `${shortName(partner.name)}, your partner`) : null,
+      places.length ? h("li", null, h("span", { class: "key", "aria-hidden": "true" }), "Places your crowd loves") : null,
+      h("li", null, h("span", { class: "key key-heat", "aria-hidden": "true" }), "Weaker to stronger"),
+    ),
+    opts.compact ? null : h(
+      "details",
+      { class: "disclose more" },
+      h("summary", null, "The map as a list"),
+      h("h3", null, "Strongest squares"),
+      cellList,
+      places.length ? [h("h3", null, "Places on the map"), h("ol", { class: "bullets" }, places.map((p) => h("li", null, `${shortName(p.name)}, ${walkShort(p.distanceM)}`)))] : null,
+      h("p", { class: "meta" }, `The dashed circle is ${distance(read.radiusM)} around ${plainName(venue.entity.name)}.`),
     ),
   );
 }

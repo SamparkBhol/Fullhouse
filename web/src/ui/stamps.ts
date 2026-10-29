@@ -1,5 +1,5 @@
 import type { Baseline, BaselineName } from "../../../src/shared/contract.ts";
-import { listWords, plainName, plural } from "../../../src/shared/words.ts";
+import { listWords, plainName, plural, possessive, shortName } from "../../../src/shared/words.ts";
 import { h } from "../dom.ts";
 
 type Stamp = "self" | "near" | "far" | "catalog" | "none" | "closed";
@@ -26,25 +26,29 @@ const STAMP_WORDS: Record<Stamp, string> = {
   self: "Your venue",
   near: "Found near you",
   far: "Found far away",
-  catalog: "In Qloo's catalog",
+  catalog: "Found",
   none: "Not found",
   closed: "Closed",
 };
 
-// Each name with Qloo's stamp beside it. The stamps differ by mark as well as by word: filled, outlined, dashed.
-export function stampList(names: BaselineName[], venueName: string): HTMLElement {
+// The chips differ by mark as well as by word: filled for found near you, outlined for found, dashed for missing.
+const STAMP_CHIP: Record<Stamp, string> = { self: "chip chip-line", near: "chip chip-yes", far: "chip chip-line", catalog: "chip chip-line", none: "chip chip-dash", closed: "chip chip-ink" };
+
+export function stampList(names: BaselineName[], venueName: string, said?: string): HTMLElement {
   return h(
     "ul",
-    { class: "stamped" },
+    { class: "checked" },
     names.map((n) => {
       const kind = stampOf(n, venueName);
+      const quote = said ? quoteFor(said, n.name) : null;
       return h(
         "li",
-        { class: `stamped-row stamp-row-${kind}` },
-        h("span", { class: "stamped-name" }, n.name),
-        h("span", { class: `stamp stamp-${kind}` }, STAMP_WORDS[kind]),
-        n.note ? h("span", { class: "stamped-note" }, n.note) : null,
-        n.tieNote ? h("span", { class: n.tied ? "stamped-note stamped-tied" : "stamped-note" }, n.tieNote) : null,
+        null,
+        h("span", { class: "checked-name" }, n.name),
+        h("span", { class: STAMP_CHIP[kind] }, STAMP_WORDS[kind]),
+        quote ? h("span", { class: "checked-note checked-quote" }, `It said: ${quote}`) : null,
+        n.note ? h("span", { class: "checked-note" }, n.note) : null,
+        n.tieNote ? h("span", { class: n.tied ? "checked-note checked-tied" : "checked-note" }, n.tieNote) : null,
       );
     }),
   );
@@ -58,19 +62,35 @@ function foundCount(names: BaselineName[]): number {
   return names.filter((n) => n.status !== "not_found").length;
 }
 
-// The one line the page is for: how much of what a plain chatbot said holds up for this venue's crowd on Qloo.
-// Full House's own picks come from the same Qloo answers they would be checked against, so they are never scored here.
+// The one line the page is for, worded as what was measured: places named, within walking distance, and among the
+// 50 places Qloo ties to this crowd. Full House's own picks come from those answers, so they are never scored here.
 export function heroLine(b: Baseline, venueName: string): string {
   const shown = plainName(venueName);
   const plain = others(b.plainNames, venueName);
-  if (!plain.length) return `The plain chatbot named nothing Qloo could look up for ${shown}.`;
-  const what = plural(plain.length, "name", "names");
-  if (plain.every((n) => n.tied === undefined)) {
-    const places = plain.filter((n) => n.kind === "place");
-    return `A plain chatbot gave ${what} for ${shown}. Qloo found ${nearCount(places)} of its ${plural(places.length, "place", "places")} near the venue.`;
+  if (!plain.length) return `The plain chatbot named nothing Full House could look up for ${shown}.`;
+  const places = plain.filter((n) => n.kind === "place");
+  const works = plain.filter((n) => n.kind !== "place");
+  const parts: string[] = [];
+  if (places.length) {
+    const tied = places.filter((n) => n.tied).length;
+    const crowd = places.some((n) => n.tied !== undefined) ? `, ${tied} among the places Qloo ties to ${possessive(shortName(shown))} crowd` : "";
+    parts.push(`${plural(places.length, "place", "places")} named, ${nearCount(places)} within walking distance${crowd}`);
   }
-  const tied = plain.filter((n) => n.tied).length;
-  return `A plain chatbot gave ${what} for ${shown}. Qloo ties ${tied ? tied : "none"} of them to its crowd.`;
+  if (works.length) {
+    const found = foundCount(works);
+    const tied = works.filter((n) => n.tied).length;
+    parts.push(`${plural(works.length, "act or title", "acts and titles")} named, ${found} in the catalog${works.some((n) => n.tied !== undefined) ? `, ${tied} among what this crowd loves` : ""}`);
+  }
+  return `A plain chatbot, asked the same question with no taste data: ${parts.join(". ")}.`;
+}
+
+// One sentence from the chatbot's answer for each name, so the page quotes the claim instead of printing the essay.
+export function quoteFor(text: string, name: string): string | null {
+  const sentences = text.replace(/\s+/g, " ").split(/(?<=[.!?])\s+/);
+  const hit = sentences.find((s) => s.toLowerCase().includes(name.toLowerCase()));
+  if (!hit) return null;
+  const clean = hit.replace(/\*\*/g, "").replace(/^[#\-*\s]+/, "").trim();
+  return clean.length > 220 ? `${clean.slice(0, 200).trim()}...` : clean;
 }
 
 // The hard failures first: closed for good, not on Qloo at all, and real but not among what this crowd loves.
@@ -81,12 +101,12 @@ export function failLine(b: Baseline, venueName: string): string | null {
   const untied = plain.filter((n) => !n.closed && n.status !== "not_found" && n.tied === false).length;
   const parts: string[] = [];
   if (closed) parts.push(`${closed} ${closed === 1 ? "is" : "are"} closed for good`);
-  if (missing) parts.push(`${missing} ${missing === 1 ? "is" : "are"} not on Qloo at all`);
+  if (missing) parts.push(`${missing} ${missing === 1 ? "is" : "are"} not found at all`);
   if (untied) parts.push(`${untied} ${untied === 1 ? "is" : "are"} real but not among what people who like ${plainName(venueName)} love`);
   return parts.length ? `Of those, ${listWords(parts)}.` : null;
 }
 
-export const OWN_PICKS_NOTE = "These came from the same Qloo answers they are checked against, so they are listed for reference, not as a score.";
+export const OWN_PICKS_NOTE = "These came from the same answers they are checked against, so they are listed for reference, not as a score.";
 
 export function countLine(names: BaselineName[], venueName: string): string {
   if (!names.length) return "No names to check.";
@@ -95,7 +115,7 @@ export function countLine(names: BaselineName[], venueName: string): string {
   const rest = counted.filter((n) => n.kind !== "place");
   const parts: string[] = [];
   if (places.length) parts.push(`${nearCount(places)} of ${plural(places.length, "place", "places")} found near you`);
-  if (rest.length) parts.push(`${foundCount(rest)} of ${plural(rest.length, "other name", "other names")} found on Qloo`);
+  if (rest.length) parts.push(`${foundCount(rest)} of ${plural(rest.length, "other name", "other names")} found`);
   if (counted.length < names.length) parts.push(`${plainName(venueName)} itself is not counted`);
   return `${parts.join(". ")}.`;
 }

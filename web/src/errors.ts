@@ -20,15 +20,15 @@ export function explain(err: unknown): Explained {
   }
   if (code === "qloo_key_missing") {
     return {
-      title: "No Qloo key on this server",
-      body: "This Full House server has no Qloo key set, so it cannot read the street. Nothing was read and nothing was made up. Whoever runs this server needs to add the key. Then try again.",
+      title: "This server has no taste data key",
+      body: "This Full House server has no key for its taste data, so it cannot read the street. Nothing was read and nothing was made up. Whoever runs this server needs to add the key. Then try again.",
       retry: true,
     };
   }
   if (code.includes("budget")) {
     return {
-      title: "Today's Qloo budget is spent",
-      body: "This server has used all the Qloo calls it allows itself in a day, so it makes no new ones until the daily budget resets. Your saved read and your nights are still here.",
+      title: "Today's call budget is spent",
+      body: "This server has used all the taste data calls it allows itself in a day, so it makes no new ones until the daily budget resets. Your saved read and your nights are still here.",
       retry: false,
     };
   }
@@ -62,8 +62,8 @@ export function explain(err: unknown): Explained {
   }
   if (code.includes("qloo")) {
     return {
-      title: "Qloo did not answer",
-      body: err.detail ?? "The Qloo call failed. Nothing was filled in instead. Try again in a minute.",
+      title: "The taste data did not come back",
+      body: err.detail ?? "The call for taste data failed. Nothing was filled in instead. Try again in a minute.",
       retry: true,
     };
   }

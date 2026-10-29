@@ -1,46 +1,121 @@
+import { BACK_CHECKS, FIT_MAX, LOVED_TAKE } from "../../../src/shared/engine.ts";
 import { h, replace } from "../dom.ts";
 import { loadExample } from "../first-run/example.ts";
 import { findForm } from "../first-run/find.ts";
 import { savedVenues, sessionGet, sessionSet } from "../store.ts";
-import { focusHeading, page, plainFascia, title } from "../ui/shell.ts";
+import { focusHeading, page, publicHeader, title } from "../ui/shell.ts";
 
-function mineList(): HTMLElement | null {
-  const mine = savedVenues();
-  if (!mine.length) return null;
+const STEPS: [string, string, string][] = [
+  ["Read your crowd", "The places within a short walk that people who like you also love.", `Up to ${LOVED_TAKE} places, ranked`],
+  ["Check it goes both ways", "The same question from each neighbour's side. A pair only works if their crowd loves you too.", `${BACK_CHECKS} reverse reads per match`],
+  ["Rule out rivals", "Two cafes compete for the same people. A bookshop and a cinema send each other people.", `Up to ${FIT_MAX.partners} points for a good pair of kinds`],
+  ["Find evenings you are both open", "Opening hours on both sides, so the night never lands on a day one of you is closed.", "The next seven evenings"],
+  ["Plan the night both crowds want", "Two stops, one at each place, built on the pick both crowds share most evenly.", "Nearest half and half wins"],
+];
+
+function mine(): HTMLElement | null {
+  const saved = savedVenues();
+  if (!saved.length) return null;
   return h(
     "section",
-    { class: "landing-mine", "aria-labelledby": "mine-title" },
+    { class: "mine", "aria-labelledby": "mine-title" },
     h("h2", { id: "mine-title" }, "Your venues on this phone"),
     h(
       "ul",
-      { class: "plain-list" },
-      mine.map((v) => h("li", null, h("a", { class: "row-link", href: `/v/${encodeURIComponent(v.id)}` }, h("strong", null, v.name), h("span", null, v.city)))),
+      { class: "items" },
+      saved.map((v) => h("li", null, h("a", { class: "item", href: `/v/${encodeURIComponent(v.id)}` }, h("span", { class: "item-name" }, v.name), h("span", { class: "item-end" }, v.city)))),
+    ),
+  );
+}
+
+function steps(): HTMLElement {
+  return h(
+    "section",
+    { class: "band band-white", id: "how", "aria-labelledby": "how-title" },
+    h(
+      "div",
+      { class: "wrap" },
+      h("h2", { id: "how-title" }, "How Full House picks your partner"),
+      h("p", { class: "intro" }, "Taste data says what people like. Full House decides who you should work with, in these five steps, and shows you why with six checks you can read."),
+      h("ol", { class: "steps" }, STEPS.map(([name, text, ours]) => h("li", null, h("h3", null, name), h("p", null, text), h("p", { class: "ours" }, ours)))),
+    ),
+  );
+}
+
+function twoLinks(): HTMLElement {
+  const row = (side: "you" | "them", name: string, line: string): HTMLElement =>
+    h("div", { class: `link-row link-${side}` }, h("i", { "aria-hidden": "true" }), h("div", null, h("b", null, name), h("span", { class: "link-url" }, line)), h("span", { class: "link-count" }, "counted"));
+  return h(
+    "section",
+    { class: "band", "aria-labelledby": "links-title" },
+    h(
+      "div",
+      { class: "wrap" },
+      h("h2", { id: "links-title" }, "Two links. One honest count."),
+      h(
+        "div",
+        { class: "ledger-band" },
+        h(
+          "div",
+          { class: "ledger-text" },
+          h("p", null, "Every night gets a sign up link for each place. Full House records which link each guest came through, so both owners see the trade: ", h("strong", null, "who you sent, who they sent"), ", night after night."),
+          h("p", null, "No taste data can tell you that. It is the record that makes the next yes easy."),
+        ),
+        h("div", { class: "links" }, row("you", "Your link", "For your regulars, on your page and your posts"), row("them", "Your neighbour's link", "For theirs, after they say yes")),
+      ),
+    ),
+  );
+}
+
+function price(): HTMLElement {
+  return h(
+    "section",
+    { class: "band band-white", "aria-labelledby": "price-title" },
+    h(
+      "div",
+      { class: "wrap price" },
+      h(
+        "div",
+        null,
+        h("h2", { id: "price-title" }, "One plan for your venue"),
+        h(
+          "ul",
+          { class: "bullets" },
+          h("li", null, "A fresh read and a new pair every Monday"),
+          h("li", null, "Invite, event page and calendar file for every night"),
+          h("li", null, "The swap ledger with every partner"),
+        ),
+      ),
+      h("div", null, h("p", { class: "price-figure" }, "$79", h("small", null, "a month")), h("p", { class: "price-note" }, "No card needed for the first night with each partner."), h("p", { class: "actions" }, h("a", { class: "btn", href: "#find" }, "Find your neighbour"))),
     ),
   );
 }
 
 export function landingPage(): void {
-  plainFascia();
+  publicHeader({ find: true });
   title("Full House");
   const flash = sessionGet<string>("flash");
   if (flash) sessionSet("flash", null);
-  const example = h("div", { class: "landing-example", hidden: true });
-  const form = findForm();
-  replace(
-    page(),
+  const example = h("div", { class: "hero-pair", hidden: true });
+  const hero = h(
+    "section",
+    { class: "hero hero-solo", id: "find" },
     h(
       "div",
-      { class: "wrap wrap-wide landing" },
-      flash ? h("p", { class: "notice landing-notice", role: "status" }, flash) : null,
+      { class: "wrap" },
       h(
         "div",
-        { class: "landing-grid" },
-        h("div", { class: "landing-find" }, h("h1", { class: "first-line" }, "Find the shop down the street that shares your customers."), form),
-        example,
+        { class: "hero-copy" },
+        flash ? h("p", { class: "notice", role: "status" }, flash) : null,
+        h("h1", null, "Your best partner is already on your street."),
+        h("p", { class: "lead" }, "Full House finds the place nearby whose customers love yours, checks that its customers love you back, and plans one night that walks each crowd through the other's door."),
+        findForm(),
+        mine(),
       ),
-      mineList(),
+      example,
     ),
   );
-  loadExample(example);
+  replace(page(), hero, steps(), twoLinks(), price());
+  loadExample(example, hero);
   focusHeading();
 }

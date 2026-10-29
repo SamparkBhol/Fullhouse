@@ -3,7 +3,7 @@ import { ApiFailure, api } from "./api.ts";
 import { h, replace } from "./dom.ts";
 import { isCurrent, ticket } from "./router.ts";
 import { loadToken, rememberVenue, saveToken, sessionGet, sessionSet, tokenFromFragment } from "./store.ts";
-import { focusHeading, page, plainFascia, title, venueFascia, type Tab } from "./ui/shell.ts";
+import { focusHeading, page, publicHeader, title, venueHeader, type Tab } from "./ui/shell.ts";
 import { failure, loading } from "./ui/states.ts";
 import { todayIn } from "./format.ts";
 
@@ -55,20 +55,24 @@ export function planGroup(state: VenueState, planId: string): { plan: NightPlan 
 }
 
 function notSignedIn(main: HTMLElement): void {
-  plainFascia();
+  publicHeader();
   title("Owner link needed");
   replace(
     main,
     h(
       "div",
-      { class: "wrap" },
-      h("h1", null, "Open your owner link"),
+      { class: "screen" },
       h(
-        "p",
-        null,
-        "This phone does not hold the owner link for this venue. Open the link you saved when you created the venue. It signs this phone in and keeps it signed in.",
+        "div",
+        { class: "wrap" },
+        h(
+          "div",
+          { class: "screen-head" },
+          h("h1", null, "Open your owner link"),
+          h("p", null, "This phone does not hold the owner link for this venue. Open the link you saved when you created the venue. It signs this phone in and keeps it signed in."),
+        ),
+        h("p", { class: "actions" }, h("a", { class: "btn btn-quiet", href: "/start" }, "Set up a different venue")),
       ),
-      h("p", { class: "actions" }, h("a", { class: "button button-quiet", href: "/start" }, "Set up a different venue")),
     ),
   );
   focusHeading();
@@ -86,7 +90,7 @@ export async function withVenue(
   const saved = loadToken(id);
   const cached = cache.get(id);
   if (!offered && saved && cached && !opts.fresh) {
-    venueFascia(cached.venue, tab, liveNight(cached));
+    venueHeader(cached.venue, tab, liveNight(cached));
     await render({ id, token: saved, state: cached }, main);
     return;
   }
@@ -94,7 +98,7 @@ export async function withVenue(
     notSignedIn(main);
     return;
   }
-  replace(main, h("div", { class: "wrap" }, loading("Opening your venue")));
+  replace(main, h("div", { class: "screen" }, h("div", { class: "wrap" }, loading("Opening your venue"))));
   const open = async (token: string): Promise<VenueState> => {
     const state = await api.state(id, token);
     if (token !== saved) saveToken(id, token);
@@ -113,7 +117,7 @@ export async function withVenue(
       }
       if (!isCurrent(mine)) return;
       setState(id, state);
-      venueFascia(state.venue, tab, liveNight(state));
+      venueHeader(state.venue, tab, liveNight(state));
       await render({ id, token, state }, main);
     } catch (err) {
       if (!isCurrent(mine)) return;
@@ -121,7 +125,7 @@ export async function withVenue(
         notSignedIn(main);
         return;
       }
-      replace(main, h("div", { class: "wrap" }, h("h1", { class: "sr-only" }, "Venue"), failure(err, () => void run())));
+      replace(main, h("div", { class: "screen" }, h("div", { class: "wrap" }, h("h1", { class: "sr-only" }, "Venue"), failure(err, () => void run()))));
     }
   };
   await run();

@@ -1,15 +1,18 @@
 import type { NightPlan } from "../../../src/shared/contract.ts";
+import { plainName } from "../../../src/shared/words.ts";
 import { h, replace } from "../dom.ts";
-import { formatName, longDate } from "../format.ts";
+import { dayOnly, readDate } from "../format.ts";
 import { navigate } from "../router.ts";
-import { fitHeadlines, flyer } from "../ui/flyer.ts";
-import { bigWindow, featureSay } from "../ui/night-room.ts";
-import { nightReceipts } from "../ui/night-receipts.ts";
-import { asItWillRead, onTheCounter, onTheSpeakers, walkingOver } from "../ui/night-windows.ts";
+import { evening, eveningNotes, featurePick } from "../ui/evening.ts";
+import { linksPanel } from "../ui/ledger.ts";
+import { nightSources } from "../ui/night-sources.ts";
+import { menuPanel, nearbyPanel, playlistPanel, wordsPanel } from "../ui/plan-parts.ts";
 import { refineBox } from "../ui/refine.ts";
-import { focusHeading, title } from "../ui/shell.ts";
-import { ledgeRow } from "../ui/ledge.ts";
+import { credit, focusHeading, title } from "../ui/shell.ts";
+import { weekStrip, whyDay } from "../ui/week.ts";
 import { planGroup, withVenue, type VenueCtx } from "../venue-context.ts";
+import { screenHead } from "../first-run/crowd-screen.ts";
+import { nightHeading } from "../first-run/night-screen.ts";
 
 export function nightPage(id: string, planId: string): Promise<void> {
   return withVenue(
@@ -34,74 +37,78 @@ function renderGone(id: string, main: HTMLElement): void {
     main,
     h(
       "div",
-      { class: "wrap" },
-      h("h1", null, "This plan is gone"),
-      h("p", null, "It may have been replaced by a newer plan or by your Monday read."),
-      h("p", null, h("a", { class: "button", href: `/v/${encodeURIComponent(id)}` }, "Back to your nights")),
+      { class: "screen" },
+      h("div", { class: "wrap" }, screenHead("This plan is gone", "A newer plan or your Monday read replaced it."), h("p", { class: "actions" }, h("a", { class: "btn", href: `/v/${encodeURIComponent(id)}` }, "Back to your nights"))),
     ),
   );
   focusHeading();
 }
 
-// Publishing is the one thing that turns the window light on, so its button is the one in lamp light.
-function publishBar(approveHref: string, refine: HTMLElement, another: HTMLElement | null): HTMLElement {
-  const change = h("button", { class: "button button-quiet button-big", type: "button", "aria-expanded": "false" }, "Change it");
-  change.addEventListener("click", () => {
-    const open = refine.hidden;
-    refine.hidden = !open;
-    change.setAttribute("aria-expanded", String(open));
-    if (!open) return;
-    const box = refine.querySelector<HTMLTextAreaElement>("textarea");
-    box?.scrollIntoView({ block: "center" });
-    box?.focus({ preventScroll: true });
-  });
-  return h(
-    "div",
-    { class: "publish-bar" },
-    h("a", { class: "button button-big button-lamp", href: approveHref }, "Review and publish"),
-    change,
-    another,
-    h("p", { class: "publish-note" }, "The next screen lists everything that goes out: the event page, the poster, the calendar and the notes to partners. You tick what you want."),
-  );
-}
-
-function renderPlan(ctx: VenueCtx, main: HTMLElement, plan: NightPlan, alternatives: NightPlan[]): void {
+function renderPlan(ctx: VenueCtx, main: HTMLElement, first: NightPlan, alternatives: NightPlan[]): void {
   const venue = ctx.state.venue;
-  const read = ctx.state.read;
-  const calls = read?.provenance ?? [];
-  const name = venue.entity.name;
-  title(`${formatName(plan.format, plan.feature?.type)}, ${longDate(plan.date)}`);
-  const stage = h("div", { class: "night-stage" });
-
-  const draw = (selected: NightPlan, others: NightPlan[]): void => {
+  const name = plainName(venue.entity.name);
+  const calls = ctx.state.read?.provenance ?? [];
+  credit(`Taste data from Qloo. Plan by Full House.`);
+  const draw = (plan: NightPlan, others: NightPlan[]): void => {
+    title(nightHeading(plan).replace(/\.$/, ""));
+    credit(`Taste data from Qloo, read ${readDate(plan.readAt, venue.tz)}. Plan by Full House.`);
+    const refine = h("div", { hidden: true }, refineBox(ctx, plan));
+    const change = h("button", { class: "btn btn-quiet", type: "button", "aria-expanded": "false" }, "Change it");
+    change.addEventListener("click", () => {
+      const open = refine.hidden;
+      refine.hidden = !open;
+      change.setAttribute("aria-expanded", String(open));
+      if (!open) return;
+      const box = refine.querySelector<HTMLTextAreaElement>("textarea");
+      box?.scrollIntoView({ block: "center" });
+      box?.focus({ preventScroll: true });
+    });
     const next = others[0];
-    const another = next ? h("button", { class: "link-button publish-another", type: "button", onclick: () => draw(next, [...others.slice(1), selected]) }, "Another idea") : null;
-    const approveHref = `/v/${encodeURIComponent(ctx.id)}/night/${encodeURIComponent(selected.id)}/approve`;
-    const refine = h("div", { class: "refine-slot", hidden: true }, refineBox(ctx, selected));
+    const another = next ? h("button", { class: "btn btn-quiet", type: "button", onclick: () => draw(next, [...others.slice(1), plan]) }, "Another idea") : h("button", { class: "btn btn-quiet", type: "button", disabled: true }, "No other idea for this pair");
+    const approve = `/v/${encodeURIComponent(ctx.id)}/night/${encodeURIComponent(plan.id)}/approve`;
     replace(
-      stage,
-      bigWindow({
-        lettering: "Draft. Only you can see it.",
-        flyer: flyer(selected, venue, { pinned: true, compact: true, headingLevel: "h2" }),
-        side: featureSay(selected, name),
-      }),
-      ledgeRow("The rest of the night", walkingOver(selected, name), onTheCounter(selected, name), onTheSpeakers(selected)),
-      h("div", { class: "night-foot" }, asItWillRead(selected), publishBar(approveHref, refine, another)),
-      refine,
-      nightReceipts(selected, name, calls, venue.tz),
+      main,
+      h(
+        "div",
+        { class: "screen" },
+        h(
+          "div",
+          { class: "wrap" },
+          screenHead(nightHeading(plan), plan.pair?.why ?? plan.why[0]?.text ?? null, h("p", { class: "small" }, "Draft. Nobody sees it until you publish it.")),
+          h(
+            "div",
+            { class: "screen-grid" },
+            h(
+              "div",
+              { class: "stack" },
+              h(
+                "section",
+                { class: "panel", "aria-labelledby": "evening-title" },
+                h("h2", { id: "evening-title" }, "The evening"),
+                evening(plan, venue),
+                eveningNotes(plan, { leadSaid: plan.pair?.why ?? null }),
+                featurePick(plan, venue, { leadSaid: plan.pair?.why ?? null }),
+                h("p", { class: "actions" }, h("a", { class: "btn", href: approve }, "Review and publish"), change, another),
+                h("p", { class: "small" }, "The next screen lists everything that goes out, and you tick what you want."),
+              ),
+              refine,
+              wordsPanel(plan),
+            ),
+            h(
+              "div",
+              { class: "stack" },
+              h("section", { class: "panel", "aria-labelledby": "why-day" }, h("h2", { id: "why-day" }, `Why ${dayOnly(plan.date)}`), h("p", null, whyDay(plan, venue)), weekStrip(plan, venue, null)),
+              linksPanel(plan),
+              nearbyPanel(plan, venue.entity.name),
+              menuPanel(plan),
+              playlistPanel(plan),
+            ),
+          ),
+          nightSources(plan, name, calls, venue.tz),
+        ),
+      ),
     );
-    fitHeadlines(stage);
+    focusHeading();
   };
-
-  replace(
-    main,
-    h(
-      "div",
-      { class: "wrap wrap-wide night-page" },
-      h("h1", { class: "page-title" }, `A night for ${longDate(plan.date)}`),
-      stage,
-    ),
-  );
-  draw(plan, alternatives);
-  focusHeading();
+  draw(first, alternatives);
 }
