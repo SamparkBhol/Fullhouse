@@ -135,3 +135,12 @@
     font-size: 10rem;
   }
 }
+
+/* Before the first yes the count is a sentence, not a big zero. */
+.rsvp-line.rsvp-none {
+  display: block;
+  max-width: 26ch;
+  font-size: var(--s21);
+  font-weight: 600;
+  line-height: 1.3;
+}

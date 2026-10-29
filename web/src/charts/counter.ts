@@ -28,7 +28,7 @@ export function saying(one: string, many: string, after = ""): Say {
   return (n) => `${plural(n, one, many)}${after}`;
 }
 
-export function doorCounter(say: Say, tone: "chalk" | "lit" = "chalk"): Counter {
+export function doorCounter(say: Say, tone: "chalk" | "lit" = "chalk", minDigits = MIN_DIGITS): Counter {
   const wheels = h("span", { class: "wheels", "aria-hidden": "true" });
   const spoken = h("span", { class: "sr-only" });
   const el = h("p", { class: `counter counter-${tone}` }, wheels, spoken);
@@ -37,7 +37,7 @@ export function doorCounter(say: Say, tone: "chalk" | "lit" = "chalk"): Counter 
     el,
     set(value: number) {
       const n = Math.max(0, Math.floor(value));
-      const digits = String(n).padStart(MIN_DIGITS, "0").split("").map(Number);
+      const digits = String(n).padStart(minDigits, "0").split("").map(Number);
       while (wheels.children.length < digits.length) wheels.prepend(wheel());
       while (wheels.children.length > digits.length) wheels.firstElementChild?.remove();
       const animate = shown !== null && shown !== n && !prefersReducedMotion();

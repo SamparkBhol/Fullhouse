@@ -1,135 +1,193 @@
-/* The landing street: three shop fronts, one lit with the flyer taped inside, then the pavement board. */
+/* The landing is one line, one field and one real pair. The type is the hero; nothing is drawn around it. */
 .landing {
-  max-width: 76rem;
-  margin: 0 auto;
-  padding: 8px var(--gutter) 0;
+  padding-top: 12px;
+}
+
+.landing-grid {
   display: grid;
-  gap: 8px;
+  gap: 40px;
 }
 
-.fronts {
-  display: grid;
-  grid-template-columns: 22px minmax(0, 1fr) 22px;
-  gap: 10px;
-  align-items: stretch;
-  margin-top: 10px;
-}
-
-.front {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-/* A blank sign board: painted fascia with a moulding round it, like the one at the top of this page. */
-.front-sign {
-  height: 28px;
-  margin: 0 -4px;
-  background: var(--fascia);
-  border-bottom: 4px solid #1c2f45;
-  box-shadow: inset 0 0 0 4px var(--fascia), inset 0 0 0 6px rgba(243, 245, 248, 0.16);
-}
-
-.front .win {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  margin-top: 10px;
-}
-
-.front .win-frame {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.front .win-room {
-  flex: 1;
-}
-
-.front-riser {
-  height: 28px;
-  margin: 0 2px;
-  background: #1c2f45;
-}
-
-.front-lit .win-inside {
-  padding: 30px 6px 14px;
-}
-
-.flyer-landing {
-  margin: 14px auto 0;
-}
-
-.flyer-landing {
-  padding-left: 16px;
-  padding-right: 16px;
-}
-
-.flyer-landing .flyer-when {
-  margin-left: -16px;
-  margin-right: -16px;
-  padding-left: 16px;
-  padding-right: 16px;
-}
-
-.flyer-landing .flyer-format {
-  font-size: var(--s18);
-}
-
-.flyer-landing .flyer-title {
-  font-size: 3.5rem;
-  margin: 4px 0 10px;
+.first-line {
+  max-width: 15ch;
+  margin: 18px 0 24px;
+  font-size: var(--s48);
+  font-stretch: 62%;
+  font-weight: 820;
+  line-height: 0.95;
+  letter-spacing: 0;
   text-wrap: balance;
 }
 
-.flyer-landing .flyer-sub {
-  max-width: 26ch;
-  font-size: var(--s16);
-  line-height: 1.35;
-}
-
-.landing-cta {
-  margin: 18px 0 4px;
-}
-
-/* On a phone, a returning owner's own covers take the place of the line written for new visitors. */
-@media (max-width: 719px) {
-  .flyer-landing:has(.flyer-wall-slot:not([hidden])) .flyer-format {
-    display: none;
-  }
-
-  .flyer-landing .flyer-wall-line {
-    font-size: var(--s14);
-  }
-}
-
-.a-board {
-  margin-top: 32px;
+.find {
   max-width: 34rem;
-  transform: rotate(-0.4deg);
 }
 
-.a-board .steps > li {
-  border-top-color: rgba(243, 245, 248, 0.18);
-  padding-left: 50px;
+.find-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--mist);
+  font-size: var(--s16);
+  font-weight: 600;
 }
 
-.a-board .steps > li::before {
-  color: rgba(243, 245, 248, 0.92);
+.find .find-input {
+  min-height: 60px;
+  font-size: var(--s24);
+  font-weight: 600;
 }
 
-.a-board .steps h3 {
-  color: rgba(243, 245, 248, 0.92);
+.find-city {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  color: var(--mist);
   font-size: var(--s18);
 }
 
-.a-board .steps p {
-  color: rgba(243, 245, 248, 0.78);
+.find .city-chip {
+  display: inline-block;
+  width: auto;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 2px solid var(--frame);
+  background: transparent;
+  color: var(--chalk);
+  font-size: var(--s18);
+  font-weight: 650;
+  color-scheme: dark;
 }
 
-.a-board a {
-  color: rgba(243, 245, 248, 0.92);
+.find .city-chip:focus {
+  border-color: var(--chalk);
+}
+
+.find-hint {
+  margin-top: 8px;
+  color: var(--mist);
+  font-size: var(--s16);
+}
+
+.find-results {
+  margin-top: 16px;
+}
+
+.find-busy .finds {
+  opacity: 0.6;
+}
+
+.finds {
+  list-style: none;
+}
+
+.find-pick {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  min-height: 64px;
+  padding: 14px 0;
+  border: 0;
+  border-top: 1px solid var(--rule);
+  background: none;
+  color: var(--chalk);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.finds li:last-child .find-pick {
+  border-bottom: 1px solid var(--rule);
+}
+
+.find-name {
+  font-size: var(--s21);
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.find-pick:hover .find-name,
+.find-pick:focus-visible .find-name {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.find-address,
+.find-kind {
+  color: var(--mist);
+  font-size: var(--s16);
+}
+
+.find-kind {
+  font-size: var(--s14);
+}
+
+.find-pick:disabled {
+  cursor: progress;
+  opacity: 0.5;
+}
+
+.find-pick.find-picked {
+  opacity: 1;
+}
+
+.find-going {
+  margin-top: 6px;
+  font-size: var(--s16);
+  font-weight: 600;
+}
+
+/* A real pair from a stored read: two photos and the split bar, nothing else. */
+.example {
+  max-width: 34rem;
+  padding-top: 18px;
+  border-top: 1px solid var(--rule);
+}
+
+.example-title {
+  margin-bottom: 14px;
+  color: var(--mist);
+  font-size: var(--s16);
+  font-stretch: 100%;
+  font-weight: 600;
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.pair-place {
+  margin: 0;
+}
+
+.pair-name {
+  margin-top: 8px;
+  font-size: var(--s16);
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.pair-apart {
+  color: var(--mist);
+  font-size: var(--s14);
+  font-stretch: 80%;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.example-night {
+  margin-top: 18px;
+}
+
+.example-shared {
+  margin-top: 4px;
+  color: var(--mist);
+  font-size: var(--s16);
 }
 
 .aside-link {
@@ -137,8 +195,14 @@
   font-size: var(--s16);
 }
 
+.a-board {
+  margin-top: 32px;
+  max-width: 34rem;
+}
+
 .landing-mine {
-  margin-top: 22px;
+  max-width: 34rem;
+  margin-top: 40px;
 }
 
 .landing-mine h2 {
@@ -159,57 +223,28 @@
 }
 
 @media (min-width: 720px) {
-  .fronts {
-    margin-top: 18px;
-    grid-template-columns: minmax(0, 0.42fr) minmax(0, 1.9fr) minmax(0, 0.42fr);
-    gap: 16px;
-  }
-
-  .front-lit .win-inside {
-    padding: 44px 22px 30px;
-  }
-
-  .flyer-landing {
-    padding-left: 28px;
-    padding-right: 28px;
-  }
-
-  .flyer-landing .flyer-when {
-    margin-left: -28px;
-    margin-right: -28px;
-    padding-left: 28px;
-    padding-right: 28px;
-  }
-
-  .flyer-landing .flyer-title {
-    font-size: 5.25rem;
-  }
-
-  .flyer-landing .flyer-sub {
-    font-size: var(--s18);
+  .first-line {
+    font-size: var(--s72);
   }
 }
 
 @media (min-width: 1100px) {
-  .landing {
-    grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
-    column-gap: 48px;
+  .landing-grid {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    column-gap: 64px;
     align-items: start;
   }
 
-  .landing > .landing-notice {
-    grid-column: 1 / -1;
-  }
-
-  .landing-side {
+  .landing-example {
     padding-top: 40px;
   }
 
-  .landing-cta {
-    margin-top: 12px;
+  .first-line {
+    font-size: 5.25rem;
   }
+}
 
-  .flyer-landing .flyer-title {
-    font-size: 6rem;
-  }
+.find .city-chip::placeholder {
+  color: var(--mist);
+  opacity: 1;
 }

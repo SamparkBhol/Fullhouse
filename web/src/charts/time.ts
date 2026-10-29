@@ -64,6 +64,12 @@ export function zoneName(tz: string): string {
   return tz.replace(/_/g, " ");
 }
 
+// "America/New_York" is said the way an owner says it: "New York time".
+export function zoneTime(tz: string): string {
+  const city = tz.split("/").pop()?.replace(/_/g, " ");
+  return tz.includes("/") && city ? `${city} time` : tz;
+}
+
 export function viewerZone(): string {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";

@@ -1,7 +1,6 @@
-/* The back office: the frame both dashboards share. The wall is the fascia blue, every pane is street blue. */
+/* The frame both number pages share, set on the street: the title, the pickers, the refresh line, then the body. */
 .board {
   --haze: #a9bbcf;
-  background: var(--fascia);
   padding-bottom: 28px;
 }
 
@@ -157,8 +156,7 @@
 
 .pane {
   min-width: 0;
-  background: var(--street);
-  padding: 14px 16px 16px;
+  padding: 14px 0 16px;
 }
 
 .pane-title {
@@ -231,5 +229,51 @@
 
   .board-plain {
     text-align: right;
+  }
+}
+
+.chart .tally-hint {
+  fill: var(--chalk-dim);
+  font-size: 15px;
+  font-stretch: 87.5%;
+}
+
+/* On a phone the board is the first thing under the title, and the pickers come after it. */
+@media (max-width: 719px) {
+  .board-inner {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .board-head {
+    display: contents;
+  }
+
+  .board-titles {
+    order: 1;
+    padding-bottom: 18px;
+  }
+
+  .board-body {
+    order: 2;
+  }
+
+  .board-controls {
+    order: 3;
+    margin: 22px 0 10px;
+  }
+
+  .board-live .board-body {
+    display: contents;
+  }
+
+  .board-live .board-body > * {
+    order: 4;
+    margin-top: 10px;
+  }
+
+  .board-live .board-body > .stat-row {
+    order: 2;
+    margin-top: 0;
   }
 }

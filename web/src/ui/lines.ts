@@ -46,9 +46,15 @@ export interface BoardLine {
 }
 
 const GAP_NOTE = /^(\d+) of the (\d+) places nearby that (.+) also loves (?:is|are) tagged .+\.$/;
+const ONE_PLACE = /^The one place nearby that (.+) also loves is tagged .+\.$/;
 
 // Every gap note repeats one sentence with only the count changing, so the board says it once and each tag keeps its count.
 export function gapLines(gaps: Gap[]): { intro?: string; lines: BoardLine[] } {
+  const one = gaps.map((g) => ONE_PLACE.exec(g.note));
+  const who = one[0]?.[1];
+  if (gaps.length > 1 && who && one.every((m) => m?.[1] === who)) {
+    return { intro: `The one place nearby that ${who} also loves carries each of these tags. Your venue carries none of them.`, lines: gaps.map((g) => ({ text: prettyTag(g.tag.name) })) };
+  }
   const parsed = gaps.map((g) => GAP_NOTE.exec(g.note));
   const first = parsed[0];
   const same = first && parsed.every((m) => m && m[2] === first[2] && m[3] === first[3]);

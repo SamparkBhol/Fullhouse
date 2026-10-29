@@ -32,19 +32,6 @@
   gap: 16px;
 }
 
-.fascia-link {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  color: var(--mist);
-  font-size: var(--s16);
-  font-weight: 600;
-}
-
-.fascia-link[aria-current="page"] {
-  color: var(--chalk);
-}
-
 .venue-name {
   font-size: 1.875rem;
   font-stretch: 125%;
@@ -133,6 +120,12 @@ main:focus {
   border-top: 1px solid var(--rule);
   color: var(--mist);
   font-size: var(--s14);
+}
+
+.foot-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 24px;
 }
 
 .foot a {

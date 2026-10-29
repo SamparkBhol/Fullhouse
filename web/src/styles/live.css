@@ -1,29 +1,79 @@
-/* /live: five counters across the top, then panes of different widths on a 12 column wall. */
+/* /live: the departure board of five counters under the fascia, then plain ruled sections on the street. */
 .stat-row {
   grid-column: 1 / -1;
 }
 
+/* The board is painted like the fascia, with a moulding inside its edge; each count is one line of it. */
 .stat-panes {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr);
+  margin: 0 -6px;
+  padding: 6px 16px;
+  background: var(--fascia);
+  border-bottom: 5px solid #1c2f45;
+  box-shadow: inset 0 0 0 5px var(--fascia), inset 0 0 0 7px rgba(243, 245, 248, 0.16);
+}
+
+.board-live .pane-stat {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0 14px;
+  padding: 12px 0;
+  border-top: 0;
+}
+
+.board-live .pane-stat + .pane-stat {
+  border-top: 1px solid rgba(243, 245, 248, 0.16);
+}
+
+.pane-stat .pane-title {
+  margin: 0;
+  font-stretch: 112.5%;
+}
+
+.pane-stat .counter {
+  margin: 0;
+  font-size: 1.875rem;
+}
+
+.pane-stat .stat-caption,
+.pane-stat .spark-host,
+.pane-stat .pane-line {
+  grid-column: 1 / -1;
+}
+
+.pane-stat .stat-caption {
+  margin-top: 6px;
 }
 
 .pane-stat .pane-line {
-  margin-top: 6px;
+  margin-top: 4px;
   font-size: var(--s14);
 }
 
 .pane-stat .spark-host {
-  margin-top: 10px;
-}
-
-.stat-panes > [data-pane="turnoutPeople"] {
-  grid-column: 1 / -1;
+  margin-top: 8px;
 }
 
 .stat-row > .as-table {
-  margin-top: 2px;
+  margin-top: 8px;
+}
+
+/* Below the board, sections sit on the street with a chalk rule across the top and nothing round them. */
+.board-live .board-body {
+  gap: 10px 40px;
+}
+
+.board-live .pane:not(.pane-stat) {
+  padding-top: 14px;
+  border-top: 2px solid rgba(243, 245, 248, 0.42);
+}
+
+/* The square that says the page is checking is the one lit thing here. */
+.board-live .pulse-on {
+  background: var(--lit);
+  border-color: var(--lit);
 }
 
 /* Time before counting began: a darker band, so it never reads as a quiet stretch. */
@@ -89,7 +139,7 @@
 
 .log-rsvp .log-kind .key {
   display: inline-block;
-  background: var(--lit);
+  background: var(--chalk);
 }
 
 .log-qloo_error .log-kind .key {
@@ -156,10 +206,30 @@
 
   .stat-panes {
     grid-template-columns: repeat(5, minmax(0, 1fr));
+    margin: 0 -10px;
+    padding: 10px 22px 12px;
   }
 
-  .stat-panes > [data-pane="turnoutPeople"] {
-    grid-column: auto;
+  .board-live .pane-stat {
+    display: block;
+    padding: 6px 16px 8px;
+  }
+
+  .board-live .pane-stat + .pane-stat {
+    border-top: 0;
+    border-left: 1px solid rgba(243, 245, 248, 0.16);
+  }
+
+  .board-live .pane-stat:first-child {
+    padding-left: 0;
+  }
+
+  .board-live .pane-stat:last-child {
+    padding-right: 0;
+  }
+
+  .pane-stat .counter {
+    margin-top: 8px;
   }
 
   .board-body-live > [data-pane="calls"],

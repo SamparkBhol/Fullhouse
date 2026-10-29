@@ -14,13 +14,16 @@ export interface BigCount {
 }
 
 // The yes count of the night that is out, in window light. It ticks over once when a check brings a new number.
+// Until the first yes it is a plain line, so a zero is never the biggest thing in the window.
 export function bigCount(start: number): BigCount {
   const figure = h("span", { class: "rsvp-big lit-text" }, String(start));
   const words = h("span", { class: "rsvp-words" });
   const el = h("p", { class: "rsvp-line", "aria-live": "polite" }, figure, words);
   let shown = start;
   const say = (n: number): void => {
-    words.textContent = ` ${n === 1 ? "person has" : "people have"} said they are coming.`;
+    figure.hidden = n === 0;
+    el.classList.toggle("rsvp-none", n === 0);
+    words.textContent = n === 0 ? "Nobody has pressed I am going yet. The count shows here when they do." : ` ${n === 1 ? "person has" : "people have"} said they are coming.`;
   };
   say(start);
   return {
@@ -87,11 +90,16 @@ export function draftWindow(base: string, state: VenueState, plan: NightPlan, sm
 export function darkWindow(ctx: { id: string; token: string }, state: VenueState): HTMLElement {
   const slot = h("div", { "aria-live": "polite" });
   const day = weekdayName(state.venue.quietSlot.weekday);
-  const button = h("button", { class: "button button-big button-lamp", type: "button" }, state.read ? `Plan a night for ${day}` : `Read the street and plan ${day}`);
-  button.addEventListener("click", () => {
-    button.disabled = true;
-    void readThenPlan(ctx.id, ctx.token, state.venue.quietSlot.weekday, slot, !state.read, () => (button.disabled = false));
-  });
+  // A venue never read goes through the first run, which reads its crowd and finds its match on the way.
+  const button = state.read
+    ? h("button", { class: "button button-big button-lamp", type: "button" }, `Plan a night for ${day}`)
+    : h("a", { class: "button button-big button-lamp", href: `/v/${encodeURIComponent(ctx.id)}/first` }, "Read your crowd");
+  if (button instanceof HTMLButtonElement) {
+    button.addEventListener("click", () => {
+      button.disabled = true;
+      void readThenPlan(ctx.id, ctx.token, state.venue.quietSlot.weekday, slot, false, () => (button.disabled = false));
+    });
+  }
   return shopWindow(
     { size: "big", dark: true, lettering: `Nothing in the window for ${day} yet`, className: "win-empty-night" },
     h("p", { class: "say-line" }, `${day} is quiet.`),
@@ -100,7 +108,7 @@ export function darkWindow(ctx: { id: string; token: string }, state: VenueState
       { class: "say-why" },
       state.read
         ? `Full House will plan your next ${day} from the street read.`
-        : `Full House reads the street around your venue from Qloo, then plans your next ${day}. It sends only your venue's public listing and its location.`,
+        : `Full House reads your crowd from Qloo, finds the place nearby it also loves, then plans the night you could run together. It sends only your venue's public listing and its location.`,
     ),
     h("p", { class: "actions" }, button),
     slot,

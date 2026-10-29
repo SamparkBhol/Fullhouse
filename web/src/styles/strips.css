@@ -1,5 +1,4 @@
-/* The two doors into the numbers: a line of counters on the landing page, a small pane on venue home. */
-.live-strip,
+/* The door into the numbers: a small line on venue home. */
 .numbers-strip {
   margin-top: 24px;
 }
@@ -65,11 +64,6 @@
 
 .strip-when {
   margin-top: 0;
-}
-
-.live-strip {
-  border-top: 1px solid var(--rule);
-  padding-top: 14px;
 }
 
 /* On venue home the numbers are a line written on the street under the window, not a box beside it. */

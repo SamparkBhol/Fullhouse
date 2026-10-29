@@ -19,7 +19,6 @@
 @import "./fold.css";
 @import "./tags.css";
 @import "./landing.css";
-@import "./onboarding.css";
 @import "./street.css";
 @import "./map-marks.css";
 @import "./night.css";
@@ -28,6 +27,7 @@
 @import "./posters.css";
 @import "./publish.css";
 @import "./proof.css";
+@import "./notes.css";
 @import "./how.css";
 @import "./counters.css";
 @import "./strips.css";
@@ -35,3 +35,4 @@
 @import "./charts.css";
 @import "./live.css";
 @import "./dashboard.css";
+@import "./first-run.css";

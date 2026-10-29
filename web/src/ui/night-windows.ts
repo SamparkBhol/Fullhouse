@@ -1,9 +1,8 @@
-import type { EntityRef, NightPlan } from "../../../src/shared/contract.ts";
-import { capFirst } from "../../../src/shared/words.ts";
+import type { NightPlan } from "../../../src/shared/contract.ts";
+import { capFirst, listWords } from "../../../src/shared/words.ts";
 import { h } from "../dom.ts";
 import { dayOnly } from "../format.ts";
 import { chalkboard } from "./chalkboard.ts";
-import { cover } from "./cover.ts";
 import { partnerReason } from "./lines.ts";
 import { postcards } from "./postcard.ts";
 import { ledge } from "./ledge.ts";
@@ -54,19 +53,12 @@ export function onTheCounter(plan: NightPlan, venueName: string): HTMLElement {
   );
 }
 
-export function sleeves(items: Pick<EntityRef, "name" | "type" | "image">[], label: string): HTMLElement {
-  return h(
-    "ol",
-    { class: "sleeves", "aria-label": label },
-    items.map((a) => h("li", { class: "sleeve" }, h("span", { class: "sleeve-stand" }, cover(a, { shape: "square" })), h("span", { class: "sleeve-name" }, a.name))),
-  );
-}
-
+// One line of names is enough for the speakers; the licence note matters more than the faces.
 export function onTheSpeakers(plan: NightPlan): HTMLElement {
-  const has = plan.playlist.length > 0;
+  const names = plan.playlist.map((a) => a.name).slice(0, 6);
   return ledge(
     { label: "On the speakers", className: "ledge-speakers" },
-    has ? sleeves(plan.playlist, "Playlist") : emptyLine("Qloo returned no artists for this street, so there is no playlist."),
+    names.length ? h("p", { class: "speakers-line" }, `${listWords(names)}.`) : emptyLine("Qloo returned no artists for this street, so there is no playlist."),
     h("p", { class: "ledge-note" }, LICENCE_NOTE),
   );
 }

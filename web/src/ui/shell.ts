@@ -15,7 +15,7 @@ export function mountShell(root: HTMLElement): HTMLElement {
   const footer = h(
     "footer",
     { class: "foot" },
-    h("a", { href: "/how" }, "How Full House works"),
+    h("p", { class: "foot-links" }, h("a", { href: "/how" }, "How Full House works"), h("a", { href: "/live" }, "Live numbers")),
     h("p", null, "Street data from Qloo. Map data from OpenStreetMap contributors."),
   );
   replace(
@@ -33,18 +33,20 @@ export function page(): HTMLElement {
 }
 
 function topRow(big: boolean): HTMLElement {
-  return h(
-    "div",
-    { class: "fascia-top" },
-    h("a", { class: big ? "wordmark wordmark-big" : "wordmark", href: "/" }, "Full House"),
-    h("a", { class: "fascia-link", href: "/live", "aria-current": location.pathname === "/live" ? "page" : null }, "Live numbers"),
-  );
+  return h("div", { class: "fascia-top" }, h("a", { class: big ? "wordmark wordmark-big" : "wordmark", href: "/" }, "Full House"));
 }
 
 export function plainFascia(): void {
   document.body.classList.remove("has-tabs");
   tabs.hidden = true;
   replace(fascia, topRow(true));
+}
+
+// The first run keeps the venue's name in view but no tabs, so the only way on is the next step.
+export function runFascia(venue: Venue): void {
+  document.body.classList.remove("has-tabs");
+  tabs.hidden = true;
+  replace(fascia, topRow(false), h("p", { class: "venue-name venue-name-run" }, venue.entity.name));
 }
 
 export function venueFascia(venue: Venue, active: Tab | null, live?: Night | null): void {

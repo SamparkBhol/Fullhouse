@@ -31,15 +31,10 @@
   font-feature-settings: "tnum" 1;
 }
 
-.axis-label,
-.row-note {
+.axis-label {
   fill: var(--mist);
 }
 
-.row-label {
-  fill: var(--chalk);
-  font-weight: 650;
-}
 
 .grid {
   stroke: rgba(243, 245, 248, 0.14);
@@ -118,46 +113,13 @@
   stroke-width: 2;
 }
 
-.room-box {
-  fill: none;
-  stroke: var(--haze);
-  stroke-width: 2;
-}
 
-.rsvp-tick {
-  fill: var(--lit);
-}
 
-.today {
-  stroke: var(--mist);
-  stroke-width: 1;
-  stroke-dasharray: 3 3;
-}
 
-.night-mark {
-  stroke-width: 2;
-}
 
-.night-lit {
-  fill: var(--lit);
-  stroke: var(--lit);
-}
 
-.night-done {
-  fill: var(--chalk);
-  stroke: var(--chalk);
-}
 
-.night-open {
-  fill: var(--street);
-  stroke: var(--chalk);
-}
 
-.night-withdrawn {
-  fill: var(--street);
-  stroke: var(--mist);
-  stroke-dasharray: 3 2;
-}
 
 .tip {
   position: absolute;

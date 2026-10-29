@@ -1,97 +1,221 @@
-.proof-cols {
-  display: grid;
-  gap: 28px;
-  margin-top: 24px;
+/* Proof: one big line, then two notes pinned to a dark window frame, the printout and the stamped names. */
+.proof-title {
+  margin: 22px 0 10px;
+  font-size: var(--s24);
+  font-stretch: 87.5%;
+  font-weight: 700;
 }
 
-.proof-col h3 {
-  padding-bottom: 6px;
-  border-bottom: 2px solid var(--chalk);
+.proof-intro {
+  max-width: 40rem;
 }
 
-.proof-model {
+.proof-hero {
+  max-width: 24ch;
   margin-top: 6px;
+  font-size: var(--s36);
+  font-stretch: 62%;
+  font-weight: 820;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.proof-tied {
+  max-width: 44ch;
+  margin-top: 14px;
   color: var(--mist);
+  font-size: var(--s16);
+}
+
+.proof-frame .win-inside {
+  padding-top: 26px;
+}
+
+.proof-notes {
+  display: grid;
+  gap: 26px;
+  align-items: start;
+}
+
+/* A note pinned at the top: white paper, one ink pin, a degree off true. */
+.pinned {
+  position: relative;
+  min-width: 0;
+  padding: 22px 16px 18px;
+  background: var(--chalk);
+  color: var(--ink);
+}
+
+.printout {
+  transform: rotate(-0.6deg);
+}
+
+.checked {
+  transform: rotate(0.5deg);
+}
+
+.pin {
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin-left: -8px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 3px solid color-mix(in srgb, var(--ink) 60%, var(--chalk));
+}
+
+.pinned-title {
+  margin: 0 0 4px;
+  color: var(--ink);
+  font-size: var(--s18);
+  font-stretch: 87.5%;
+  font-weight: 700;
+}
+
+.printout-model,
+.checked-count {
+  color: var(--ink-soft);
   font-size: var(--s14);
   overflow-wrap: anywhere;
 }
 
-.proof-count {
-  margin: 8px 0;
+.printout-text {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--ink-soft);
   font-size: var(--s16);
-  color: var(--mist);
+  font-stretch: 87.5%;
+  line-height: 1.45;
+  overflow-wrap: break-word;
 }
 
-.verify-list {
+.printout-text p + p {
+  margin-top: 10px;
+}
+
+.printout-text strong {
+  font-weight: 700;
+}
+
+/* Names in ink, with Qloo's rubber stamp beside each. */
+.stamped {
   list-style: none;
+  margin-top: 8px;
 }
 
-.verify {
+.stamped-row {
   display: grid;
-  grid-template-columns: 18px 1fr;
-  gap: 2px 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 12px;
   padding: 10px 0;
-  border-top: 1px solid var(--rule);
+  border-top: 1px solid rgba(29, 49, 80, 0.16);
 }
 
-.verify-mark {
-  width: 14px;
-  height: 14px;
-  margin-top: 5px;
-  grid-row: span 3;
-}
-
-.verify-found_nearby .verify-mark {
-  background: var(--chalk);
-}
-
-.verify-found_far .verify-mark {
-  border: 2px solid var(--mist);
-}
-
-.verify-not_found .verify-mark {
-  border: 2px solid var(--stop);
-  background: linear-gradient(45deg, transparent 44%, var(--stop) 44% 56%, transparent 56%);
-}
-
-.verify-name {
-  font-weight: 650;
-}
-
-.verify-status {
+.stamped-name {
   font-size: var(--s16);
-}
-
-.verify-found_far .verify-status {
-  color: var(--mist);
-}
-
-.verify-not_found .verify-status {
-  color: var(--stop);
-}
-
-.verify-note {
-  color: var(--mist);
-  font-size: var(--s14);
-}
-
-.verify-tied {
-  color: var(--lit);
-}
-
-.proof-tied {
-  margin: 16px 0 0;
-  font-size: var(--s18);
   font-weight: 650;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.stamp {
+  justify-self: end;
+  padding: 3px 7px 2px;
+  border: 2px solid var(--ink);
+  border-radius: 3px;
+  color: var(--ink);
+  font-size: var(--s14);
+  font-stretch: 75%;
+  font-weight: 760;
+  line-height: 1.2;
+  white-space: nowrap;
+  transform: rotate(-3deg);
+}
+
+.stamp-near,
+.stamp-catalog {
+  background: var(--ink);
   color: var(--chalk);
 }
 
-.proof-result h2 {
-  margin-top: 28px;
+.stamp-catalog {
+  transform: rotate(2deg);
+}
+
+.stamp-far {
+  transform: rotate(2.5deg);
+}
+
+.stamp-none,
+.stamp-closed {
+  border-style: dashed;
+}
+
+/* The venue itself: a double ring, apart from every found or missing name. */
+.stamp-self {
+  border-style: double;
+  border-width: 4px;
+  padding: 1px 6px 0;
+  transform: rotate(1.5deg);
+}
+
+.stamp-none::before,
+.stamp-closed::before {
+  content: "";
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 5px;
+  background: linear-gradient(45deg, transparent 40%, var(--ink) 40% 60%, transparent 60%), linear-gradient(-45deg, transparent 40%, var(--ink) 40% 60%, transparent 60%);
+}
+
+.stamped-note {
+  grid-column: 1 / -1;
+  color: var(--ink-soft);
+  font-size: var(--s14);
+  line-height: 1.35;
+}
+
+.stamped-tied {
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.proof-again {
+  margin-top: 26px;
+}
+
+.proof .receipts {
+  margin-top: 8px;
 }
 
 @media (min-width: 720px) {
-  .proof-cols {
-    grid-template-columns: 1fr 1fr;
+  .proof-hero {
+    font-size: var(--s48);
+  }
+
+  .pinned {
+    padding: 26px 22px 22px;
+  }
+}
+
+@media (min-width: 960px) {
+  .proof-notes {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 30px;
+  }
+
+  .proof-hero {
+    max-width: 30ch;
+    font-size: var(--s60);
+  }
+
+  /* The stamped names stay beside the printout while the owner reads down it. */
+  .checked {
+    position: sticky;
+    top: 20px;
   }
 }
