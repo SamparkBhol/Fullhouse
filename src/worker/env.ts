@@ -10,6 +10,7 @@ export interface Env {
   AI_MODEL?: string;
   QLOO_API_KEY?: string;
   QLOO_BASE_URL?: string;
+  QLOO_IMAGE_BASE?: string;
   QLOO_DAILY_BUDGET?: string;
   TOKEN_SECRET?: string;
   RESEND_API_KEY?: string;
@@ -26,6 +27,11 @@ export function modelOf(env: Env): string {
 export function dailyBudgetOf(env: Env): number {
   const n = Number.parseInt(env.QLOO_DAILY_BUDGET ?? "", 10);
   return Number.isFinite(n) && n > 0 ? n : 4000;
+}
+
+// A secret piped into wrangler secret put can end with a newline, which would change every owner token.
+export function tokenSecretOf(env: Env): string {
+  return env.TOKEN_SECRET?.trim() ?? "";
 }
 
 // There is no default sender: owner email stays off until both the key and a verified sender are set.

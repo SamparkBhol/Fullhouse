@@ -60,3 +60,8 @@ export function ordinal(n: number): string {
 export function possessive(name: string): string {
   return /s$/i.test(name.trim()) ? `${name}'` : `${name}'s`;
 }
+
+// Some listings put the branch after a hyphen with spaces round it. A comma reads the same and keeps dashes off the page.
+export function plainName(name: string): string {
+  return name.replace(/\s+[-\u2013\u2014]\s+/g, ", ").trim();
+}

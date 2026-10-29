@@ -8,7 +8,7 @@ workers_dev = true
 directory = "web/dist"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
-run_worker_first = ["/api/*", "/e/*", "/mcp", "/mcp/*"]
+run_worker_first = ["/api/*", "/e/*", "/img/*", "/mcp", "/mcp/*", "/live.txt"]
 
 [[rules]]
 type = "Data"
@@ -19,7 +19,7 @@ fallthrough = true
 binding = "AI"
 
 [vars]
-AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+AI_MODEL = "@cf/mistralai/mistral-small-3.1-24b-instruct"
 QLOO_DAILY_BUDGET = "4000"
 
 [[durable_objects.bindings]]

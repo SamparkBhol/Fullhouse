@@ -4,10 +4,13 @@ import { modelOf, resendOf } from "./env.ts";
 import { API_HEADERS, apiError, BODY_LIMIT, corsHeaders, originAllowed, preflight, withHeaders } from "./http.ts";
 import { MCP_VERSION } from "./mcp.ts";
 import { renderMissing } from "./pages/event.ts";
+import { imageRoutes } from "./routes/images.ts";
 import { mcpRoutes } from "./routes/mcp.ts";
 import { ownerRoutes } from "./routes/owner.ts";
 import { publicRoutes } from "./routes/public.ts";
 import { HttpError, isBodyLimit, json, pageResponse, type AppDeps, type AppEnv } from "./routes/shared.ts";
+import { statsRoutes } from "./routes/stats.ts";
+import { collectStats } from "./stats/collect.ts";
 
 export type { AppDeps } from "./routes/shared.ts";
 
@@ -34,6 +37,7 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
     return apiError(500, "internal", "Something went wrong on our side. It was logged.");
   });
 
+  app.use("*", collectStats(deps));
   app.use("*", async (c, next) => {
     if (!isApiPath(c.req.path)) return next();
     if (c.req.method === "OPTIONS") return preflight(c.req.raw, c.env);
@@ -62,9 +66,11 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
   );
 
   ownerRoutes(app, deps);
+  statsRoutes(app, deps);
   app.all("/api/*", () => apiError(404, "not_found", "No such API route."));
   mcpRoutes(app, deps);
   publicRoutes(app, deps);
+  imageRoutes(app);
 
   app.all("*", async (c) => {
     if (c.env.ASSETS) return c.env.ASSETS.fetch(c.req.raw);
