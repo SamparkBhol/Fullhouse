@@ -61,7 +61,31 @@ export function possessive(name: string): string {
   return /s$/i.test(name.trim()) ? `${name}'` : `${name}'s`;
 }
 
+// Listings carry flags and emoji, and some put a street or a tagline after a pipe. None of that is the name.
+const DECORATION = /[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\uFE0F\u200D]/gu;
+
+function undecorated(name: string): string {
+  const cut = name.split("|")[0] ?? name;
+  const clean = cut.replace(DECORATION, "").replace(/\s+/g, " ").trim();
+  return clean || name.trim();
+}
+
 // Some listings put the branch after a hyphen with spaces round it. A comma reads the same and keeps dashes off the page.
 export function plainName(name: string): string {
-  return name.replace(/\s+[-\u2013\u2014]\s+/g, ", ").trim();
+  return undecorated(name).replace(/\s+[-\u2013\u2014]\s+/g, ", ").trim();
+}
+
+// Nobody says "Angelika Film Center & Cafe": the side line after the ampersand goes when a real name is left.
+const SIDE_LINE = /\s+(?:&|and)\s+(?:caf[eé]|bar|kitchen|lounge|restaurant|publishers|event center|events)$/i;
+
+// A branch listed after the name, such as Angelika Film Center & Cafe in New York, is said as the name alone.
+export function shortName(name: string): string {
+  const base = plainName(name).split(",")[0]?.trim() || name;
+  const cut = base.replace(SIDE_LINE, "").trim();
+  return cut.split(/\s+/).length >= 2 ? cut : base;
+}
+
+// "the The Hate U Give" never: a title that already starts with an article keeps its own.
+export function theTitle(title: string): string {
+  return /^(the|a|an)\s/i.test(title) ? title : `the ${title}`;
 }
