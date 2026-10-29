@@ -12,25 +12,28 @@ test("the public event page takes one RSVP per browser and the owner sees the co
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(night.feature?.name ?? night.copy.eventTitle);
   await expect(page).toHaveTitle(/Copper Taproom/);
   await expect(page.locator(".place")).toContainText("Copper Taproom");
-  await expect(page.locator(".rsvp .count")).toHaveText("0 said they are coming");
+  // The count stays hidden until three people have said yes, so a new night never leads with a zero.
+  await expect(page.locator(".rsvp .count")).toHaveCount(0);
   await expect(page.locator("footer")).toContainText("Copper Taproom has not confirmed it.");
   await expect(page.getByRole("button", { name: "Report this page" })).toBeVisible();
 
   await page.getByRole("button", { name: "I am going" }).click();
-  await expect(page.locator(".rsvp .count")).toHaveText("1 said they are coming");
   await expect(page.locator(".rsvp .going")).toHaveText("You are on the list. See you there.");
+  await expect(page.locator(".rsvp .count")).toHaveCount(0);
   await page.reload();
-  await expect(page.locator(".rsvp .count")).toHaveText("1 said they are coming");
   await expect(page.getByRole("button", { name: "I am going" })).toHaveCount(0);
 
-  await page.context().clearCookies();
-  await page.reload();
-  await page.getByRole("button", { name: "I am going" }).click();
-  await expect(page.locator(".rsvp .count")).toHaveText("2 said they are coming");
+  for (const n of [2, 3]) {
+    await page.context().clearCookies();
+    await page.reload();
+    await page.getByRole("button", { name: "I am going" }).click();
+    await expect(page.locator(".rsvp .going")).toHaveText("You are on the list. See you there.");
+    if (n === 3) await expect(page.locator(".rsvp .count")).toHaveText("3 said they are coming");
+  }
 
   const state = await request.get(`/api/venues/${owner.venue.id}`, { headers: { authorization: `Bearer ${owner.token}` } });
   const nights = ((await state.json()) as { nights: Array<{ id: string; rsvps: number }> }).nights;
-  expect(nights.find((n) => n.id === night.id)?.rsvps).toBe(2);
+  expect(nights.find((n) => n.id === night.id)?.rsvps).toBe(3);
 });
 
 test("the calendar file parses as one event at the night's time", async ({ request }) => {

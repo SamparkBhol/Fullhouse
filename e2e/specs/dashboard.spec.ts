@@ -11,7 +11,7 @@ async function sayYes(browser: Browser, slug: string): Promise<void> {
   const page = await guest.newPage();
   await page.goto(`/e/${slug}`);
   await page.getByRole("button", { name: "I am going" }).click();
-  await expect(page.locator(".count")).toContainText("said they are coming");
+  await expect(page.locator(".going")).toContainText("You are on the list");
   await guest.close();
 }
 
@@ -34,15 +34,15 @@ test("venue home shows the numbers strip, and it opens the Numbers tab", async (
   await expect(page.getByRole("navigation", { name: "Your venue" }).getByRole("link", { name: "Numbers", exact: true })).toHaveAttribute("aria-current", "page");
   const next = page.locator('[data-pane="next"]');
   await expect(next.locator(".counter .sr-only")).toHaveText("1 RSVP for your next night");
-  await expect(next).toContainText("1 of a room of 40 have said yes.");
+  await expect(next.locator(".tally-yes-words")).toHaveText("of 40 has said yes");
 
   const nights = page.locator('[data-pane="nights"]');
   await nights.getByText("Show as a table").click();
   await expect(nights.locator("tbody tr")).toHaveCount(1);
   await expect(nights.locator("tbody tr")).toContainText("On the street");
-  const reads = page.locator('[data-pane="reads"]');
-  await reads.getByText("Show as a table").click();
-  await expect(reads.locator("tbody tr")).toHaveCount(1);
+  await expect(page.locator('[data-pane="reads"]')).toHaveCount(0);
+  await expect(page.getByRole("radio", { name: "10 s" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Check now" })).toHaveCount(0);
   await expect(page.locator('[data-pane="mondays"]')).toContainText(/Next run \w{3} \d+ \w{3}, 09:00\./);
 
   await page.getByRole("link", { name: "Nights", exact: true }).click();
@@ -58,11 +58,8 @@ test("the next night's yes count updates by itself while the tab is open", async
   const counter = page.locator('[data-pane="next"] .counter .sr-only');
   await expect(counter).toHaveText("0 RSVPs for your next night");
 
-  await page.getByRole("radio", { name: "10 s" }).check();
-  await expect(page.locator(".refresh-line")).toContainText("Checks every 10 s.");
   await sayYes(browser, night.eventSlug ?? "");
   await expect(counter).toHaveText("1 RSVP for your next night", { timeout: 25_000 });
-  await expect(page.locator(".refresh-line")).toContainText("numbers updated");
 });
 
 test("a logged turnout shows against the room on the strip and the dashboard", async ({ page, request }) => {
@@ -79,11 +76,13 @@ test("a logged turnout shows against the room on the strip and the dashboard", a
 
   await openAsOwner(page, owner, "/dashboard");
   await expect(page.locator('[data-pane="next"]')).toContainText("No published night coming up.");
-  const rooms = page.locator('[data-pane="rooms"]');
-  await rooms.getByText("Show as a table").click();
-  await expect(rooms.locator("tbody tr").first()).toContainText("40");
-  await expect(rooms.locator("tbody tr").first()).toContainText("27");
-  await expect(page.locator('[data-pane="nights"] .night-done')).toHaveCount(1);
+  const nights = page.locator('[data-pane="nights"]');
+  await expect(nights.locator(".night-done .tally-big")).toHaveText("27");
+  await nights.getByText("Show as a table").click();
+  await expect(nights.locator("tbody tr").first()).toContainText("Turnout logged");
+  await expect(nights.locator("tbody tr").first()).toContainText("40");
+  await expect(nights.locator("tbody tr").first()).toContainText("27");
+  await expect(nights.locator(".night-done")).toHaveCount(1);
 });
 
 test("the Numbers tab fits a 360 and a 390 px phone", async ({ page, request }) => {

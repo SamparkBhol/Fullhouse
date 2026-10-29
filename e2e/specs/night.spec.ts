@@ -10,7 +10,8 @@ test("a plan carries its reasons and says who wrote the copy, a plain phrase cha
   await page.getByRole("button", { name: "Plan a night for Tuesday" }).click();
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(/^A night for Tuesday \d+ \w+$/);
-  await expect(page.locator(".options button")).toHaveCount(3);
+  await expect(page.locator(".options")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Another idea" })).toBeVisible();
   await expect(page.locator(".night-window .flyer")).toBeVisible();
   const receipts = page.locator("details.receipts");
   await expect(receipts).toHaveCount(1);
@@ -23,6 +24,7 @@ test("a plan carries its reasons and says who wrote the copy, a plain phrase cha
   await expect(page.locator(".written-by")).toHaveText("Copy from template");
   await expect(page.locator(".claim")).toBeVisible();
   await expect(page.getByText("A personal streaming account does not cover playing music to customers.")).toBeVisible();
+  await expect(page.locator(".sleeve")).toHaveCount(0);
 
   await why.locator(".because-row").first().click();
   await expect(page.getByRole("dialog").locator(".receipt-focus")).toBeVisible();
@@ -37,15 +39,13 @@ test("a plan carries its reasons and says who wrote the copy, a plain phrase cha
   await page.getByRole("link", { name: "Review and publish" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Publish this night");
   const actions = page.locator(".actions-list li.action");
-  await expect(actions).toHaveCount(7);
-  const eventbrite = page.getByRole("checkbox", { name: /Create the Eventbrite event/ });
-  await expect(eventbrite).toBeDisabled();
-  await expect(eventbrite).not.toBeChecked();
+  await expect(actions).toHaveCount(5);
   for (const name of ["Publish the event page", "Make the poster", "Make a calendar file", "Make a Google Calendar link", "Draft notes to the partners"]) {
     await expect(page.getByRole("checkbox", { name: new RegExp(name) })).toBeChecked();
   }
-  await expect(page.getByRole("checkbox", { name: /Email me the links/ })).toBeDisabled();
-  await expect(page.getByText("Email is off on this server.")).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: /Create the Eventbrite event/ })).toHaveCount(0);
+  await expect(page.getByRole("checkbox", { name: /Email me the links/ })).toHaveCount(0);
+  await expect(page.getByText("Email is off on this server.")).toHaveCount(0);
   const title = page.getByLabel("Title", { exact: true });
   await expect(title).not.toHaveValue("");
   await title.fill("Friday night at Juniper Books");
@@ -67,7 +67,7 @@ test("a plan carries its reasons and says who wrote the copy, a plain phrase cha
   await expect(draft.getByRole("link", { name: /^Draft to / })).toHaveAttribute("href", /^mailto:events@partner\.example\?/);
   await expect(draft.getByRole("link", { name: "Gmail" })).toHaveAttribute("href", /^https:\/\/mail\.google\.com\//);
   await expect(draft.getByRole("link", { name: "Outlook" })).toHaveAttribute("href", /^https:\/\/outlook\.(live|office)\.com\//);
-  await expect(page.locator(".rsvp-line")).toContainText("0 people have said they are coming.");
+  await expect(page.locator(".rsvp-line")).toHaveText("Nobody has pressed I am going yet. The count shows here when they do.");
 
   await page.getByRole("link", { name: "Nights", exact: true }).click();
   await expect(page.getByRole("heading", { name: "On the street now" })).toBeVisible();

@@ -60,6 +60,7 @@ test("the public event page prints the feature's cover and shows nearby places, 
   const imgs = await page.locator("img").evaluateAll(LOADED);
   expect(imgs.every((i) => i.src.startsWith("/img/"))).toBe(true);
   if (night.feature?.image) await expect(page.locator(".flyer .print img")).toHaveCount(1);
-  if (night.partners.length) await expect(page.locator(".near li")).toHaveCount(Math.min(3, night.partners.length));
-  await expect(page.locator(".near")).not.toContainText(/partner/i);
+  // No partner has said yes yet, so the page names none of them.
+  await expect(page.locator(".near li")).toHaveCount(0);
+  for (const p of night.partners) await expect(page.locator("body")).not.toContainText(p.name);
 });

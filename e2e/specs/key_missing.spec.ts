@@ -8,12 +8,11 @@ test("without a Qloo key the server says so plainly and shows nothing in its pla
   expect(api.status()).toBe(503);
   expect(await api.json()).toMatchObject({ error: "qloo_key_missing" });
 
-  await page.goto("/start");
-  await page.getByLabel("Venue name").fill("Juniper Books");
+  await page.goto("/");
   await page.getByLabel("City").fill("Leeds");
-  await page.getByRole("button", { name: "Look it up" }).click();
+  await page.getByRole("textbox", { name: "Your venue" }).fill("Juniper Books");
   const failure = page.locator(".state-failure");
   await expect(failure.locator(".state-title")).toHaveText("No Qloo key on this server");
   await expect(failure).toContainText("Nothing was read and nothing was made up.");
-  await expect(page.locator(".candidate")).toHaveCount(0);
+  await expect(page.locator(".find-pick")).toHaveCount(0);
 });

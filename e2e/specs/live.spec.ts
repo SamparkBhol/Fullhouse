@@ -8,18 +8,16 @@ const HIDE_TAB = `(() => {
   document.dispatchEvent(new Event("visibilitychange"));
 })()`;
 
-test("the landing page counts what happened and opens the live numbers", async ({ page, request }) => {
+test("the live numbers open from the footer only and count what happened", async ({ page, request }) => {
   await createVenue(request, { name: "Lantern Records", city: "Leeds" });
   await page.goto("/");
-  const strip = page.locator("section", { has: page.getByRole("heading", { name: "Counted on this server" }) });
-  await expect(strip.locator(".counter .sr-only").first()).toHaveText(/^[1-9]\d* venues? set up$/);
-  await expect(strip).toContainText("nights published");
+  await expect(page.locator("header").getByRole("link", { name: "Live numbers" })).toHaveCount(0);
+  await expect(page.getByText("Counted on this server")).toHaveCount(0);
 
-  await strip.getByRole("link", { name: "See the live numbers" }).click();
+  await page.locator("footer").getByRole("link", { name: "Live numbers" }).click();
   await expect(page).toHaveURL(/\/live$/);
   await expect(page).toHaveTitle("Live numbers | Full House");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Live numbers");
-  await expect(page.locator(".fascia-link")).toHaveAttribute("aria-current", "page");
 
   const venues = page.locator('[data-pane="venues"]');
   await expect(venues.locator(".counter .sr-only")).toHaveText(/^[1-9]\d* venues? set up$/);

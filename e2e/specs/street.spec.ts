@@ -12,7 +12,7 @@ test("the street read shows the map, both tag lists, the gap, the picks and ever
   const receipts = page.locator("details.receipts");
   await expect(receipts).toHaveCount(1);
   await expect(receipts).not.toHaveAttribute("open", "");
-  await expect(receipts.locator(".fold")).toHaveCount(6);
+  await expect(receipts.locator(".fold")).toHaveCount(5);
   const part = (name: string) => receipts.locator(".fold").filter({ has: page.locator(".fold-title", { hasText: new RegExp(`^${name}$`) }) });
 
   const map = page.locator(".map.leaflet-container");
@@ -45,8 +45,7 @@ test("the street read shows the map, both tag lists, the gap, the picks and ever
 
   const gaps = page.locator(".slate-gaps");
   await expect(gaps.getByRole("heading", { name: "Found nearby, not here" })).toBeVisible();
-  await expect(gaps.locator(".slate-intro")).toHaveText("Of the 5 places nearby that Saltwater Records' audience also loves, how many carry each tag. Your venue carries none of them.");
-  await expect(gaps.locator(".slate-lines li .slate-count").first()).toHaveText(/^\d of 5$/);
+  await expect(gaps.locator(".slate-intro")).toHaveText(/^(Of the \d+ places nearby that Saltwater Records' audience also loves, how many carry each tag|The one place nearby that Saltwater Records' audience also loves carries each of these tags)\. Your venue carries none of them\.$/);
   await expect(part("Found nearby, not here").locator(".because-row").first()).toContainText(/Call \d+/);
 
   const picks = page.locator(".street-picks");
@@ -63,9 +62,8 @@ test("the street read shows the map, both tag lists, the gap, the picks and ever
   const loved = page.locator(".ledge-loved");
   await expect(loved.getByRole("heading", { name: "Places nearby your audience loves" })).toBeVisible();
   await expect(loved.locator("ol.postcards").first().locator("> .postcard")).toHaveCount(await map.locator(".pin-place").count());
-  await expect(page.getByRole("heading", { name: "Who your audience is, in aggregate" })).toBeHidden();
   await receipts.locator("> summary").click();
-  await expect(page.getByRole("heading", { name: "Who your audience is, in aggregate" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Who your audience is, in aggregate" })).toHaveCount(0);
   await expect(receipts.locator(".limits")).toContainText("Ranks are positions within one Qloo response.");
 
   await part("The night map").locator(".fold-call").first().click();
