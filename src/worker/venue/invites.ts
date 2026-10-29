@@ -1,9 +1,13 @@
-import type { Invite, LovedPlace, Match, NightPlan, Venue } from "../../shared/contract.ts";
-import { FORMATS } from "../../core/index.ts";
-import { capFirst } from "../../shared/words.ts";
+import type { Invite, InviteAnswer, LovedPlace, Match, MatchPartner, NightPlan, PartnerConfirmation, Venue } from "../../shared/contract.ts";
+import { FORMATS, confirmPartnerStop } from "../../core/index.ts";
+import { listedHours } from "../../shared/hours.ts";
+import { capFirst, ordinal, possessive, shortName } from "../../shared/words.ts";
 import { proxiedImage } from "../../shared/images.ts";
+import { walkMinutes } from "../../shared/walk.ts";
 import { featureArt } from "../pages/event_art.ts";
 import { inviteUrl, type PublicInvite } from "../pages/invite.ts";
+import { publicStops } from "../pages/stops.ts";
+import { COUNT_SHOWN_FROM } from "../pages/event.ts";
 import { makeInviteSlug } from "../slug.ts";
 import { recordEvent } from "../stats/events.ts";
 import { inviteAnsweredEvent, inviteSentEvent } from "../stats/makers.ts";
@@ -12,13 +16,24 @@ import type { VenueRecords } from "./records.ts";
 
 const MAX_INVITES = 40;
 
-export function walkMinutes(distanceM: number): number {
-  return Math.max(1, Math.round(distanceM / 80));
+export { walkMinutes } from "../../shared/walk.ts";
+
+export function kindOf(plan: Pick<NightPlan, "format" | "feature" | "pair">): string {
+  if (plan.pair) return capFirst(plan.pair.label);
+  return capFirst(FORMATS[plan.format]?.label ?? "night");
 }
 
-export function kindOf(plan: Pick<NightPlan, "format" | "feature">): string {
-  if (plan.format === "film" && plan.feature?.type === "tv_show") return "Watch night";
-  return capFirst(FORMATS[plan.format]?.label ?? "night");
+// The checks read from the partner's side: "your crowd" on the invite is the partner's crowd. The failed hours check
+// goes in too, so the partner can answer it with one tick.
+export function partnerReasons(m: MatchPartner | undefined, venue: Venue): string[] {
+  if (!m) return [];
+  const v = shortName(venue.entity.name);
+  const p = shortName(m.name);
+  const back = m.reverseRank?.rank ? `${v} is ${ordinal(m.reverseRank.rank)} of the ${m.reverseRank.of} places your crowd loves nearby.` : null;
+  const crowd = `${p} is ${ordinal(m.rank)} on the list of places ${possessive(v)} crowd loves nearby.`;
+  const keep = new Set(["partners", "walk", "taste", "open"]);
+  const rest = (m.fit?.checks ?? []).filter((c) => keep.has(c.key) && (c.pass || c.key === "open")).map((c) => c.sentence.replace(/so check them before you ask\./, "so say below if you are open that evening."));
+  return [back, crowd, ...rest].filter((x): x is string => Boolean(x));
 }
 
 // An invite can be sent from a draft or from a published night, so the plan is looked for in both.
@@ -49,7 +64,7 @@ export async function createInvite(records: VenueRecords, deps: VenueDeps, planI
   const existing = all.find((i) => i.planId === planId && same(i.partner.id, partner.id));
   if (existing) return ok(existing);
   if (all.length >= MAX_INVITES) return fail(429, "invite_limit", `This venue has sent ${MAX_INVITES} invites. Answered ones stay; ask the rest from a fresh night.`);
-  const slug = makeInviteSlug(partner.name, venue.id);
+  const slug = makeInviteSlug(venue.id);
   const invite: Invite = {
     id: deps.newId(),
     slug,
@@ -67,43 +82,84 @@ export async function createInvite(records: VenueRecords, deps: VenueDeps, planI
   return ok(invite);
 }
 
-export async function answerInvite(records: VenueRecords, deps: VenueDeps, slug: string, answer: "yes" | "no"): Promise<Out<Invite>> {
+function confirmation(a: InviteAnswer, at: string): PartnerConfirmation {
+  const c: PartnerConfirmation = { tellsRegulars: a.tellsRegulars === true, at };
+  if (a.start) c.start = a.start;
+  if (a.what?.trim()) c.what = a.what.trim();
+  if (a.open !== undefined) c.open = a.open;
+  if (a.contact?.trim()) c.contact = a.contact.trim();
+  return c;
+}
+
+// The partner's own time and words replace the proposed stop wherever the plan is kept: the drafts, the invite's copy
+// of the plan, and a night already published.
+async function applyConfirmation(records: VenueRecords, venue: Venue, invite: Invite, c: PartnerConfirmation): Promise<void> {
+  const merge = (plan: NightPlan) => confirmPartnerStop(plan, c, venue);
+  const proposals = await records.proposals();
+  if (proposals.some((r) => r.plan.id === invite.planId)) await records.store.put("proposals", proposals.map((r) => (r.plan.id === invite.planId ? { ...r, plan: merge(r.plan) } : r)));
+  const kept = await records.store.get<NightPlan>(`iplan:${invite.id}`);
+  if (kept) await records.store.put(`iplan:${invite.id}`, merge(kept));
+  const night = await records.night(invite.planId);
+  if (night) await records.store.put(`night:${invite.planId}`, { ...night, night: { ...night.night, ...merge(night.night) } });
+}
+
+export async function answerInvite(records: VenueRecords, deps: VenueDeps, slug: string, answer: InviteAnswer): Promise<Out<Invite>> {
   const invite = await records.inviteBySlug(slug);
   if (!invite) return fail(404, "invite_not_found");
-  if (invite.status !== "waiting") return fail(409, "already_answered", `${invite.partner.name} already answered this invite.`);
-  const answered: Invite = { ...invite, status: answer === "yes" ? "accepted" : "declined", answeredAt: deps.now().toISOString() };
+  if (invite.status !== "waiting") return fail(409, "already_answered", `${shortName(invite.partner.name)} already answered this invite.`);
+  const at = deps.now().toISOString();
+  const yes = answer.answer === "yes";
+  const answered: Invite = { ...invite, status: yes ? "accepted" : "declined", answeredAt: at, ...(yes ? { confirmed: confirmation(answer, at) } : {}) };
   await records.store.put(`invite:${invite.id}`, answered);
   const venue = await records.venue();
-  if (venue) recordEvent(deps.stats, inviteAnsweredEvent(venue.id, answer));
+  if (venue && answered.confirmed) await applyConfirmation(records, venue, answered, answered.confirmed);
+  if (venue) recordEvent(deps.stats, inviteAnsweredEvent(venue.id, answer.answer));
   return ok(answered);
 }
 
-function place(name: string, image: string | undefined, address?: string): PublicInvite["venue"] {
+function place(name: string, image: string | undefined, address?: string, kind?: string): PublicInvite["venue"] {
   const img = proxiedImage(image);
-  return { name, ...(img ? { image: img } : {}), ...(address ? { address } : {}) };
+  return { name: shortName(name), ...(img ? { image: img } : {}), ...(address ? { address } : {}), ...(kind ? { kind } : {}) };
+}
+
+// The invite may ask a runner up, so the place, its score and its checks are the invited partner's own.
+function invitedPartner(invite: Invite, plan: NightPlan): MatchPartner | undefined {
+  if (plan.match && same(plan.match.partner.id, invite.partner.id)) return plan.match.partner;
+  return plan.partners.find((p) => same(p.id, invite.partner.id));
 }
 
 export function inviteView(invite: Invite, plan: NightPlan, venue: Venue): PublicInvite {
-  const partner = plan.match?.partner ?? plan.partners.find((p) => same(p.id, invite.partner.id));
+  const partner = invitedPartner(invite, plan);
   const distanceM = partner?.distanceM ?? 0;
   const hostsHere = plan.match?.host !== "partner";
   const art = featureArt(plan);
-  const night: PublicInvite["night"] = { date: plan.date, start: plan.start, end: plan.end, tz: venue.tz, kind: kindOf(plan), at: hostsHere ? venue.entity.name : invite.partner.name };
+  const at = plan.pair?.stops[0]?.name ?? (hostsHere ? venue.entity.name : invite.partner.name);
+  const night: PublicInvite["night"] = { date: plan.date, start: plan.start, end: plan.end, tz: venue.tz, kind: kindOf(plan), at };
   if (plan.feature) night.feature = plan.feature.name;
   if (plan.feature?.by) night.by = plan.feature.by;
   if (art) night.art = art;
   const view: PublicInvite = {
     slug: invite.slug,
     status: invite.status,
-    venue: place(venue.entity.name, venue.entity.image, venue.entity.address),
-    partner: place(invite.partner.name, partner?.image ?? invite.partner.image),
+    venue: place(venue.entity.name, venue.entity.image, venue.entity.address, venue.entity.kind),
+    partner: place(invite.partner.name, partner?.image ?? invite.partner.image, partner?.address, partner?.kind),
     walkMin: walkMinutes(distanceM),
     verified: venue.verified === true,
     night,
     split: plan.match && same(plan.match.partner.id, invite.partner.id) ? plan.match.split : null,
     shared: plan.match?.shared.map((t) => t.name) ?? [],
+    reasons: partnerReasons(partner, venue),
   };
+  const score = partner?.fit?.score;
+  if (typeof score === "number" && Number.isFinite(score)) view.score = Math.round(score);
+  const stops = publicStops(plan.pair?.stops);
+  if (stops) view.stops = stops;
+  if (plan.pair) view.why = plan.pair.why;
   if (invite.answeredAt) view.answeredAt = invite.answeredAt;
+  const mine = plan.pair?.stops.find((s) => s.at === "partner");
+  if (mine) view.partnerStop = { start: mine.start, end: mine.end, what: mine.what, hoursUnknown: partner ? listedHours(partner) === null : false };
+  if (invite.confirmed) view.confirmed = { tellsRegulars: invite.confirmed.tellsRegulars, ...(invite.confirmed.start ? { start: invite.confirmed.start } : {}), ...(invite.confirmed.what ? { what: invite.confirmed.what } : {}) };
+  if (invite.status === "accepted" && venue.contact) view.venueContact = venue.contact;
   return view;
 }
 
@@ -112,5 +168,14 @@ export async function publicInvite(records: VenueRecords, slug: string): Promise
   if (!invite || !venue) return fail(404, "invite_not_found");
   const plan = (await records.store.get<NightPlan>(`iplan:${invite.id}`)) ?? (await planById(records, invite.planId));
   if (!plan) return fail(404, "invite_not_found");
-  return ok(inviteView(invite, plan, venue));
+  const view = inviteView(invite, plan, venue);
+  if (invite.status === "accepted") {
+    // The partner's own link to share with its regulars, so the RSVPs it sends are counted as its own.
+    const night = (await records.night(invite.planId))?.night;
+    const link = night && !night.withdrawnAt ? night.shareLinks?.partner : undefined;
+    if (link) view.yourLink = link;
+    const theirs = night?.ledger?.fromPartner ?? 0;
+    if (link && theirs >= COUNT_SHOWN_FROM) view.yourCount = theirs;
+  }
+  return ok(view);
 }

@@ -95,7 +95,7 @@ describe("invites", () => {
     expect(html).toContain("Blue Hour Records would like to put on one night with Kaffee Kanal");
     expect(html).toContain("Blue Hour Records crowd 52, Kaffee Kanal crowd 48");
     expect(html).toContain('width="52"');
-    expect(html).toContain("What both crowds share");
+    expect(html).toContain("What both places share");
     expect(html).toContain("A pattern across many people, not a fact about anyone.");
     expect(html).toContain("We're in");
     expect(html).toContain("Not this time");
@@ -144,7 +144,7 @@ describe("consent", () => {
     const state = (await (await req(h, `/api/venues/${p.id}`, { token: p.token })).json()) as VenueState;
     expect(state.nights[0]?.invites?.[0]).toMatchObject({ status: "waiting", partner: { name: "Kaffee Kanal" } });
 
-    await say(h, inv.slug, "yes");
+    await say(h, inv.slug, "yes&what=Our+late+coffee&start=20%3A15");
     const page = await (await req(h, `/e/${slug}`)).text();
     expect(page).toContain("Put on with Kaffee Kanal");
     expect(page).toContain("people who like Blue Hour Records and people who like Kaffee Kanal");
@@ -185,8 +185,11 @@ describe("the example route", () => {
     const res = await req(h, "/api/example");
     expect(res.status).toBe(200);
     const ex = (await res.json()) as JointExample;
-    expect(ex).toMatchObject({ venue: { name: "Blue Hour Records" }, partner: { name: "Kaffee Kanal" }, minutes: 2, distanceM: 180, split: { venue: 52, partner: 48 }, shared: ["Jazz"] });
+    expect(ex).toMatchObject({ venue: { name: "Blue Hour Records" }, partner: { name: "Kaffee Kanal" }, minutes: 3, distanceM: 180, split: { venue: 52, partner: 48 }, shared: ["Jazz"], agreed: false });
     expect(ex.title).toBe(p.plan.copy.eventTitle);
     expect(JSON.stringify(ex)).not.toMatch(/owner|example\.com|token/i);
+    const inv = (await (await invite(h, p, p.plan.id)).json()) as Invite;
+    await say(h, inv.slug, "yes");
+    expect(((await (await req(h, "/api/example")).json()) as JointExample).agreed).toBe(true);
   });
 });

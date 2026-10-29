@@ -54,7 +54,7 @@ function activity(s: StatsBody): string[] {
 function qloo(s: StatsBody): string[] {
   const t = s.totals;
   const b = s.budget;
-  const setAside = b.counted > b.liveCalls ? `${b.counted} set aside, in blocks of ten per request` : "";
+  const setAside = b.counted > b.liveCalls ? `${b.counted} set aside in blocks of ten, ${b.counted - b.liveCalls} still held by requests running or lost to retries and failed calls` : "";
   return [
     "Qloo",
     row("Live calls", t.qlooCalls),

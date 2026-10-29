@@ -25,7 +25,7 @@ export function lineFor(e: StatEvent): string | null {
     case "venue_created":
       return "A venue was set up.";
     case "street_read":
-      return `Read the street around a venue: ${calls(e.calls)} to Qloo, ${e.cached} answered from cache.`;
+      return `Read the street around a venue: ${calls(e.calls)} for taste data, ${e.cached} answered from cache.`;
     case "plan_made": {
       const who = e.copy === "model" ? "Copy written by the model." : "Copy from template.";
       if (e.origin === "refine") return `Changed a plan at the owner's request. ${who}`;
@@ -48,7 +48,7 @@ export function lineFor(e: StatEvent): string | null {
     case "mcp_call":
       return `An MCP client called ${e.tool}.`;
     case "qloo_error":
-      return `Qloo call to ${e.endpoint} failed: ${ERROR_WORDS[e.error] ?? ERROR_WORDS.other}.`;
+      return `A taste data call to ${e.endpoint} failed: ${ERROR_WORDS[e.error] ?? ERROR_WORDS.other}.`;
     case "qloo_call":
     case "forget_venue":
     case "budget_unused":

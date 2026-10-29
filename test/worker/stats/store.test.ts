@@ -107,7 +107,7 @@ describe("stats kept in the Meter's SQLite", () => {
     await core.record([at("2026-10-27T14:00:00.000Z", err), at("2026-10-27T14:00:01.000Z", err), at("2026-10-27T14:00:02.000Z", err)]);
     const body = await core.stats("24h");
     expect(body.events).toHaveLength(1);
-    expect(body.events[0]?.line).toBe("Qloo call to /v2/insights urn:entity:artist failed: stopped by today's budget. 3 times.");
+    expect(body.events[0]?.line).toBe("A taste data call to /v2/insights urn:entity:artist failed: stopped by today's budget. 3 times.");
     expect(body.errorKinds).toEqual([{ kind: "budget", n: 3 }]);
   });
 

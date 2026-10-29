@@ -48,21 +48,21 @@ describe("art on the public pages", () => {
   it("prints the cover beside the headline on the event page and the poster, from this site only", () => {
     const n = night({ feature: "Alice Coltrane", art: { image: "/img/i/a-420x-auto.jpg", shape: "square" } });
     const page = renderEventPage(n, "https://x.example", NOW);
-    expect(page).toContain('<div class="head"><h1>Alice Coltrane</h1><span class="print print-square"><img src="/img/i/a-420x-auto.jpg" alt=""');
+    expect(page).toContain('<div class="head"><h1>Alice Coltrane</h1><span class="art art-square"><img src="/img/i/a-420x-auto.jpg" alt=""');
     expect(page).not.toContain("images.qloo.com");
     const poster = renderPoster(n, "https://x.example");
     expect(poster).toContain("<h1>Alice Coltrane</h1>");
-    expect(poster).toContain('class="print print-square"');
+    expect(poster).toContain('class="art art-square"');
   });
 
-  it("names the partner only once it said yes, as the other half of the night, without spaced dashes", () => {
+  it("names the partner only once it said yes, by its short name, without spaced dashes", () => {
     const before = renderEventPage(night(), "https://x.example", NOW);
     expect(before).not.toContain("Put on with");
     expect(before).not.toContain("Close by");
     const name = ["Angelika Film Center & Cafe", "New York"].join(" - ");
     const after = renderEventPage(night({ partner: { name, walkMin: 2, hosts: false } }), "https://x.example", NOW);
-    expect(after).toContain("Put on with Angelika Film Center &amp; Cafe, New York");
-    expect(after).toContain("2 min walk");
+    expect(after).toContain("Put on with Angelika Film Center<");
+    expect(after).toContain("about 2 minutes on foot");
     expect(after).not.toContain(" - New York");
   });
 

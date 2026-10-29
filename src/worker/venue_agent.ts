@@ -17,7 +17,9 @@ import type {
   ApproveInput,
   Baseline,
   CreateVenueInput,
+  EditableCopy,
   Invite,
+  InviteAnswer,
   JointExample,
   Match,
   Night,
@@ -26,7 +28,9 @@ import type {
   StreetRead,
   Venue,
   VenueCandidate,
+  VenueSettingsInput,
   VenueState,
+  RunProgress,
 } from "../shared/contract.ts";
 import type { VenueDashboard } from "../shared/stats.ts";
 import { makeGenerate } from "./ai.ts";
@@ -42,6 +46,7 @@ import { settleVenueStats } from "./stats/venue_history.ts";
 import { doStore } from "./store.ts";
 import type { CoreFns, MondayRun, Out, VenueApi } from "./venue/api.ts";
 import { VenueCore } from "./venue/core.ts";
+import { Progress } from "./venue/progress.ts";
 
 export const CORE_FNS: CoreFns = { readStreet, planNights, writeCopy, runBaseline, nextMondayNine, REFINE_TOOL, parseRefineFallback, applyRefine, matchFor, readJoint, planJoint };
 
@@ -54,6 +59,8 @@ export function statsStub(env: Env): StatsApi {
 }
 
 export class VenueAgent extends DurableObject<Env> implements VenueApi {
+  private readonly tracker = new Progress();
+
   // Built per call so each invocation gets its own cache operation allowance and budget reservation.
   private core(stats?: StatsBuffer): VenueCore {
     const env = this.env;
@@ -61,6 +68,7 @@ export class VenueAgent extends DurableObject<Env> implements VenueApi {
     const model = modelOf(env);
     return new VenueCore(doStore(this.ctx.storage), {
       core: CORE_FNS,
+      progress: this.tracker,
       qloo: (established) => buildQloo(env, createQloo, tieredCache(sqlCache(sql), cacheApiCache(10)), meterStub(env), established, stats),
       generate: makeGenerate(env.AI, model),
       ai: env.AI ?? null,
@@ -100,6 +108,9 @@ export class VenueAgent extends DurableObject<Env> implements VenueApi {
   confirmEmail(code: string): Promise<Out<Venue>> {
     return this.core().confirmEmail(code);
   }
+  settings(input: VenueSettingsInput): Promise<Out<Venue>> {
+    return this.core().settings(input);
+  }
   state(): Promise<Out<VenueState>> {
     return this.core().state();
   }
@@ -124,7 +135,7 @@ export class VenueAgent extends DurableObject<Env> implements VenueApi {
   publicInvite(slug: string): Promise<Out<PublicInvite>> {
     return this.core().publicInvite(slug);
   }
-  answerInvite(slug: string, answer: "yes" | "no"): Promise<Out<Invite>> {
+  answerInvite(slug: string, answer: InviteAnswer): Promise<Out<Invite>> {
     return this.ctx.blockConcurrencyWhile(() => this.run((c) => c.answerInvite(slug, answer)));
   }
   example(): Promise<Out<JointExample>> {
@@ -149,8 +160,11 @@ export class VenueAgent extends DurableObject<Env> implements VenueApi {
   republish(nightId: string): Promise<Out<Night>> {
     return this.core().republish(nightId);
   }
-  report(slug: string): Promise<Out<{ hidden: boolean }>> {
-    return this.run((c) => c.report(slug));
+  editNight(nightId: string, copy: EditableCopy): Promise<Out<Night>> {
+    return this.core().editNight(nightId, copy);
+  }
+  report(slug: string, reporter: string): Promise<Out<{ hidden: boolean }>> {
+    return this.run((c) => c.report(slug, reporter));
   }
   connectEventbrite(token: string): Promise<Out<{ organization: string }>> {
     return this.core().connectEventbrite(token);
@@ -164,11 +178,14 @@ export class VenueAgent extends DurableObject<Env> implements VenueApi {
   baseline(): Promise<Out<Baseline>> {
     return this.run((c) => c.baseline());
   }
-  publicNight(slug: string, browser: string | null): Promise<Out<PublicNight>> {
-    return this.core().publicNight(slug, browser);
+  publicNight(slug: string, browser: string | null, via?: string): Promise<Out<PublicNight>> {
+    return this.core().publicNight(slug, browser, via);
   }
-  rsvp(slug: string, browser: string): Promise<Out<{ count: number; already: boolean }>> {
-    return this.run((c) => c.rsvp(slug, browser));
+  rsvp(slug: string, browser: string, via?: string): Promise<Out<{ count: number; already: boolean }>> {
+    return this.run((c) => c.rsvp(slug, browser, via));
+  }
+  progress(): Promise<Out<RunProgress>> {
+    return this.core().progress();
   }
   monday(): Promise<Out<MondayRun>> {
     return this.run((c) => c.monday());

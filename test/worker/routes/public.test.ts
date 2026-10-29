@@ -18,7 +18,7 @@ describe("public pages", () => {
     expect(html).toContain("Jazz on vinyl night");
     expect(html).not.toContain("said they are coming");
     expect(html).toContain("I am going");
-    expect(html).toContain("has not confirmed it");
+    expect(html).toContain("<summary>unconfirmed</summary>");
   });
 
   it("count one RSVP per browser and redirect back to the page", async () => {
@@ -57,14 +57,21 @@ describe("public pages", () => {
     expect((await req(h, `/e/${p.night.eventSlug}/rsvp`, { method: "POST", headers: { origin: ORIGIN, "sec-fetch-site": "same-site" } })).status).toBe(403);
   });
 
-  it("take a page offline after three reports from different people", async () => {
+  it("take a page offline after three reports from different people, never after three from one, and keep the count on republish", async () => {
     const h = testApp();
     const p = await published(h);
-    for (const ip of ["198.51.100.1", "198.51.100.2", "198.51.100.3"]) {
+    for (let i = 0; i < 3; i++) expect((await req(h, `/e/${p.night.eventSlug}/report`, { method: "POST", headers: { origin: ORIGIN, "cf-connecting-ip": "198.51.100.1" } })).status).toBe(200);
+    expect((await req(h, `/e/${p.night.eventSlug}`)).status).toBe(200);
+    for (const ip of ["198.51.100.2", "198.51.100.3"]) {
       const res = await req(h, `/e/${p.night.eventSlug}/report`, { method: "POST", headers: { origin: ORIGIN, "cf-connecting-ip": ip } });
       expect(res.status).toBe(200);
     }
     expect((await req(h, `/e/${p.night.eventSlug}`)).status).toBe(404);
+    const state = (await (await req(h, `/api/venues/${p.id}`, { token: p.token })).json()) as { nights: Array<{ reports?: number }> };
+    expect(state.nights[0]?.reports).toBe(3);
+    await req(h, `/api/venues/${p.id}/nights/${p.night.id}/republish`, { method: "POST", token: p.token, body: {} });
+    const again = (await (await req(h, `/api/venues/${p.id}`, { token: p.token })).json()) as { nights: Array<{ reports?: number }> };
+    expect(again.nights[0]?.reports).toBe(3);
   });
 
   it("refuse cross site RSVPs", async () => {

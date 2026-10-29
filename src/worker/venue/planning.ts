@@ -3,6 +3,7 @@ import type { EntityRef, NightPlan, StreetRead, Venue } from "../../shared/contr
 import { recordEvent } from "../stats/events.ts";
 import { readEvent } from "../stats/makers.ts";
 import type { VenueDeps } from "./api.ts";
+import { tracked } from "./progress.ts";
 import type { VenueRecords } from "./records.ts";
 
 const DAY_MS = 86_400_000;
@@ -20,7 +21,8 @@ export async function withCopy(deps: VenueDeps, plan: NightPlan, venue: Venue, r
 }
 
 export function qlooFor(deps: VenueDeps, venue: Venue): Qloo | null {
-  return deps.qloo(deps.now().getTime() - Date.parse(venue.createdAt) >= ESTABLISHED_DAYS * DAY_MS);
+  const q = deps.qloo(deps.now().getTime() - Date.parse(venue.createdAt) >= ESTABLISHED_DAYS * DAY_MS);
+  return q && deps.progress ? tracked(q, deps.progress) : q;
 }
 
 // The features of nights from the last eight weeks go to Qloo as exclusions, so the next read brings new picks.

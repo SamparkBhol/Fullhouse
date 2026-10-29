@@ -1,5 +1,6 @@
 import type { ActionKind, ActionResult, NightPlan, PlanInput, Venue } from "../../shared/contract.ts";
 import { esc } from "../pages/html.ts";
+import { shortName } from "../../shared/words.ts";
 import { eventUrl, placeLine } from "../pages/event.ts";
 import { guestSource } from "../pages/guest.ts";
 import { makeSlug } from "../slug.ts";
@@ -161,7 +162,7 @@ export async function runActions(ctx: ActionContext): Promise<ActionRun> {
             kind,
             ok: true,
             url: mailtoUrl(draft),
-            label: `Draft to ${partner.name}`,
+            label: `Draft to ${shortName(partner.name)}`,
             detail: to
               ? `Addressed to ${to}. It opens in your own mail app and nothing is sent until you press send there.`
               : "No address yet. Add theirs in your mail app. Nothing is sent until you press send there.",

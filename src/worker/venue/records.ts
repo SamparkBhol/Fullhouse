@@ -16,6 +16,8 @@ export interface NightRecord {
   // What the owner chose to publish, so a page taken down after reports can go back up as it was.
   chosen?: Published;
   reports?: number;
+  // One hashed key per person who reported the page, so one person pressing three times is one report.
+  reporters?: string[];
   // What the public totals hold for this night, so a correction moves them by the difference.
   counted?: Counted;
 }

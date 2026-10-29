@@ -1,12 +1,12 @@
 import { buildIcs } from "../actions/ics.ts";
-import { plainName } from "../../shared/words.ts";
+import { plainName, shortName } from "../../shared/words.ts";
 import { nightWindow } from "../zones.ts";
 import { eventUrl, placeLine, titleAt, type PublicNight } from "./event.ts";
 
 // The partner joins the calendar text only once it said yes, like everywhere else in public.
 export function calendarDetails(n: PublicNight, origin: string): string {
   const link = n.published.page ? `\n${eventUrl(origin, n.slug)}` : "";
-  const withLine = n.partner ? `\n\nPut on by ${plainName(n.venueName)} and ${plainName(n.partner.name)}.` : "";
+  const withLine = n.partner ? `\n\nPut on by ${plainName(n.venueName)} and ${shortName(n.partner.name)}.` : "";
   return `${n.description.trim()}${withLine}\n\nPicked with Qloo taste data.${link}`;
 }
 

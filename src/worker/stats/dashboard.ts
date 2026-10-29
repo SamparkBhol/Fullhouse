@@ -48,7 +48,9 @@ export async function venueDashboard(records: VenueRecords, now: Date): Promise<
   const venue = await records.venue();
   if (!venue) return null;
   const [recs, history, alarm] = await Promise.all([records.nights(), venueHistory(records.store), records.store.getAlarm()]);
-  const nights = recs.map((r) => dashboardNight(r, venue.capacity)).sort((a, b) => `${a.date}${a.start}`.localeCompare(`${b.date}${b.start}`));
+  // A room size nobody typed is never shown as "of 40"; only a night's own cap or a room the owner set counts.
+  const room = venue.assumed?.room ? undefined : venue.capacity;
+  const nights = recs.map((r) => dashboardNight(r, room)).sort((a, b) => `${a.date}${a.start}`.localeCompare(`${b.date}${b.start}`));
   const ids = new Set(nights.map((n) => n.id));
   const upcoming = nights.find((n) => n.public && !n.withdrawn && n.status === "approved" && notOver(n, venue.tz, now));
   const out: VenueDashboard = {
@@ -61,7 +63,7 @@ export async function venueDashboard(records: VenueRecords, now: Date): Promise<
       ? { nightId: upcoming.id, date: upcoming.date, start: upcoming.start, title: upcoming.title, rsvps: upcoming.rsvps, ...(upcoming.room !== undefined ? { room: upcoming.room } : {}) }
       : null,
   };
-  if (venue.capacity !== undefined) out.capacity = venue.capacity;
+  if (room !== undefined) out.capacity = room;
   if (alarm) out.nextAlarm = new Date(alarm).toISOString();
   return out;
 }

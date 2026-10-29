@@ -111,13 +111,28 @@ describe("event page", () => {
     expect(html).not.toContain("Berlin, Berlin");
   });
 
-  it("says who posted the page until the venue confirms it, and offers a report button", () => {
+  it("marks an unconfirmed venue with one word beside its name, never on the poster, and offers a report button", () => {
     const html = renderEventPage(night(), "https://x.example", NOW);
-    expect(html).toContain("Posted on Full House by whoever set up Blue Hour Records. Blue Hour Records has not confirmed it.");
-    expect(html).not.toContain("Made with Full House for");
+    expect(html).toContain('<span class="top-venue"><span class="top-name">Blue Hour Records</span><details class="state"><summary>unconfirmed</summary>');
+    expect(html).toContain("has not confirmed that from an address on its own website yet.");
     expect(html).toContain('<form method="post" action="/e/jazz-night-abcdefghijkm-abcde/report">');
-    expect(renderPoster(night(), "https://x.example")).toContain("has not confirmed it");
-    expect(renderEventPage(night({ verified: true }), "https://x.example", NOW)).toContain("Made with Full House for Blue Hour Records.");
+    expect(renderPoster(night(), "https://x.example")).not.toMatch(/unconfirmed|not confirmed/);
+    const confirmed = renderEventPage(night({ verified: true }), "https://x.example", NOW);
+    expect(confirmed).not.toContain("unconfirmed");
+    expect(confirmed).toContain("confirmed by Blue Hour Records.");
+  });
+
+  it("prints a short address on the poster and keeps the partner off it until the partner confirmed its stop", () => {
+    const stops = [
+      { at: "venue" as const, name: "Blue Hour Records", start: "19:00", end: "20:00", what: "Round one", walkMin: 3 },
+      { at: "partner" as const, name: "Kaffee Kanal", start: "20:15", end: "22:00", what: "Round two" },
+    ];
+    const proposed = renderPoster(night({ shortSlug: "e-abcdefghijkm-xyz23", stops, partner: { name: "Kaffee Kanal", walkMin: 3, hosts: false, answered: "link", confirmed: false } }), "https://x.example");
+    expect(proposed).toContain('<p class="p-url">x.example/e/e-abcdefghijkm-xyz23</p>');
+    expect(proposed).not.toContain("Kaffee Kanal");
+    const confirmed = renderPoster(night({ stops, partner: { name: "Kaffee Kanal", walkMin: 3, hosts: false, answered: "link", confirmed: true } }), "https://x.example");
+    expect(confirmed).toContain("With Kaffee Kanal");
+    expect(confirmed).toContain("20:15");
   });
 
   it("says when a model wrote the description", () => {
@@ -203,5 +218,70 @@ describe("invite page", () => {
     );
     expect(html).not.toContain("<script>");
     expect(html).not.toContain("<img src=x");
+  });
+});
+
+describe("the night as two stops", () => {
+  const stops = [
+    { at: "venue" as const, name: "Blue Hour Records", start: "19:00", end: "20:00", what: "Round one", walkMin: 3, address: "12 Canal Street" },
+    { at: "partner" as const, name: "Kaffee Kanal", start: "20:15", end: "22:00", what: "Round two", afterHours: true },
+  ];
+
+  it("keeps one item per stop, in each place's colour, with the walk inside the first and a maps link where there is an address", () => {
+    const html = renderEventPage(night({ stops, partner: { name: "Kaffee Kanal", walkMin: 3, hosts: false } }), "https://x.example", NOW);
+    expect(html).not.toContain("tells its regulars");
+    const list = /<ol class="stops">(.*?)<\/ol>/.exec(html)?.[1] ?? "";
+    expect(list.match(/<li /g)).toHaveLength(2);
+    expect(list).toMatch(/<li class="stop stop-you">.*Then about 3 minutes on foot to Kaffee Kanal<\/p><\/li><li class="stop stop-them">/);
+    expect(list).toContain('href="https://www.openstreetmap.org/search?query=Blue%20Hour%20Records%2C%2012%20Canal%20Street"');
+    expect(list.match(/Open in maps/g)).toHaveLength(1);
+    expect(list).toContain("Opens late for it");
+  });
+
+  it("marks the partner's stop as proposed until the partner set its own, and says how the yes came", () => {
+    const proposed = [stops[0]!, { ...stops[1]!, proposed: true }];
+    const before = renderEventPage(night({ stops: proposed, partner: { name: "Kaffee Kanal", walkMin: 3, hosts: false, answered: "link", confirmed: false } }), "https://x.example", NOW);
+    expect(before).toContain("Proposed, subject to Kaffee Kanal&#39;s programme");
+    expect(before).toContain("Kaffee Kanal answered through an invite link. Its stop is proposed, subject to its own programme.");
+    const after = renderEventPage(night({ stops, partner: { name: "Kaffee Kanal", walkMin: 3, hosts: false, answered: "link", confirmed: true, tellsRegulars: true } }), "https://x.example", NOW);
+    expect(after).toContain("Kaffee Kanal answered through an invite link and set its own time and what runs there. It tells its regulars too.");
+    expect(after).not.toContain("Proposed");
+  });
+
+  it("credits Qloo once, in the footer, and never starts a line with its name", () => {
+    const html = renderEventPage(night(), "https://x.example", NOW);
+    const text = html.replace(/<style>.*?<\/style>/s, "").replace(/<a href="https:\/\/calendar[^"]*"/, "");
+    expect(text.match(/Qloo/g)).toHaveLength(1);
+    expect(/<footer[^>]*>.*Qloo.*<\/footer>/s.test(text)).toBe(true);
+    expect(text).not.toMatch(/>\s*Qloo/);
+  });
+});
+
+describe("invite page pair", () => {
+  it("shows the score with Full House's verdict, the venue in green and the partner in plum, and the partner's yes in plum", async () => {
+    const { renderInvitePage } = await import("../../src/worker/pages/invite.ts");
+    const html = renderInvitePage(
+      {
+        slug: "x-abcdefghijkm-abcdefghijkm",
+        status: "waiting",
+        venue: { name: "Blue Hour Records", image: "/img/i/v.jpg", kind: "record shop", address: "12 Canal Street, Berlin" },
+        partner: { name: "Kaffee Kanal", image: "/img/i/p.jpg" },
+        walkMin: 3,
+        verified: false,
+        night: { date: "2026-11-05", start: "19:00", end: "22:00", tz: "Europe/Berlin", kind: "Book night", at: "Blue Hour Records" },
+        split: { venue: 52, partner: 48 },
+        shared: ["Jazz"],
+        score: 88,
+      },
+      "https://x.example",
+    );
+    expect(html).toContain('<p class="score">88 <span>of 100</span></p><p class="verdict-head">A strong pair</p>');
+    expect(html).toContain('<div class="door door-you"><span class="door-photo"><span class="door-word" aria-hidden="true">Blue Hour Records</span><img src="/img/i/v.jpg" alt="Blue Hour Records, from the street"');
+    expect(html).toContain('<small class="door-sub">Record shop, 12 Canal Street</small>');
+    expect(html).toContain('<div class="door door-them"><span class="door-photo"><span class="door-word" aria-hidden="true">Kaffee Kanal</span><img src="/img/i/p.jpg" alt="Kaffee Kanal, from the street"');
+    expect(html).toContain("about 3 min on foot");
+    expect(html).toContain('<button class="btn btn-them" type="submit" name="answer" value="yes">We\'re in</button>');
+    expect(html).not.toMatch(/\sstyle=/);
+    expect(html.match(/Qloo/g)).toHaveLength(1);
   });
 });

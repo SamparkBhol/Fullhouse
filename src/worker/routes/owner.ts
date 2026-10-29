@@ -6,7 +6,9 @@ import { ownerUrl } from "../owner_token.ts";
 import {
   ApproveSchema,
   cleanPlanInput,
+  cleanSettings,
   ConfirmSchema,
+  EditSchema,
   CreateVenueSchema,
   EmailSchema,
   EventbriteSchema,
@@ -17,6 +19,7 @@ import {
   RefineSchema,
   ResultSchema,
   SearchSchema,
+  SettingsSchema,
 } from "../validate.ts";
 import { json, limit, readBody, searchVenues, secretOf, send, type AppDeps, type AppEnv, type Ctx } from "./shared.ts";
 
@@ -29,7 +32,7 @@ function venueRoutes(app: Hono<AppEnv>, deps: AppDeps): void {
     const p = parse(SearchSchema, await readBody(c));
     if (!p.ok) return apiError(400, "invalid_input", p.detail);
     await limit(c, deps, "search");
-    return send(await searchVenues(c, deps, p.value.name, p.value.city));
+    return send(await searchVenues(c, deps, p.value.name, p.value.city ?? "", p.value.near));
   });
 
   // The candidate is looked up again so a venue is only ever created from a place Qloo returned.
@@ -38,15 +41,16 @@ function venueRoutes(app: Hono<AppEnv>, deps: AppDeps): void {
     if (!p.ok) return apiError(400, "invalid_input", p.detail);
     secretOf(c.env);
     await limit(c, deps, "create");
-    const found = await searchVenues(c, deps, p.value.candidate.name, p.value.city);
+    const found = await searchVenues(c, deps, p.value.candidate.name, p.value.city, p.value.near);
     if (!found.ok) return send(found);
     const candidate = found.value.find((v) => v.id === p.value.candidate.id);
     if (!candidate) {
-      return apiError(409, "candidate_not_found", "Qloo did not return that place again for this name and city. Search once more and pick it from the new list.");
+      return apiError(409, "candidate_not_found", "That place did not come back again for this name and city. Search once more and pick it from the new list.");
     }
     const id = newVenueId();
     const origin = originOf(c);
-    const out = await deps.venue(c.env, id).init(id, { ...p.value, candidate }, candidate, origin);
+    const { near: _near, ...input } = p.value;
+    const out = await deps.venue(c.env, id).init(id, { ...input, candidate }, candidate, origin);
     if (!out.ok) return send(out);
     return json({ venue: out.value.venue, ownerToken: out.value.ownerToken, ownerUrl: ownerUrl(origin, id, out.value.ownerToken) }, 201);
   });
@@ -111,10 +115,24 @@ function nightRoutes(app: Hono<AppEnv>, deps: AppDeps): void {
     const id = nightId(c);
     return id ? send(await c.var.venue.republish(id)) : apiError(404, "night_not_found", "No night with that id.");
   });
+
+  app.post("/api/venues/:id/nights/:nightId/edit", async (c) => {
+    const id = nightId(c);
+    if (!id) return apiError(404, "night_not_found", "No night with that id.");
+    const p = parse(EditSchema, await readBody(c));
+    if (!p.ok) return apiError(400, "invalid_input", p.detail);
+    return send(await c.var.venue.editNight(id, Object.fromEntries(Object.entries(p.value.copy).filter(([, v]) => v !== undefined))));
+  });
 }
 
 function accountRoutes(app: Hono<AppEnv>): void {
   app.post("/api/venues/:id/owner-link", async (c) => send(await c.var.venue.newOwnerLink(originOf(c))));
+
+  app.post("/api/venues/:id/settings", async (c) => {
+    const p = parse(SettingsSchema, await readBody(c));
+    if (!p.ok) return apiError(400, "invalid_input", p.detail);
+    return send(await c.var.venue.settings(cleanSettings(p.value)));
+  });
 
   app.post("/api/venues/:id/email", async (c) => {
     const p = parse(EmailSchema, await readBody(c));
@@ -171,6 +189,7 @@ export function ownerRoutes(app: Hono<AppEnv>, deps: AppDeps): void {
   });
 
   app.get("/api/venues/:id/invites", async (c) => send(await c.var.venue.invites()));
+  app.get("/api/venues/:id/progress", async (c) => send(await c.var.venue.progress()));
 
   nightRoutes(app, deps);
   accountRoutes(app);

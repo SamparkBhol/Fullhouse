@@ -1,10 +1,13 @@
+import type { Progress } from "./progress.ts";
 import type { Generate, JointRead, MatchOutcome, Qloo, ReadOptions } from "../../core/index.ts";
 import type {
   ApproveInput,
   Baseline,
   CreateVenueInput,
+  EditableCopy,
   EntityRef,
   Invite,
+  InviteAnswer,
   JointExample,
   LovedPlace,
   Match,
@@ -16,7 +19,9 @@ import type {
   Rising,
   Venue,
   VenueCandidate,
+  VenueSettingsInput,
   VenueState,
+  RunProgress,
 } from "../../shared/contract.ts";
 import type { VenueDashboard } from "../../shared/stats.ts";
 import type { RefineCore } from "../ai.ts";
@@ -40,6 +45,7 @@ export interface CoreFns extends RefineCore {
 
 export interface VenueDeps {
   core: CoreFns;
+  progress?: Progress;
   qloo(established?: boolean): Qloo | null;
   generate: Generate | null;
   ai: AiLike | null;
@@ -61,6 +67,7 @@ export interface VenueApi {
   newOwnerLink(origin: string): Promise<Out<{ ownerUrl: string; ownerToken: string }>>;
   requestEmail(email: string, origin: string): Promise<Out<Venue>>;
   confirmEmail(code: string): Promise<Out<Venue>>;
+  settings(input: VenueSettingsInput): Promise<Out<Venue>>;
   state(): Promise<Out<VenueState>>;
   read(): Promise<Out<StreetRead>>;
   plan(input: PlanInput): Promise<Out<PlanResponse>>;
@@ -69,20 +76,22 @@ export interface VenueApi {
   result(nightId: string, headcount: number, note?: string, capacity?: number): Promise<Out<Night>>;
   unpublish(nightId: string): Promise<Out<Night>>;
   republish(nightId: string): Promise<Out<Night>>;
-  report(slug: string): Promise<Out<{ hidden: boolean }>>;
+  editNight(nightId: string, copy: EditableCopy): Promise<Out<Night>>;
+  report(slug: string, reporter: string): Promise<Out<{ hidden: boolean }>>;
   connectEventbrite(token: string): Promise<Out<{ organization: string }>>;
   disconnectEventbrite(): Promise<Out<{ disconnected: true }>>;
   destroy(): Promise<Out<{ deleted: true }>>;
   baseline(): Promise<Out<Baseline>>;
-  publicNight(slug: string, browser: string | null): Promise<Out<PublicNight>>;
-  rsvp(slug: string, browser: string): Promise<Out<{ count: number; already: boolean }>>;
+  publicNight(slug: string, browser: string | null, via?: string): Promise<Out<PublicNight>>;
+  rsvp(slug: string, browser: string, via?: string): Promise<Out<{ count: number; already: boolean }>>;
+  progress(): Promise<Out<RunProgress>>;
   monday(): Promise<Out<MondayRun>>;
   dashboard(): Promise<Out<VenueDashboard>>;
   match(partnerId?: string): Promise<Out<Match>>;
   invite(planId: string, partnerId: string, origin: string): Promise<Out<Invite>>;
   invites(): Promise<Out<Invite[]>>;
   publicInvite(slug: string): Promise<Out<PublicInvite>>;
-  answerInvite(slug: string, answer: "yes" | "no"): Promise<Out<Invite>>;
+  answerInvite(slug: string, answer: InviteAnswer): Promise<Out<Invite>>;
   example(): Promise<Out<JointExample>>;
   precomputeProof(): Promise<Out<Baseline | null>>;
 }

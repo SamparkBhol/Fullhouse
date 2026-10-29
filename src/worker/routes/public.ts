@@ -1,5 +1,5 @@
 import type { Hono } from "hono";
-import { apiError, originAllowed, readCookie, setCookie } from "../http.ts";
+import { apiError, ipKey, originAllowed, readCookie, setCookie } from "../http.ts";
 import { tokenSecretOf } from "../env.ts";
 import { renderEventPage, renderIcs, renderMissing, renderPoster, renderReported, type PublicNight } from "../pages/event.ts";
 import { FONT_PATH } from "../pages/style.ts";
@@ -25,12 +25,18 @@ export function fromEventPage(c: Ctx, wantsJson: boolean): boolean {
   return originAllowed(c.req.raw, c.env);
 }
 
+// Only a short slug of a place's name is ever read from the link.
+function viaOf(c: Ctx): string | undefined {
+  const v = c.req.query("via");
+  return v && /^[a-z0-9-]{1,60}$/.test(v) ? v : undefined;
+}
+
 async function nightFor(c: Ctx, deps: AppDeps, slug: string, withBrowser: boolean): Promise<PublicNight | null> {
   const venueId = venueIdFromSlug(slug);
   if (!venueId) return null;
   const cookie = readCookie(c.req.raw, BROWSER_COOKIE);
   const browser = withBrowser && cookie && BROWSER_RE.test(cookie) ? await browserKey(c, slug, cookie) : null;
-  const out = await deps.venue(c.env, venueId).publicNight(slug, browser);
+  const out = await deps.venue(c.env, venueId).publicNight(slug, browser, viaOf(c));
   return out.ok ? out.value : null;
 }
 
@@ -59,7 +65,7 @@ async function rsvp(c: Ctx, deps: AppDeps): Promise<Response> {
   await limit(c, deps, "rsvp_night", slug);
   const existing = readCookie(c.req.raw, BROWSER_COOKIE);
   const cookie = existing && BROWSER_RE.test(existing) ? existing : randomId(22);
-  const out = await deps.venue(c.env, venueId).rsvp(slug, await browserKey(c, slug, cookie));
+  const out = await deps.venue(c.env, venueId).rsvp(slug, await browserKey(c, slug, cookie), viaOf(c));
   const secure = new URL(c.req.url).protocol === "https:";
   const setC = setCookie(BROWSER_COOKIE, cookie, COOKIE_MAX_AGE_S, "/e/", secure);
   if (!out.ok) {
@@ -76,8 +82,8 @@ async function report(c: Ctx, deps: AppDeps): Promise<Response> {
   const venueId = venueIdFromSlug(slug);
   if (!venueId) return pageResponse(renderMissing(), 404);
   await limit(c, deps, "report");
-  await limit(c, deps, "rsvp_night", `report:${slug}`);
-  const out = await deps.venue(c.env, venueId).report(slug);
+  const reporter = (await ipKey(c.req.raw, tokenSecretOf(c.env) || "fullhouse")).slice(0, 24);
+  const out = await deps.venue(c.env, venueId).report(slug, reporter);
   if (!out.ok) return pageResponse(renderMissing(), 404);
   return pageResponse(renderReported(out.value.hidden));
 }

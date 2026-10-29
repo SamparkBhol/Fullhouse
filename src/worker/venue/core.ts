@@ -2,15 +2,19 @@ import type {
   ApproveInput,
   Baseline,
   CreateVenueInput,
+  EditableCopy,
   Invite,
+  InviteAnswer,
   JointExample,
   Match,
   Night,
   PlanInput,
   PlanResponse,
+  RunProgress,
   StreetRead,
   Venue,
   VenueCandidate,
+  VenueSettingsInput,
   VenueState,
 } from "../../shared/contract.ts";
 import type { VenueDashboard } from "../../shared/stats.ts";
@@ -27,13 +31,14 @@ import { armAlarm } from "./alarm.ts";
 import { fail, failure, noVenue, ok, type MondayRun, type Out, type VenueApi, type VenueDeps } from "./api.ts";
 import { connectEventbrite, disconnectEventbrite } from "./eventbrite.ts";
 import { runMonday } from "./monday.ts";
-import { checkOwner, confirmEmail, initVenue, requestEmail, rotateOwnerLink } from "./owner.ts";
+import { checkOwner, confirmEmail, initVenue, requestEmail, rotateOwnerLink, updateSettings } from "./owner.ts";
 import { FRESH_READS_PER_DAY, freshRead, qlooFor, takeReadSlot, withCopy } from "./planning.ts";
 import { answerInvite, createInvite, publicInvite } from "./invites.ts";
 import { jointExample, matchNow, planWithMatch } from "./joint.ts";
 import { precomputeProof, runProof } from "./proof.ts";
 import { publicNight, rsvp } from "./public.ts";
-import { approveNight, logTurnout, reportNight, republishNight, unpublishNight } from "./publish.ts";
+import { approveNight, editNight, logTurnout, reportNight, republishNight, unpublishNight } from "./publish.ts";
+import { pairLedgers } from "./ledger.ts";
 import { VenueRecords } from "./records.ts";
 
 const keyMissing = <T>(): Out<T> => fail(QLOO_KEY_MISSING.status, QLOO_KEY_MISSING.error, QLOO_KEY_MISSING.detail);
@@ -70,6 +75,10 @@ export class VenueCore implements VenueApi {
     return confirmEmail(this.records, this.deps, code);
   }
 
+  settings(input: VenueSettingsInput): Promise<Out<Venue>> {
+    return updateSettings(this.records, input);
+  }
+
   // Opening the venue counts as the owner being around, which keeps the Monday runs going.
   async state(): Promise<Out<VenueState>> {
     const venue = await this.records.venue();
@@ -95,6 +104,8 @@ export class VenueCore implements VenueApi {
     };
     if (read) state.read = read;
     if (baseline) state.baseline = baseline;
+    const ledgers = pairLedgers(state.nights);
+    if (ledgers.length) state.ledgers = ledgers;
     return ok(state);
   }
 
@@ -104,6 +115,7 @@ export class VenueCore implements VenueApi {
     const q = qlooFor(this.deps, venue);
     if (!q) return keyMissing();
     if (!(await takeReadSlot(this.records, utcDay(this.deps.now())))) return readLimit();
+    this.deps.progress?.start(this.deps.now());
     try {
       return ok(await freshRead(this.records, this.deps, q, venue));
     } catch (err) {
@@ -114,6 +126,7 @@ export class VenueCore implements VenueApi {
   async plan(input: PlanInput): Promise<Out<PlanResponse>> {
     const venue = await this.records.venue();
     if (!venue) return noVenue();
+    this.deps.progress?.start(this.deps.now());
     try {
       let read = await this.records.read();
       if (!read) {
@@ -175,8 +188,12 @@ export class VenueCore implements VenueApi {
     return republishNight(this.records, nightId);
   }
 
-  report(slug: string): Promise<Out<{ hidden: boolean }>> {
-    return reportNight(this.records, this.deps, slug);
+  editNight(nightId: string, copy: EditableCopy): Promise<Out<Night>> {
+    return editNight(this.records, nightId, copy);
+  }
+
+  report(slug: string, reporter: string): Promise<Out<{ hidden: boolean }>> {
+    return reportNight(this.records, this.deps, slug, reporter);
   }
 
   connectEventbrite(token: string): Promise<Out<{ organization: string }>> {
@@ -203,12 +220,12 @@ export class VenueCore implements VenueApi {
     return precomputeProof(this.records, this.deps);
   }
 
-  publicNight(slug: string, browser: string | null): Promise<Out<PublicNight>> {
-    return publicNight(this.records, slug, browser);
+  publicNight(slug: string, browser: string | null, via?: string): Promise<Out<PublicNight>> {
+    return publicNight(this.records, slug, browser, via);
   }
 
-  rsvp(slug: string, browser: string): Promise<Out<{ count: number; already: boolean }>> {
-    return rsvp(this.records, this.deps, slug, browser);
+  rsvp(slug: string, browser: string, via?: string): Promise<Out<{ count: number; already: boolean }>> {
+    return rsvp(this.records, this.deps, slug, browser, via);
   }
 
   monday(): Promise<Out<MondayRun>> {
@@ -223,6 +240,10 @@ export class VenueCore implements VenueApi {
     return createInvite(this.records, this.deps, planId, partnerId, origin);
   }
 
+  async progress(): Promise<Out<RunProgress>> {
+    return ok(this.deps.progress?.view() ?? { since: null, done: [] });
+  }
+
   async invites(): Promise<Out<Invite[]>> {
     return ok(await this.records.invites());
   }
@@ -231,7 +252,7 @@ export class VenueCore implements VenueApi {
     return publicInvite(this.records, slug);
   }
 
-  answerInvite(slug: string, answer: "yes" | "no"): Promise<Out<Invite>> {
+  answerInvite(slug: string, answer: InviteAnswer): Promise<Out<Invite>> {
     return answerInvite(this.records, this.deps, slug, answer);
   }
 

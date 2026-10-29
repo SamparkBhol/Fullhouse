@@ -71,7 +71,7 @@ describe("stats events", () => {
       "A Monday run drafted a listening night.",
       "A Monday run drafted nothing.",
       "A venue logged the turnout of a night.",
-      "Read the street around a venue: 0 calls to Qloo, 0 answered from cache.",
+      "Read the street around a venue: 0 calls for taste data, 0 answered from cache.",
       "Published a listening night for Thursday 5 November at a venue that has not confirmed it.",
       "One more RSVP for a night.",
     ]);

@@ -1,8 +1,9 @@
-import type { JointExample, Match, NightPlan, PlanInput, PlanResponse, StreetRead, Venue } from "../../shared/contract.ts";
+import type { ExamplePlace, JointExample, Match, MatchPartner, NightPlan, PlanInput, PlanResponse, StreetRead, Venue } from "../../shared/contract.ts";
 import { plainName } from "../../shared/words.ts";
 import { QLOO_KEY_MISSING, isQlooError } from "../qloo/errors.ts";
 import { fail, failure, noVenue, ok, type Out, type VenueDeps } from "./api.ts";
-import { walkMinutes } from "./invites.ts";
+import { kindOf, walkMinutes } from "./invites.ts";
+import { publicStops } from "../pages/stops.ts";
 import { qlooFor, recentFeatures } from "./planning.ts";
 import type { VenueRecords } from "./records.ts";
 
@@ -72,6 +73,10 @@ function exampleRank(p: NightPlan, accepted: boolean, published: boolean): numbe
   return (p.match?.split ? 0 : 4) + (accepted ? 0 : published ? 1 : 2);
 }
 
+function examplePlace(name: string, image?: string, kind?: string, address?: string, neighborhood?: string): ExamplePlace {
+  return { name, ...(image ? { image } : {}), ...(kind ? { kind } : {}), ...(address ? { address } : {}), ...(neighborhood ? { neighborhood } : {}) };
+}
+
 // The landing's example: the venue's best joint night, accepted ones first. Nothing about the owner goes in it.
 export async function jointExample(records: VenueRecords): Promise<Out<JointExample>> {
   const venue = await records.venue();
@@ -87,8 +92,8 @@ export async function jointExample(records: VenueRecords): Promise<Out<JointExam
   const m = best?.match;
   if (!best || !m) return fail(404, "no_example");
   const ex: JointExample = {
-    venue: { name: venue.entity.name, ...(venue.entity.image ? { image: venue.entity.image } : {}) },
-    partner: { name: m.partner.name, ...(m.partner.image ? { image: m.partner.image } : {}) },
+    venue: examplePlace(venue.entity.name, venue.entity.image, venue.entity.kind, venue.entity.address, venue.entity.neighborhood),
+    partner: examplePlace(m.partner.name, m.partner.image, (m.partner as MatchPartner).kind, m.partner.address),
     distanceM: m.partner.distanceM,
     minutes: walkMinutes(m.partner.distanceM),
     title: best.copy.eventTitle,
@@ -97,5 +102,18 @@ export async function jointExample(records: VenueRecords): Promise<Out<JointExam
     shared: m.shared.slice(0, 3).map((t) => t.name),
   };
   if (best.feature) ex.feature = best.feature.name;
+  ex.readAt = best.readAt;
+  ex.kind = kindOf(best);
+  const fit = (m.partner as MatchPartner).fit;
+  if (fit) {
+    ex.fit = fit.score;
+    ex.checks = fit.checks.map(({ key, label, pass, points, max, sentence }) => ({ key, label, pass, points, max, sentence }));
+  }
+  ex.city = venue.city;
+  ex.date = best.date;
+  ex.agreed = accepted.has(best.id);
+  // The stops name the partner, so they go on the landing only once the partner said yes.
+  const stops = accepted.has(best.id) ? publicStops(best.pair?.stops) : undefined;
+  if (stops) ex.stops = stops;
   return ok(ex);
 }

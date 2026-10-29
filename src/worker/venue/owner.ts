@@ -1,4 +1,4 @@
-import type { CreateVenueInput, Venue, VenueCandidate } from "../../shared/contract.ts";
+import type { CreateVenueInput, Venue, VenueCandidate, VenueSettingsInput } from "../../shared/contract.ts";
 import { sendOwnerEmail } from "../actions/email.ts";
 import { randomBase64url } from "../crypto.ts";
 import { ownerToken, ownerUrl, timingSafeEqual, verifyOwnerToken } from "../owner_token.ts";
@@ -66,6 +66,7 @@ export async function initVenue(
   const now = deps.now().toISOString();
   const venue: Venue = { id, entity: candidate, city: input.city, tz: input.tz, quietSlot: input.quietSlot, createdAt: now, verified: false };
   if (input.capacity !== undefined) venue.capacity = input.capacity;
+  if (input.assumed && (input.assumed.slot || input.assumed.room)) venue.assumed = { ...(input.assumed.slot ? { slot: true } : {}), ...(input.assumed.room ? { room: true } : {}) };
   if (input.ownerEmail && deps.resend) venue.pendingEmail = input.ownerEmail;
   if (input.noLiveMusic !== undefined) venue.noLiveMusic = input.noLiveMusic;
   const nonce = randomBase64url(16);
@@ -77,6 +78,35 @@ export async function initVenue(
   await sendConfirmation(records, deps, venue, origin);
   recordEvent(deps.stats, { kind: "venue_created", venueId: id });
   return ok({ venue, ownerToken: await ownerToken(deps.secret, id, nonce) });
+}
+
+// What the owner tells Full House about the room. Each answer replaces its default and the default stops being assumed.
+export async function updateSettings(records: VenueRecords, input: VenueSettingsInput): Promise<Out<Venue>> {
+  const venue = await records.venue();
+  if (!venue) return noVenue();
+  const next: Venue = { ...venue };
+  const assumed = { ...venue.assumed };
+  if (input.quietSlot) {
+    next.quietSlot = input.quietSlot;
+    delete assumed.slot;
+  }
+  if (input.capacity !== undefined) {
+    if (input.capacity === null) delete next.capacity;
+    else next.capacity = input.capacity;
+    delete assumed.room;
+  }
+  if (input.house) {
+    next.house = { ...venue.house, ...input.house };
+    if (input.house.music !== undefined) next.noLiveMusic = !input.house.music;
+  }
+  if (input.contact !== undefined) {
+    if (input.contact === null || !input.contact.trim()) delete next.contact;
+    else next.contact = input.contact.trim();
+  }
+  if (assumed.slot || assumed.room) next.assumed = assumed;
+  else delete next.assumed;
+  await records.store.put("venue", next);
+  return ok(next);
 }
 
 export async function rotateOwnerLink(records: VenueRecords, deps: VenueDeps, origin: string): Promise<Out<{ ownerUrl: string; ownerToken: string }>> {

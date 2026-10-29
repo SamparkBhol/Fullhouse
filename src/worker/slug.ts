@@ -37,10 +37,16 @@ export function venueIdFromSlug(slug: string): string | null {
 }
 
 // An invite is answered by whoever holds its link, so its random part is as long as a venue id.
+// The slug carries no name: a partner is not named in a URL before it has said yes.
 const INVITE_RAND = /^[a-km-np-z2-9]{12}$/;
 
-export function makeInviteSlug(partnerName: string, venueId: string, rand: string = randomId(12)): string {
-  return `${titleWords(partnerName)}-${venueId}-${rand}`;
+export function makeInviteSlug(venueId: string, rand: string = randomId(12)): string {
+  return `night-${venueId}-${rand}`;
+}
+
+// A second address for an event page, short enough to print on a poster in one line.
+export function shortSlugFor(venueId: string, rand: string = randomId(5)): string {
+  return `e-${venueId}-${rand}`;
 }
 
 export function venueIdFromInviteSlug(slug: string): string | null {

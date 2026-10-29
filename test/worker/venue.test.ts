@@ -204,6 +204,19 @@ describe("mondayInput", () => {
 });
 
 describe("confirmsVenue", () => {
+  it("keeps the quiet night and room as assumed until the owner saves them, and obeys the house rules", async () => {
+    const venue = new VenueCore(new MemoryStore(), venueDeps());
+    await venue.init("abcdefghijkm", { ...INPUT, assumed: { slot: true, room: true } }, CANDIDATE, "https://x.example");
+    const before = await venue.state();
+    expect(before.ok && before.value.venue.assumed).toEqual({ slot: true, room: true });
+    const saved = await venue.settings({ capacity: 60, house: { music: false, spoken: true } });
+    expect(saved.ok && saved.value).toMatchObject({ capacity: 60, assumed: { slot: true }, house: { music: false, spoken: true }, noLiveMusic: true });
+    const again = await venue.settings({ quietSlot: { weekday: 4, start: "20:00", durationMin: 180 }, contact: "0151 000 0000" });
+    expect(again.ok && again.value.assumed).toBeUndefined();
+    expect(again.ok && again.value.contact).toBe("0151 000 0000");
+    expect(again.ok && again.value.quietSlot.start).toBe("20:00");
+  });
+
   it("confirms a venue when the owner's address is on the venue's own website domain", () => {
     const withSite = { ...CANDIDATE, url: "https://www.bluehour.example/shop" };
     expect(confirmsVenue("anna@bluehour.example", withSite)).toBe(true);

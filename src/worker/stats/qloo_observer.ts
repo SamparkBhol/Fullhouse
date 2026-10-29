@@ -2,7 +2,7 @@ import type { Qloo } from "../../core/index.ts";
 import { isQlooError } from "../qloo/errors.ts";
 import { recordEvent, type StatsSink } from "./events.ts";
 
-const PATHS = new Set(["/search", "/v2/insights", "/v2/analysis/compare", "/v2/trending"]);
+const PATHS = new Set(["/search", "/v2/insights", "/v2/analysis/compare", "/v2/trending", "/entities"]);
 const FILTER_TYPE = /^urn:[a-z_:]{1,40}$/;
 
 // Insights answers differ by filter type, so each type is its own row; anything else keeps a fixed name.

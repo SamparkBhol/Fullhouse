@@ -4,12 +4,14 @@ import { VENUE_ID_RE } from "../ids.ts";
 import { renderMissing } from "../pages/event.ts";
 import { renderInvitePage } from "../pages/invite.ts";
 import { venueIdFromInviteSlug } from "../slug.ts";
-import { AnswerSchema, parse } from "../validate.ts";
+import type { InviteAnswer } from "../../shared/contract.ts";
+import { AnswerSchema, cleanAnswer, parse } from "../validate.ts";
 import { fromEventPage } from "./public.ts";
 import { json, limit, pageResponse, type AppDeps, type AppEnv, type Ctx } from "./shared.ts";
 
-// The buttons on the page post a form; a script may post JSON. Both say only yes or no.
-async function readAnswer(c: Ctx): Promise<"yes" | "no" | null> {
+// The buttons on the page post a form; a script may post JSON. Both say yes or no, and a yes may carry the
+// partner's own stop time, its words for its part, and whether it tells its regulars.
+async function readAnswer(c: Ctx): Promise<InviteAnswer | null> {
   const type = c.req.header("content-type") ?? "";
   let raw: unknown;
   try {
@@ -20,7 +22,7 @@ async function readAnswer(c: Ctx): Promise<"yes" | "no" | null> {
     return null;
   }
   const p = parse(AnswerSchema, raw);
-  return p.ok ? p.value.answer : null;
+  return p.ok ? cleanAnswer(p.value) : null;
 }
 
 async function answer(c: Ctx, deps: AppDeps): Promise<Response> {

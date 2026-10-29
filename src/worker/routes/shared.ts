@@ -15,7 +15,7 @@ import type { Out, VenueApi } from "../venue/api.ts";
 
 export interface AppDeps {
   createQloo: CreateQloo;
-  findVenues(q: Qloo, name: string, city: string): Promise<VenueCandidate[]>;
+  findVenues(q: Qloo, name: string, city: string, opts?: { near?: { lat: number; lng: number } }): Promise<VenueCandidate[]>;
   venue(env: Env, id: string): VenueApi;
   meter(env: Env): MeterApi;
   stats?(env: Env): StatsApi;
@@ -107,9 +107,9 @@ function workerQloo(c: Ctx, deps: AppDeps): Qloo {
   return q;
 }
 
-export async function searchVenues(c: Ctx, deps: AppDeps, name: string, city: string): Promise<Out<VenueCandidate[]>> {
+export async function searchVenues(c: Ctx, deps: AppDeps, name: string, city: string, near?: { lat: number; lng: number }): Promise<Out<VenueCandidate[]>> {
   try {
-    return { ok: true, value: await deps.findVenues(workerQloo(c, deps), name, city) };
+    return { ok: true, value: await deps.findVenues(workerQloo(c, deps), name, city, near ? { near } : {}) };
   } catch (err) {
     if (err instanceof HttpError) return asOut(err);
     if (isQlooError(err)) {
