@@ -135,8 +135,6 @@ npm run e2e     # Playwright, headless, against wrangler dev and the fake Qloo s
 
 Unit test fixtures are small hand written JSON shaped like Qloo's answers. The end to end run starts the Worker without the AI binding, so plans use templates, then restarts it without a key to check the page that says so. On 29 October 2026 all 514 unit tests and all 36 end to end specs passed, plus the key missing spec.
 
-`npm run probe` and `npm run live-read` run against the live API with `QLOO_API_KEY` set. They keep every raw answer in `../raw/live/`, beside the clone, so no Qloo response ever lands in the repository.
-
 ## Deploy for free on Cloudflare
 
 ```sh
@@ -180,7 +178,7 @@ To report a vulnerability, use GitHub private vulnerability reporting on this re
 | `web/src` | The owner app: pages, UI pieces and styles |
 | `test` | Unit tests and hand written fixtures |
 | `e2e` | Fake Qloo server and Playwright specs |
-| `scripts` | Local dev and e2e runners, the live probe and the live read |
+| `scripts` | Local dev and e2e runners |
 | `media` | The screenshots in this README: the Housing Works plan, read from the live Qloo API on 27 October 2026 |
 
 ## Licence
