@@ -1,8 +1,11 @@
 import { buildIcs } from "../actions/ics.ts";
 import { gcalUrl } from "../actions/links.ts";
-import { longDate, nightWindow } from "../zones.ts";
+import { describeDate } from "../../core/index.ts";
+import { nightWindow } from "../zones.ts";
+import { zoneCity } from "./guest.ts";
+import { headWithArt, nearbySection, ledgeHtml, type PublicArt, type PublicNearby } from "./event_art.ts";
 import { esc, safeHref } from "./html.ts";
-import { qrSvg } from "./qr.ts";
+import { qrSvg } from "../qr/svg.ts";
 import { PAGE_CSS, PRINT_SCRIPT } from "./style.ts";
 
 export interface PublicNight {
@@ -14,7 +17,9 @@ export interface PublicNight {
   posterSub: string;
   kind?: string;
   feature?: string;
-  writtenBy: "model" | "template";
+  art?: PublicArt;
+  nearby?: PublicNearby[];
+  writtenBy: "model" | "template" | "owner";
   date: string;
   start: string;
   end: string;
@@ -24,7 +29,8 @@ export interface PublicNight {
   city: string;
   lat: number;
   lng: number;
-  why: string[];
+  reason: string;
+  verified: boolean;
   rsvps: number;
   going: boolean;
   published: { page: boolean; poster: boolean; ics: boolean };
@@ -42,6 +48,12 @@ export function placeLine(n: Pick<PublicNight, "venueName" | "address" | "city">
   const rest = [n.address, n.city].filter((p): p is string => Boolean(p && p.trim()));
   const unique = rest.filter((p, i) => !(i > 0 && rest[0]?.toLowerCase().includes(p.toLowerCase())));
   return [n.venueName, ...unique].join(", ");
+}
+
+// Qloo's street address usually ends with the city already.
+function addressLine(n: Pick<PublicNight, "address" | "city">): string {
+  if (n.address && n.address.toLowerCase().includes(n.city.toLowerCase())) return n.address;
+  return [n.address, n.city].filter(Boolean).join(", ");
 }
 
 function paragraphs(text: string): string {
@@ -91,57 +103,73 @@ export function calendarDetails(n: PublicNight, origin: string): string {
   return `${n.description.trim()}\n\nPicked with Qloo taste data.${link}`;
 }
 
+// Until the venue confirms it, the page says plainly who posted it, so nobody mistakes it for the venue's own word.
+function postedBy(n: PublicNight): string {
+  const v = esc(n.venueName);
+  return n.verified ? `Made with Full House for ${v}.` : `Posted on Full House by whoever set up ${v}. ${v} has not confirmed it.`;
+}
+
 function fascia(n: PublicNight): string {
   return `<header class="fascia"><p>Full House</p><p class="sign">${esc(n.venueName)}</p></header>`;
 }
 
 export function renderEventPage(n: PublicNight, origin: string, now: Date): string {
   const url = eventUrl(origin, n.slug);
-  const when = `${longDate(n.date)}, ${n.start} to ${n.end}`;
+  const when = `${describeDate(n.date)}, ${n.start} to ${n.end}`;
   const desc = shortText(`${when} at ${n.venueName}. ${n.description}`, 200);
   const past = isPast(n, now);
   let calendar = "";
   try {
     const w = nightWindow(n, n.tz);
     const g = gcalUrl({ title: n.title, details: calendarDetails(n, origin), location: placeLine(n), start: w.start, end: w.end });
-    calendar =
-      `<section aria-labelledby="cal"><h2 id="cal">Add it to your calendar</h2><ul class="links">` +
-      `<li><a href="/e/${esc(n.slug)}.ics">Apple, Outlook and others (.ics)</a></li>` +
-      `<li><a href="${safeHref(g)}" rel="noopener noreferrer" target="_blank">Google Calendar</a></li></ul></section>`;
+    calendar = ledgeHtml(
+      "cal",
+      "Add it to your calendar",
+      `<ul class="links"><li><a href="/e/${esc(n.slug)}.ics">Apple, Outlook and others (.ics)</a></li>` +
+        `<li><a href="${safeHref(g)}" rel="noopener noreferrer" target="_blank">Google Calendar</a></li></ul>`,
+    );
   } catch {
     calendar = "";
   }
-  const why = n.why.length
-    ? `<ul>${n.why.slice(0, 4).map((w) => `<li>${esc(w)}</li>`).join("")}</ul>`
-    : `<p>This night was picked from what people who like ${esc(n.venueName)} love.</p>`;
   const rsvp = past
     ? `<p class="count">${n.rsvps} said they would come</p><p class="going">This night has passed.</p>`
-    : `<p class="count" aria-live="polite">${n.rsvps} going</p>` +
+    : `<p class="count" aria-live="polite">${n.rsvps} said they are coming</p>` +
       (n.going
         ? `<p class="going">You are on the list. See you there.</p>`
         : `<form method="post" action="/e/${esc(n.slug)}/rsvp"><button type="submit">I am going</button></form>`);
   const copyNote =
     n.writtenBy === "model"
       ? `<p class="note">Description written by a language model from the Qloo facts below. Every name in it was checked against them.</p>`
-      : "";
-  const address = [n.address, n.city].filter(Boolean).join(", ");
+      : n.writtenBy === "owner"
+        ? `<p class="note">Description written by the venue.</p>`
+        : "";
+  const address = addressLine(n);
   return (
     head(titleAt(n), desc, url) +
     `<body>${fascia(n)}<main class="sheet">` +
-    `<article class="flyer">` +
-    `<p class="when"><span>${esc(longDate(n.date))}</span><span>${esc(`${n.start} to ${n.end}`)}</span></p>` +
+    `<section class="win win-big${past ? " win-dark" : ""}" aria-label="The night"><div class="win-frame"><div class="win-room">` +
+    (past ? "" : `<span class="pendant" aria-hidden="true"></span>`) +
+    `<div class="win-inside"><article class="flyer${past ? "" : " lit"}">` +
+    `<p class="when"><span>${esc(describeDate(n.date))}</span><span>${esc(`${n.start} to ${n.end}`)}</span></p>` +
     (n.kind ? `<p class="kind">${esc(n.kind)}</p>` : "") +
-    `<h1>${esc(n.feature || n.title)}</h1>` +
+    headWithArt(`<h1>${esc(n.feature || n.title)}</h1>`, n.art) +
     `<div class="desc">${paragraphs(n.description)}</div>` +
     `<p class="place">${esc(n.venueName)}${address ? `<span>${esc(address)}</span>` : ""}</p>` +
-    `<p class="tz">Times are local to the venue (${esc(n.tz)}).</p>` +
+    `<p class="tz">Times are local to the venue, ${esc(zoneCity(n.tz))}.</p>` +
     copyNote +
     `</article>` +
     `<section class="rsvp" id="rsvp" aria-label="Who is going">${rsvp}</section>` +
-    `<section aria-labelledby="why"><h2 id="why">Why this night, here</h2>${why}` +
-    `<p class="limits">Picked with Qloo taste data for the streets around ${esc(n.venueName)}. These are patterns for the area, not facts about any one person, and they say nothing about who will come. <a href="/how">How this works</a></p></section>` +
+    `</div></div></div><div class="win-sill" aria-hidden="true"></div></section>` +
+    ledgeHtml(
+      "why",
+      "Why this night, here",
+      `<p>${esc(n.reason)}.</p>` +
+        `<p class="limits">Picked with Qloo taste data for people who like ${esc(n.venueName)}. It is a pattern across many people, not a fact about any one person, and it says nothing about who will come. <a href="/how">How this works</a></p>`,
+    ) +
+    nearbySection(n.nearby) +
     calendar +
-    `<footer>${n.published.poster ? `<a href="/e/${esc(n.slug)}/poster">Printable poster</a>. ` : ""}Made with Full House for ${esc(n.venueName)}.</footer>` +
+    `<footer><p>${n.published.poster ? `<a href="/e/${esc(n.slug)}/poster">Printable poster</a>. ` : ""}${postedBy(n)}</p>` +
+    `<form method="post" action="/e/${esc(n.slug)}/report"><button class="quiet" type="submit">Report this page</button></form></footer>` +
     `</main></body></html>`
   );
 }
@@ -149,8 +177,8 @@ export function renderEventPage(n: PublicNight, origin: string, now: Date): stri
 export function renderPoster(n: PublicNight, origin: string): string {
   const url = eventUrl(origin, n.slug);
   const shortUrl = url.replace(/^https?:\/\//, "");
-  const when = `${longDate(n.date)}, ${n.start} to ${n.end}`;
-  const reason = n.why[0] ?? `Picked from what people who like ${n.venueName} love.`;
+  const when = `${describeDate(n.date)}, ${n.start} to ${n.end}`;
+  const reason = `${n.reason}.`;
   let qr = "";
   if (n.published.page) {
     try {
@@ -160,15 +188,15 @@ export function renderPoster(n: PublicNight, origin: string): string {
     }
   }
   const foot = n.published.page
-    ? `<div><p class="p-url">${esc(shortUrl)}</p><p class="p-src">Picked with Qloo taste data. Scan the code or type the link to say you are coming.</p></div>${qr}`
-    : `<div><p class="p-src">Picked with Qloo taste data.</p></div>`;
+    ? `<div><p class="p-url">${esc(shortUrl)}</p><p class="p-src">Picked with Qloo taste data. Scan the code or type the link to say you are coming. ${postedBy(n)}</p></div>${qr}`
+    : `<div><p class="p-src">Picked with Qloo taste data. ${postedBy(n)}</p></div>`;
   return (
     head(`Poster: ${n.title}`, `${titleAt(n)}, ${when}`, `${url}/poster`) +
     `<body><div class="print-bar"><button id="print" type="button">Print the poster</button><span>A4 portrait. Turn off headers and footers in the print dialog.</span></div>` +
     `<main class="poster">` +
     `<p class="when">${esc(when)}</p>` +
     (n.kind ? `<p class="kind">${esc(n.kind)}</p>` : "") +
-    `<h1>${esc(n.feature || n.posterHeadline || n.title)}</h1>` +
+    headWithArt(`<h1>${esc(n.feature || n.posterHeadline || n.title)}</h1>`, n.art) +
     (n.posterSub ? `<p class="p-sub">${esc(n.posterSub)}</p>` : "") +
     `<p class="p-where"><strong>${esc(n.venueName)}</strong>${n.address ? `<br>${esc(n.address)}` : ""}</p>` +
     `<p class="p-why">${esc(reason)}</p>` +
@@ -196,6 +224,14 @@ export function renderMissing(): string {
   return (
     head("Night not found", "This night is not on Full House.", "/") +
     `<body><header class="fascia"><p class="sign">Full House</p></header><main class="sheet"><h2>That night is not here</h2>` +
-    `<p>The link may be mistyped, or the venue took the night down.</p></main></body></html>`
+    `<p>The link may be mistyped, or the night was taken down.</p></main></body></html>`
+  );
+}
+
+export function renderReported(hidden: boolean): string {
+  return (
+    head("Report received", "Thanks for telling us.", "/") +
+    `<body><header class="fascia"><p class="sign">Full House</p></header><main class="sheet"><h2>Thanks, the report is in</h2>` +
+    `<p>${hidden ? "Enough people reported this page that it is offline until the person who set it up puts it back." : "The person who set this page up can see reports. Pages that several people report go offline."}</p></main></body></html>`
   );
 }
