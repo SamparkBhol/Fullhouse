@@ -3,6 +3,7 @@ import { FORMATS, menuItem } from "../planner/formats.ts";
 import { describeDate } from "../planner/time.ts";
 import { capFirst, listWords, plainName } from "../../shared/words.ts";
 import { fit, shortTitle, withArticle } from "./text.ts";
+import { pairCopy } from "./pair_copy.ts";
 import { planTheme, themeWords } from "./theme.ts";
 
 type CopyFields = Omit<NightCopy, "writtenBy">;
@@ -19,7 +20,7 @@ function pitch(plan: NightPlan, venue: Venue, day: string, night: string): CopyF
       "",
       `We run ${v}, a short walk from you. On ${day} from ${plan.start} to ${plan.end} we are putting on ${withArticle(what)}.`,
       "",
-      `Qloo's aggregate taste data puts your place among the spots nearby that people who like ${v} also like, which is why we are writing to you.`,
+      `Taste data puts your place among the spots nearby that people who like ${v} also like, which is why we are writing to you.`,
       "",
       "Would you cross promote it with us? We would put your name on our event page and poster, and we are happy to do the same for one of your nights.",
       "",
@@ -57,7 +58,8 @@ function tastingLead(plan: NightPlan): string {
 }
 
 export function nightName(plan: NightPlan): string {
-  if (plan.format === "film") return plan.feature?.type === "tv_show" ? "watch night" : "film night";
+  if (plan.pair) return plan.pair.label;
+  if (plan.format === "film") return "film night";
   if (plan.format === "tasting") return `${tastingLead(plan)} tasting night`;
   return FORMATS[plan.format].label;
 }
@@ -69,6 +71,7 @@ export function hostName(plan: Pick<NightPlan, "match">, venue: Venue): string {
 }
 
 export function templateCopy(plan: NightPlan, venue: Venue): NightCopy {
+  if (plan.pair) return { ...pairCopy(plan, venue), writtenBy: "template" };
   const v = hostName(plan, venue);
   const day = describeDate(plan.date);
   const dayShort = day.split(" ")[0] ?? day;
@@ -175,6 +178,18 @@ export function templateCopy(plan: NightPlan, venue: Venue): NightCopy {
         posterHeadline: fit([`${capFirst(t)} tasting night`, "Tasting night"], 40),
         posterSub: fit([`${capFirst(t)} and more of what this street eats and drinks. Free to come in.`, "Free to come in."], 90),
         social: fit([`${capFirst(t)} tasting night at ${v}, ${day} at ${plan.start}. Free to come in, RSVP at the link.`, `Tasting night, ${dayShort} ${plan.start}. RSVP at the link.`], 280),
+      };
+      break;
+    }
+    case "show":
+    case "art": {
+      const noun = nightName(plan);
+      c = {
+        eventTitle: fit([`${capFirst(noun)} at ${v}`, capFirst(noun)], 60),
+        eventDescription: `${when}, ${v} puts on ${withArticle(noun)}. ${rsvp}`,
+        posterHeadline: fit([capFirst(noun)], 40),
+        posterSub: "Free to come in.",
+        social: fit([`${capFirst(noun)} at ${v}, ${day} at ${plan.start}. Free, RSVP at the link.`, `${capFirst(noun)}, ${dayShort} ${plan.start}. RSVP at the link.`], 280),
       };
       break;
     }

@@ -52,7 +52,7 @@ export function planNights(
 
   const all = scoreCandidates(read, venue, cap, prefer);
   if (!all.length) {
-    throw new PlanError("no_candidates", "Qloo returned no artists, books, films, shows, podcasts, games or food tags for this street, so there is nothing to build a night from.");
+    throw new PlanError("no_candidates", "No artists, books, films, shows, podcasts, games or food tags came back for this street, so there is nothing to build a night from.");
   }
   const allowed = all.filter((c) => !avoid.has(c.format));
   if (!allowed.length) {
@@ -65,7 +65,7 @@ export function planNights(
   const avoided = [...avoid].filter((f) => !FORMATS[f].music || !noLive);
   if (avoided.length) shared.push(`Left out at your request: ${listWords(avoided.map((f) => `${FORMATS[f].label}s`))}.`);
   if (prefer.size && !picks.some((p) => prefer.has(p.format))) {
-    shared.push(`Qloo returned nothing to build a ${listWords([...prefer].map((f) => FORMATS[f].label))} from, so this is the closest fit.`);
+    shared.push(`Nothing came back to build a ${listWords([...prefer].map((f) => FORMATS[f].label))} from, so this is the closest fit.`);
   }
   if (cap !== undefined) shared.push(`Sized for up to ${cap} people.`);
   shared.push(`Based on the street read from ${fmtDay(read.at)}.`, RANK_LIMIT);
@@ -75,7 +75,7 @@ export function planNights(
     const theme = themeFor(c, read);
     const partners = pickPartners(c, theme, read, venue, slot, notes);
     const menuIdeas = menuFor(c.menuTag, read, venue);
-    if (!menuIdeas.length && foodLed(venue.entity)) notes.push("Qloo returned no food or drink tags for your audience or the street, so there are no menu ideas.");
+    if (!menuIdeas.length && foodLed(venue.entity)) notes.push("No food or drink tags came back for your audience or the street, so there are no menu ideas.");
     const playlist = playlistFrom(read.rising);
     const def = FORMATS[c.format];
     if (def.licence) notes.push(def.licence);

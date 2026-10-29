@@ -79,6 +79,7 @@ export function findNames(text: string): Found[] {
       runStart = -1;
     };
     tokens.forEach((raw, i) => {
+      if (/^[(\["“]/.test(raw)) flush();
       const word = raw.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}'’.]+$/gu, "").replace(/[.]+$/, "");
       const breaksAfter = /[,()\[\]"“”:;!?]$/.test(raw);
       if (word && isCapitalised(word)) {

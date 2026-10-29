@@ -14,7 +14,7 @@ export const COPY_SYSTEM_PROMPT = [
   "Use the night label from the brief exactly, for example watch night for a TV show and film night for a film.",
   "Public copy (title, description, poster, social) must not mention partner businesses. The partner pitch may.",
   'The partner pitch goes to every partner, so its body opens with "Hi there,", gives the night in one short paragraph and the ask in another, and signs off with "Thanks," and the venue name.',
-  "The partner pitch must say that Qloo's aggregate taste data puts the partner among the places nearby that people who like the venue also like. Never call it a rating and never present it as a fact about anyone's customers.",
+  "The partner pitch must say that aggregate taste data puts the partner among the places nearby that people who like the venue also like. Do not start a sentence with a company name. Never call it a rating and never present it as a fact about anyone's customers.",
   "Write in sentence case with plain verbs. Times are 24 hour. Write dates as the brief gives them.",
   "No hashtags, emoji or links. The app adds the event link itself.",
   "Do not use em dashes, en dashes or hyphens as punctuation.",

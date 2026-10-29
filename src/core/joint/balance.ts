@@ -1,4 +1,4 @@
-import type { CrowdSplit, QlooType, Rising } from "../../shared/contract.ts";
+import type { CrowdSplit, Rising } from "../../shared/contract.ts";
 import { sameId } from "../qloo/values.ts";
 
 export const EVEN_LOW = 35;
@@ -16,39 +16,4 @@ export function splitOf(r: Pick<Rising, "explain">, venueId: string, partnerId: 
 
 export function nearEven(s: CrowdSplit): boolean {
   return s.venue >= EVEN_LOW && s.venue <= EVEN_HIGH;
-}
-
-function offEven(s: CrowdSplit): number {
-  return Math.abs(s.venue - 50);
-}
-
-export interface Balanced {
-  pick: Rising;
-  split: CrowdSplit;
-}
-
-// Within one list, the pick nearest half and half among the top ten, ties broken by rank.
-export function balanceOf(list: Rising[], venueId: string, partnerId: string): Balanced | null {
-  const scored = list
-    .filter((r) => r.rank <= BALANCE_TOP && r.name.trim() !== "")
-    .flatMap((pick) => {
-      const split = splitOf(pick, venueId, partnerId);
-      return split ? [{ pick, split }] : [];
-    })
-    .sort((a, b) => offEven(a.split) - offEven(b.split) || a.pick.rank - b.pick.rank);
-  return scored[0] ?? null;
-}
-
-// One balance pick per type, nearest even first, then by rank, then in the order the types are read.
-export function balancePicks(rising: Rising[], venueId: string, partnerId: string, types: QlooType[]): Balanced[] {
-  return types
-    .flatMap((type) => {
-      const b = balanceOf(
-        rising.filter((r) => r.type === type),
-        venueId,
-        partnerId,
-      );
-      return b ? [b] : [];
-    })
-    .sort((a, b) => offEven(a.split) - offEven(b.split) || a.pick.rank - b.pick.rank || types.indexOf(a.pick.type) - types.indexOf(b.pick.type));
 }

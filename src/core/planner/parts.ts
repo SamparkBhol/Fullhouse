@@ -55,7 +55,7 @@ function validStart(s: string | undefined): string | undefined {
 }
 
 export function nightSlot(venue: Venue, input: PlanInput, now: Date): NightSlot {
-  const noLive = input.noLiveMusic ?? venue.noLiveMusic ?? false;
+  const noLive = input.noLiveMusic ?? venue.noLiveMusic ?? venue.house?.music === false;
   const avoid = new Set<NightFormat>(input.avoidFormats ?? []);
   if (noLive) for (const f of FORMAT_ORDER) if (FORMATS[f].music) avoid.add(f);
   const prefer = new Set<NightFormat>((input.preferFormats ?? []).filter((f) => !avoid.has(f)));

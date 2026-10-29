@@ -30,9 +30,9 @@ function screensOnly(p: LovedPlace, c: Candidate, carriers: Set<string>): boolea
 export function partnerBecause(p: LovedPlace, slot: Slot, prov: number): Because[] {
   if (prov < 0) return [];
   const open = hoursLine(p, slot.weekday);
-  if (open) return [{ kind: "affinity", text: `${open}, from Qloo's listing`, provenance: prov }];
+  if (open) return [{ kind: "affinity", text: `${open}, by its listing`, provenance: prov }];
   return hoursVerdict(p, slot.weekday, slot.start) === "unknown"
-    ? [{ kind: "affinity", text: `Qloo has no opening hours for ${p.name}, check before you send`, provenance: prov }]
+    ? [{ kind: "affinity", text: `${p.name} has no opening hours listed, so check before you send`, provenance: prov }]
     : [];
 }
 

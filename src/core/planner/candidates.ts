@@ -1,5 +1,6 @@
 import type { Gap, NightFormat, Rising, StreetRead, StreetTag, Venue } from "../../shared/contract.ts";
 import { foodLed } from "../street/hosts.ts";
+import { groupOf } from "../pair/groups.ts";
 import { FORMATS, FORMAT_ORDER, type FormatDef } from "./formats.ts";
 import { menuTags } from "./menu.ts";
 
@@ -64,6 +65,8 @@ export function scoreCandidates(read: StreetRead, venue: Venue, cap: number | un
       if (c) out.push(c);
       continue;
     }
+    // A film is shown to a room only at a cinema, which holds the screen and the licence.
+    if (format === "film" && groupOf(venue.entity) !== "film") continue;
     const fits = read.rising.filter((r) => def.types.includes(r.type) && r.name.trim() !== "");
     // A list Qloo answered without the venue is the area's, not the audience's, so it never outranks one that is.
     const anyTied = fits.some((r) => r.venueSignal !== false);

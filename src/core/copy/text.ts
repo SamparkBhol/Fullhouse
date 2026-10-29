@@ -71,9 +71,11 @@ export function hasDash(text: string): boolean {
 }
 
 // "Walden: Or, Life in the Woods" reads as "Walden" on a title line; a name with no subtitle stays whole.
+// "Dune: Part Two" keeps its part, because "Dune" would name another film.
 export function shortTitle(name: string): string {
-  const cut = name.split(/: | \(| \[/)[0]?.trim() ?? name;
-  return cut.length >= 2 ? cut : name;
+  const [cut = name, rest = ""] = name.split(/: | \(| \[/);
+  if (/^(part|chapter|vol(ume)?|episode|book)\b|^\d/i.test(rest.trim())) return name;
+  return cut.trim().length >= 2 ? cut.trim() : name;
 }
 
 export function fit(options: string[], max: number): string {

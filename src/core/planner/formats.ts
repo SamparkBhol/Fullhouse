@@ -36,13 +36,14 @@ export const FORMATS: Record<NightFormat, FormatDef> = {
   film: {
     format: "film",
     label: "film night",
-    types: ["movie", "tv_show"],
+    // A TV episode does not draw a crowd and needs its own licence, so TV shows only theme quizzes.
+    types: ["movie"],
     music: false,
     people: { min: 8, max: 60 },
     themeNamespaces: ["urn:tag:genre:media", "urn:tag:keyword:media"],
     partnerHints: ["cinema", "theater", "theatre", "bar", "pizza", "popcorn", "dessert", "restaurant"],
     gapWords: ["movie theater", "cinema", "theater", "theatre"],
-    licence: "Showing a film or TV episode to the public needs a screening licence. Check you have one before the night.",
+    licence: "Showing a film to the public needs a screening licence. Check you have one before the night.",
   },
   quiz: {
     format: "quiz",
@@ -94,6 +95,26 @@ export const FORMATS: Record<NightFormat, FormatDef> = {
     themeNamespaces: MENU_NAMESPACES,
     partnerHints: ["wine", "cheese", "bakery", "deli", "market", "brewery", "coffee", "chocolate"],
     gapWords: ["food", "restaurant", "wine", "bakery", "deli", "dinner", "brunch", "cuisine"],
+  },
+  show: {
+    format: "show",
+    label: "show night",
+    types: [],
+    music: false,
+    people: { min: 10, max: 120 },
+    themeNamespaces: [],
+    partnerHints: ["theatre", "theater", "comedy", "bar", "pub", "restaurant"],
+    gapWords: ["theater", "theatre", "comedy"],
+  },
+  art: {
+    format: "art",
+    label: "late view",
+    types: [],
+    music: false,
+    people: { min: 10, max: 80 },
+    themeNamespaces: [],
+    partnerHints: ["gallery", "bar", "wine", "cafe"],
+    gapWords: ["gallery", "art"],
   },
 };
 
