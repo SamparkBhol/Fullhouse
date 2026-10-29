@@ -2,7 +2,7 @@ import type { Because, LovedPlace, QuietSlot, StreetRead, StreetTag, Venue } fro
 import { capFirst } from "../../shared/words.ts";
 import { tagLabel } from "../qloo/tags.ts";
 import { describeDistance } from "../street/geo.ts";
-import { canHost, isKindTag } from "../street/hosts.ts";
+import { canHost, hostKinds, hostsPeople, isKindTag } from "../street/hosts.ts";
 import type { Candidate } from "./candidates.ts";
 import { FORMATS } from "./formats.ts";
 import { hoursLine, hoursVerdict } from "./hours.ts";
@@ -21,7 +21,13 @@ function carrierIds(c: Candidate): Set<string> {
   return new Set((c.feature?.explain ?? []).filter((x) => x.share >= CARRIER_SHARE).map((x) => x.entityId.toUpperCase()));
 }
 
-function partnerBecause(p: LovedPlace, slot: Slot, prov: number): Because[] {
+// A cinema has nothing to play records on, so a listening night takes one only when its crowd carries the pick.
+function screensOnly(p: LovedPlace, c: Candidate, carriers: Set<string>): boolean {
+  if (c.format !== "listening" || carriers.has(p.id.toUpperCase())) return false;
+  return hostKinds(p).some((k) => k === "movie_theater" || k === "cinema");
+}
+
+export function partnerBecause(p: LovedPlace, slot: Slot, prov: number): Because[] {
   if (prov < 0) return [];
   const open = hoursLine(p, slot.weekday);
   if (open) return [{ kind: "affinity", text: `${open}, from Qloo's listing`, provenance: prov }];
@@ -32,18 +38,19 @@ function partnerBecause(p: LovedPlace, slot: Slot, prov: number): Because[] {
 
 export function pickPartners(c: Candidate, theme: StreetTag[], read: StreetRead, venue: Venue, slot: Slot, notes: string[]): LovedPlace[] {
   const def = FORMATS[c.format];
-  const walkable = read.lovedPlaces.filter((p) => p.distanceM <= WALK_M);
+  const walkable = read.lovedPlaces.filter((p) => p.distanceM <= WALK_M && hostsPeople(p));
   if (!walkable.length) {
     notes.push("No place within a 1 km walk came back from Qloo, so this night has no partners.");
     return [];
   }
-  const open = walkable.filter((p) => hoursVerdict(p, slot.weekday, slot.start) !== "closed");
-  const shut = walkable.length - open.length;
+  const carriers = carrierIds(c);
+  const reachable = walkable.filter((p) => !screensOnly(p, c, carriers));
+  const open = reachable.filter((p) => hoursVerdict(p, slot.weekday, slot.start) !== "closed");
+  const shut = reachable.length - open.length;
   if (shut) notes.push(shut === 1 ? "1 nearby place is left out because Qloo lists it as closed by the start of the night." : `${shut} nearby places are left out because Qloo lists them as closed by the start of the night.`);
   const themeIds = new Set(theme.map((t) => t.id));
   const gapIds = new Set(read.gaps.map((g) => g.tag.id));
   const sharedIds = new Set(read.shared.map((t) => t.id));
-  const carriers = carrierIds(c);
   const names = new Map<string, string>();
   for (const t of [...read.streetTags, ...read.shared, ...read.gaps.map((g) => g.tag)]) names.set(t.id, t.name);
   const venueCats = new Set(venue.entity.tags.filter(isKindTag));

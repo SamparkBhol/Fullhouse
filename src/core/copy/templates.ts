@@ -1,7 +1,7 @@
 import type { NightCopy, NightPlan, Venue } from "../../shared/contract.ts";
 import { FORMATS, menuItem } from "../planner/formats.ts";
 import { describeDate } from "../planner/time.ts";
-import { capFirst, listWords } from "../../shared/words.ts";
+import { capFirst, listWords, plainName } from "../../shared/words.ts";
 import { fit, shortTitle, withArticle } from "./text.ts";
 import { planTheme, themeWords } from "./theme.ts";
 
@@ -9,8 +9,9 @@ type CopyFields = Omit<NightCopy, "writtenBy">;
 
 // The same note goes to every partner, so it greets them as a neighbour and gets to the ask in three short paragraphs.
 function pitch(plan: NightPlan, venue: Venue, day: string, night: string): CopyFields["partnerPitch"] {
-  const v = venue.entity.name;
+  const v = plainName(venue.entity.name);
   const what = plan.feature ? `${night} around ${plan.feature.name}` : night;
+  if (plan.match) return jointPitch(plan, v, day, what);
   return {
     subject: fit([`${capFirst(night)} at ${v} on ${day}`, `${capFirst(night)} on ${day}`], 100),
     body: [
@@ -21,6 +22,28 @@ function pitch(plan: NightPlan, venue: Venue, day: string, night: string): CopyF
       `Qloo's aggregate taste data puts your place among the spots nearby that people who like ${v} also like, which is why we are writing to you.`,
       "",
       "Would you cross promote it with us? We would put your name on our event page and poster, and we are happy to do the same for one of your nights.",
+      "",
+      "Thanks,",
+      v,
+    ].join("\n"),
+  };
+}
+
+// A joint night is asked for, not announced: nothing names the partner in public until they say yes.
+function jointPitch(plan: NightPlan, v: string, day: string, what: string): CopyFields["partnerPitch"] {
+  const m = plan.match;
+  const shared = listWords((m?.shared ?? []).slice(0, 3).map((t) => t.name.toLowerCase()));
+  const where = m?.host === "partner" ? "at your place" : `at ${v}`;
+  return {
+    subject: fit([`A night with ${v} on ${day}`, `A joint night on ${day}`], 100),
+    body: [
+      "Hi there,",
+      "",
+      `We run ${v}, a short walk from you. Qloo's aggregate taste data says the people who like ${v} also love your place${shared ? `, and that both crowds go for ${shared}` : ""}.`,
+      "",
+      `So we would like to put on ${withArticle(what)} with you, ${where}, on ${day} from ${plan.start} to ${plan.end}. We each tell our regulars, and both names go on the event page once you say yes.`,
+      "",
+      "Are you in?",
       "",
       "Thanks,",
       v,
@@ -39,8 +62,14 @@ export function nightName(plan: NightPlan): string {
   return FORMATS[plan.format].label;
 }
 
+// A night the partner hosts is held at the partner's place, so its public copy names that place.
+// Qloo puts a spaced dash before a branch's city; copy reads it as "Angelika Film Center & Cafe, New York".
+export function hostName(plan: Pick<NightPlan, "match">, venue: Venue): string {
+  return plainName(plan.match?.host === "partner" ? plan.match.partner.name : venue.entity.name);
+}
+
 export function templateCopy(plan: NightPlan, venue: Venue): NightCopy {
-  const v = venue.entity.name;
+  const v = hostName(plan, venue);
   const day = describeDate(plan.date);
   const dayShort = day.split(" ")[0] ?? day;
   const f = plan.feature?.name ?? "";
@@ -51,11 +80,13 @@ export function templateCopy(plan: NightPlan, venue: Venue): NightCopy {
   const others = plan.playlist.filter((a) => a.name !== f).slice(0, 4).map((a) => a.name);
   const when = `On ${day} from ${plan.start} to ${plan.end}`;
   const rsvp = "Free to come in. RSVP so we know how many chairs to put out.";
+  // A joint pick is loved by both crowds; a solo pick by the venue's own, and the copy says which without naming anyone.
+  const crowd = plan.match?.split ? "both crowds" : `people who like ${plainName(venue.entity.name)}`;
   let c: Omit<CopyFields, "partnerPitch">;
 
   switch (plan.format) {
     case "listening": {
-      const between = others.length ? ` Between records we play more artists people around here love, like ${listWords(others)}.` : "";
+      const between = others.length ? ` Between records we play more artists ${crowd} love, like ${listWords(others)}.` : "";
       const lean = themeText ? ` Expect ${themeText}.` : "";
       c = {
         eventTitle: fit([`${f} listening night at ${v}`, `${f} listening night`, `${fs} listening night at ${v}`, `${fs} listening night`, `Listening night at ${v}`], 60),
@@ -64,7 +95,7 @@ export function templateCopy(plan: NightPlan, venue: Venue): NightCopy {
         posterSub: "Records played properly, with room to listen and room to talk. Free entry.",
         social: fit(
           [
-            `${day}, ${plan.start}. ${f} on the speakers at ${v}, plus artists people around here love. Free, RSVP at the link.`,
+            `${day}, ${plan.start}. ${f} on the speakers at ${v}, plus artists ${crowd} love. Free, RSVP at the link.`,
             `${dayShort} ${plan.start}. ${f} listening night at ${v}. Free, RSVP at the link.`,
           ],
           280,
@@ -102,10 +133,9 @@ export function templateCopy(plan: NightPlan, venue: Venue): NightCopy {
       break;
     }
     case "book": {
-      const lean = themeText ? ` Fans of ${themeText} especially welcome.` : "";
       c = {
         eventTitle: fit([`${f} book night at ${v}`, `${f} book night`, `${fs} book night at ${v}`, `${fs} book night`, `Book night at ${v}`], 60),
-        eventDescription: `${when}, ${v} hosts a book night around ${f}. Come if you have read it, come if you mean to.${lean} Free, RSVP so we can save you a seat.`,
+        eventDescription: `${when}, ${v} hosts a book night around ${f}. Come if you have read it, come if you mean to. Free, RSVP so we can save you a seat.`,
         posterHeadline: fit([`${f}`, `${fs}`, "Book night"], 40),
         posterSub: "Come if you have read it, come if you mean to.",
         social: fit(

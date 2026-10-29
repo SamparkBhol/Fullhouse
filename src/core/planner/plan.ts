@@ -1,21 +1,18 @@
-import type { EntityRef, NightFormat, NightPlan, PlanInput, PlanResponse, QuietSlot, StreetRead, StreetTag, Venue } from "../../shared/contract.ts";
-import { checkClaims } from "../copy/claims.ts";
-import { templateCopy } from "../copy/templates.ts";
+import type { NightPlan, PlanInput, PlanResponse, StreetRead, Venue } from "../../shared/contract.ts";
 import { listWords } from "../../shared/words.ts";
-import { briefNames, buildBrief } from "../copy/brief.ts";
+import { foodLed } from "../street/hosts.ts";
 import { RANK_LIMIT } from "../street/steps/limits.ts";
 import { fmtDay } from "../street/words.ts";
 import { scoreCandidates, type Candidate } from "./candidates.ts";
-import { FORMATS, FORMAT_ORDER, PLAYLIST_LICENCE } from "./formats.ts";
-import { menuFor, menuTags } from "./menu.ts";
+import { FORMATS, PLAYLIST_LICENCE } from "./formats.ts";
+import { menuFor } from "./menu.ts";
 import { pickPartners } from "./partners.ts";
 import { whyFor } from "./reasons.ts";
-import { nextSlotDate, parseHHMM } from "./time.ts";
+import { EMPTY_COPY, nightSlot, playlistFrom, themeFor, withTemplateCopy } from "./parts.ts";
 
 export { MAX_PARTNERS, WALK_M } from "./partners.ts";
 export { provIndex } from "./provenance.ts";
-
-export const PLAYLIST_SIZE = 8;
+export { PLAYLIST_SIZE } from "./parts.ts";
 
 export class PlanError extends Error {
   code: "no_candidates" | "all_avoided";
@@ -24,38 +21,6 @@ export class PlanError extends Error {
     this.name = "PlanError";
     this.code = code;
   }
-}
-
-// Book formats such as Audiobook or Paperback are on every book, so they never make a theme.
-const FORMAT_TAG = /^(audiobook|e ?book|hardcover|paperback|mass market|kindle)/i;
-
-// The theme only names tags the feature itself carries, so a film night is never themed with the street's book tags.
-function themeFor(c: Candidate, read: StreetRead): StreetTag[] {
-  const out: StreetTag[] = [];
-  const add = (t: StreetTag | undefined) => {
-    if (t && !FORMAT_TAG.test(t.name.trim()) && !out.some((o) => o.id === t.id) && out.length < 3) out.push(t);
-  };
-  const tags = new Set(c.feature?.tags ?? []);
-  if (c.menuTag) add(c.menuTag);
-  if (c.format === "tasting") for (const m of menuTags(read)) add(m.tag);
-  for (const g of read.gaps) if (tags.has(g.tag.id)) add(g.tag);
-  for (const t of read.streetTags) if (tags.has(t.id)) add(t);
-  for (const t of read.venueTags) if (tags.has(t.id)) add(t);
-  return out;
-}
-
-function playlistFor(read: StreetRead): EntityRef[] {
-  return read.rising
-    .filter((r) => r.type === "artist")
-    .sort((a, b) => a.rank - b.rank)
-    .slice(0, PLAYLIST_SIZE)
-    .map((r) => {
-      const e: EntityRef = { id: r.id, name: r.name, type: r.type };
-      if (r.subtype) e.subtype = r.subtype;
-      if (r.image) e.image = r.image;
-      if (r.url) e.url = r.url;
-      return e;
-    });
 }
 
 // An alternative is offered by what it features, so one without a named Qloo pick, such as a tasting night, only
@@ -75,10 +40,6 @@ function pickNights(ranked: Candidate[]): Candidate[] {
   return picks;
 }
 
-function validStart(s: string | undefined): string | undefined {
-  return s && parseHHMM(s) ? s : undefined;
-}
-
 export function planNights(
   read: StreetRead,
   venue: Venue,
@@ -87,18 +48,7 @@ export function planNights(
   origin: NightPlan["origin"],
   newId: () => string,
 ): PlanResponse {
-  const noLive = input.noLiveMusic ?? venue.noLiveMusic ?? false;
-  const avoid = new Set<NightFormat>(input.avoidFormats ?? []);
-  if (noLive) for (const f of FORMAT_ORDER) if (FORMATS[f].music) avoid.add(f);
-  const prefer = new Set<NightFormat>((input.preferFormats ?? []).filter((f) => !avoid.has(f)));
-  const caps = [input.maxPeople, venue.capacity].filter((n): n is number => typeof n === "number" && n > 0);
-  const cap = caps.length ? Math.min(...caps) : undefined;
-  const slot: QuietSlot = {
-    weekday: input.weekday ?? venue.quietSlot.weekday,
-    start: validStart(input.start) ?? venue.quietSlot.start,
-    durationMin: input.durationMin ?? venue.quietSlot.durationMin,
-  };
-  const when = nextSlotDate(slot, venue.tz, now);
+  const { slot, when, cap, noLive, avoid, prefer } = nightSlot(venue, input, now);
 
   const all = scoreCandidates(read, venue, cap, prefer);
   if (!all.length) {
@@ -125,8 +75,8 @@ export function planNights(
     const theme = themeFor(c, read);
     const partners = pickPartners(c, theme, read, venue, slot, notes);
     const menuIdeas = menuFor(c.menuTag, read, venue);
-    if (!menuIdeas.length) notes.push("Qloo returned no food or drink tags for your audience or the street, so there are no menu ideas.");
-    const playlist = playlistFor(read);
+    if (!menuIdeas.length && foodLed(venue.entity)) notes.push("Qloo returned no food or drink tags for your audience or the street, so there are no menu ideas.");
+    const playlist = playlistFrom(read.rising);
     const def = FORMATS[c.format];
     if (def.licence) notes.push(def.licence);
     if (playlist.length) notes.push(PLAYLIST_LICENCE);
@@ -152,27 +102,14 @@ export function planNights(
       menuIdeas,
       playlist,
       why: whyFor(c, theme, read, venue, playlist),
-      copy: {
-        eventTitle: "",
-        eventDescription: "",
-        posterHeadline: "",
-        posterSub: "",
-        social: "",
-        partnerPitch: { subject: "", body: "" },
-        writtenBy: "template",
-      },
+      copy: EMPTY_COPY,
       checks: { claimsVerified: true, unverified: [] },
       limits: [...notes, ...shared],
       readAt: read.at,
       status: "proposed",
     };
     if (cap !== undefined) plan.maxPeople = cap;
-    plan.copy = templateCopy(plan, venue);
-    const c2 = plan.copy;
-    const text = [c2.eventTitle, c2.eventDescription, c2.posterHeadline, c2.posterSub, c2.social, c2.partnerPitch.subject, c2.partnerPitch.body].join("\n");
-    const check = checkClaims(text, briefNames(buildBrief(plan, venue, read), plan, read));
-    plan.checks = { claimsVerified: check.ok, unverified: check.unverified };
-    return plan;
+    return withTemplateCopy(plan, venue, read);
   });
 
   const [plan, ...alternatives] = plans;

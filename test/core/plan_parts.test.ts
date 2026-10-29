@@ -17,7 +17,7 @@ beforeAll(async () => {
 describe("partners, menu ideas and the playlist", () => {
   it("picks partners within walking distance that share the theme and are not direct competitors", () => {
     for (const p of [plan().plan, ...plan().alternatives]) {
-      expect(p.partners.length).toBeGreaterThanOrEqual(2);
+      expect(p.partners.length).toBeGreaterThanOrEqual(1);
       expect(p.partners.length).toBeLessThanOrEqual(3);
       for (const x of p.partners) {
         expect(x.distanceM).toBeLessThanOrEqual(WALK_M);
@@ -28,6 +28,8 @@ describe("partners, menu ideas and the playlist", () => {
     const listening = plan().plan;
     expect(listening.partners[0]?.name).toBe("Blue Hour Wine Bar");
     expect(listening.partners[0]?.because.at(-1)?.text).toContain("tagged Wine Bar, which Full House pairs with a listening night");
+    expect(listening.format).toBe("listening");
+    expect(listening.partners.map((x) => x.name)).not.toContain("Grand Street Cinema");
     const book = plan({ preferFormats: ["book"] }).plan;
     expect(book.partners.map((x) => x.name)).toContain("Kettle Books");
     const tasting = plan({ preferFormats: ["tasting"] }).plan;

@@ -48,7 +48,7 @@ export function whyFor(c: Candidate, theme: StreetTag[], read: StreetRead, venue
   }
   const iArtist = provIndex(read, ["insights_artist"]);
   if (playlist.length && iArtist >= 0) {
-    why.push({ kind: "affinity", text: `The playlist is the top ${playlist.length} artists Qloo picked for ${venue.entity.name} and its area`, provenance: iArtist });
+    why.push({ kind: "affinity", text: `The playlist is the top ${playlist.length} artists Qloo picked for people who like ${venue.entity.name}, read with the streets around it`, provenance: iArtist });
   }
   return why;
 }

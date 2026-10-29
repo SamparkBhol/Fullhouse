@@ -31,7 +31,6 @@ function themed(tags: StreetTag[], type: QlooType = "tv_show"): NightPlan {
 
 describe("theme phrases from live Qloo tags", () => {
   it("turns plot keywords into something a person would say", () => {
-    expect(phrase("Female protagonist", KEYWORD)).toBe("stories with a female lead");
     expect(phrase("Mother daughter relationship", KEYWORD)).toBe("stories about mothers and daughters");
     expect(phrase("Brother brother relationship", KEYWORD)).toBe("stories about brothers");
     expect(phrase("Family relationships", KEYWORD)).toBe("stories about family");
@@ -41,6 +40,13 @@ describe("theme phrases from live Qloo tags", () => {
     expect(phrase("Satire comedy", KEYWORD)).toBe("satirical comedy");
     expect(phrase("Kdrama", KEYWORD)).toBe("Korean drama");
     expect(phrase("feel good romance", KEYWORD)).toBe("feel good romance");
+  });
+
+  it("never themes public copy by who people are: gender, race or sexuality", () => {
+    for (const name of ["Female protagonist", "Gay lead", "Black protagonist", "Female lawyer", "Race", "Gender", "Sexuality", "Coming out", "Feminism"]) {
+      expect(phrase(name, KEYWORD), name).toBeNull();
+    }
+    for (const name of ["LGBT", "Queer", "Race", "Feminism", "African American"]) expect(phrase(name, MEDIA_GENRE, "movie"), name).toBeNull();
   });
 
   it("leaves out keywords that do not read as a taste", () => {
@@ -53,7 +59,6 @@ describe("theme phrases from live Qloo tags", () => {
   it("words genres by what the feature is and drops formats, ages and places", () => {
     expect(phrase("Cooking", MEDIA_GENRE, "book")).toBe("books about cooking");
     expect(phrase("Food & Drink", MEDIA_GENRE, "book")).toBe("books about food");
-    expect(phrase("LGBT", MEDIA_GENRE, "movie")).toBe("LGBT stories");
     expect(phrase("Thriller", MEDIA_GENRE, "movie")).toBe("thrillers");
     expect(phrase("Biography & Memoir", MEDIA_GENRE, "book")).toBe("biography and memoir");
     expect(phrase("Historical", MEDIA_GENRE, "movie")).toBe("historical stories");
@@ -95,10 +100,10 @@ describe("theme phrases from live Qloo tags", () => {
 
 describe("theme line in the template copy", () => {
   it("phrases the theme instead of pasting the tag", () => {
-    const plan = themed([tag("Female protagonist", KEYWORD), tag("Comedy", MEDIA_GENRE)]);
+    const plan = themed([tag("Female protagonist", KEYWORD), tag("Friendship", KEYWORD), tag("Comedy", MEDIA_GENRE)]);
     const copy = templateCopy(plan, VENUE);
-    expect(copy.eventDescription).toContain("If you like stories with a female lead and comedy, this one is for you.");
-    expect(copy.eventDescription).not.toMatch(/female protagonist/i);
+    expect(copy.eventDescription).toContain("If you like stories about friendship and comedy, this one is for you.");
+    expect(copy.eventDescription).not.toMatch(/female/i);
   });
 
   it("keeps the more specific of two overlapping genres and at most two phrases", () => {
@@ -107,9 +112,9 @@ describe("theme line in the template copy", () => {
   });
 
   it("lets two subjects share one noun", () => {
-    const local = themed([tag("Female protagonist", KEYWORD), tag("New york city", KEYWORD)]);
+    const local = themed([tag("Friendship", KEYWORD), tag("New york city", KEYWORD)]);
     expect(templateCopy(local, { ...VENUE, city: "New York" }).eventDescription).toContain(
-      "If you like stories set in New York City with a female lead, this one is for you.",
+      "If you like stories set in New York City about friendship, this one is for you.",
     );
     expect(themeWords(planTheme(themed([tag("Friendship", KEYWORD), tag("Family relationships", KEYWORD)])))).toEqual(["stories about friendship and family"]);
   });

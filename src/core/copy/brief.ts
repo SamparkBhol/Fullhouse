@@ -1,9 +1,8 @@
 import type { NightPlan, StreetRead, Venue } from "../../shared/contract.ts";
-import { ordinal, TYPE_SINGULAR } from "../../shared/words.ts";
+import { TYPE_SINGULAR, plainName } from "../../shared/words.ts";
 import { describeDate } from "../planner/time.ts";
 import { tagLabel } from "../qloo/tags.ts";
-import { describeDistance } from "../street/geo.ts";
-import { nightName } from "./templates.ts";
+import { hostName, nightName } from "./templates.ts";
 import { planTheme, themeWords } from "./theme.ts";
 
 export interface CopyBrief {
@@ -17,10 +16,18 @@ export interface CopyBrief {
   streetNotes: string[];
 }
 
+// Public copy says nothing about a partner before it agrees, so the reason the model gets is the venue's own.
+function featureReason(plan: NightPlan, venue: Venue): string {
+  return `a ${TYPE_SINGULAR[plan.feature?.type ?? "book"]} the people who like ${plainName(venue.entity.name)} love in Qloo's taste data`;
+}
+
 // The theme goes in as the phrases the templates use, so the model never echoes a raw tag such as "female protagonist".
+// Partners stay out of the brief: a partner is named in public only after it says yes, so the claim check refuses any copy that names one.
 export function buildBrief(plan: NightPlan, venue: Venue, _read: StreetRead): CopyBrief {
+  const place = hostName(plan, venue);
+  const address = place === venue.entity.name ? venue.entity.address : plan.match?.partner.address;
   return {
-    venue: { name: venue.entity.name, city: venue.city, ...(venue.entity.address ? { address: venue.entity.address } : {}) },
+    venue: { name: place, city: venue.city, ...(address ? { address } : {}) },
     night: {
       format: plan.format,
       label: nightName(plan),
@@ -33,18 +40,14 @@ export function buildBrief(plan: NightPlan, venue: Venue, _read: StreetRead): Co
           name: plan.feature.name,
           kind: TYPE_SINGULAR[plan.feature.type],
           trend: plan.feature.trend,
-          // The model gets one plain reason; the technical Qloo lines stay on the owner's screen.
-          reasons: [`the ${TYPE_SINGULAR[plan.feature.type]} Qloo ranks ${ordinal(plan.feature.rank)} for people who like ${venue.entity.name}`],
+          // The model gets one plain reason without ranks; the technical Qloo lines stay on the owner's screen.
+          reasons: [featureReason(plan, venue)],
         }
       : null,
     theme: themeWords(planTheme(plan, venue.city)),
     menuIdeas: plan.menuIdeas.map((m) => m.text),
     playlist: plan.playlist.map((p) => p.name),
-    partners: plan.partners.map((p) => ({
-      name: p.name,
-      distance: describeDistance(p.distanceM),
-      reasons: p.because.map((b) => b.text).slice(0, 2),
-    })),
+    partners: [],
     // Gap notes name nearby businesses, which public copy must not mention.
     streetNotes: [],
   };

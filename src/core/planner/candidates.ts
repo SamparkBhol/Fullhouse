@@ -1,4 +1,5 @@
 import type { Gap, NightFormat, Rising, StreetRead, StreetTag, Venue } from "../../shared/contract.ts";
+import { foodLed } from "../street/hosts.ts";
 import { FORMATS, FORMAT_ORDER, type FormatDef } from "./formats.ts";
 import { menuTags } from "./menu.ts";
 
@@ -58,6 +59,7 @@ export function scoreCandidates(read: StreetRead, venue: Venue, cap: number | un
     const people = fitsPeople(def, cap);
     const gap = gapFor(format, read) ? GAP_BONUS : 0;
     if (format === "tasting") {
+      if (!foodLed(venue.entity)) continue;
       const c = tastingCandidate(read, people, bonus, gapFor(format, read));
       if (c) out.push(c);
       continue;

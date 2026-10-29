@@ -32,7 +32,7 @@ const good = {
   posterHeadline: "Alice Coltrane night",
   posterSub: "Thursday 29 October, 19:00 at Cafe Lumen",
   social: "Alice Coltrane on the speakers at Cafe Lumen this Thursday. Free, RSVP at the link.",
-  partnerPitch: { subject: "A listening night at Cafe Lumen", body: "Hi, we are hosting a listening night on Thursday. Blue Hour Wine Bar came up in Qloo's aggregate taste data for our street. Would you cross promote it? Thanks, Cafe Lumen" },
+  partnerPitch: { subject: "A listening night at Cafe Lumen", body: "Hi there, we are hosting a listening night on Thursday. Qloo's aggregate taste data puts your place among the spots nearby that people who like Cafe Lumen also like. Would you cross promote it? Thanks, Cafe Lumen" },
 };
 
 beforeAll(async () => {
@@ -102,6 +102,15 @@ describe("writeCopy", () => {
     expect(out.copy.writtenBy).toBe("template");
     expect(out.checks).toEqual({ claimsVerified: true, unverified: ["Kamasi Washington"] });
     expect(out.limits.at(-1)).toBe("The model copy named Kamasi Washington, which is not in the Qloo brief, so the copy comes from templates.");
+  });
+
+  it("keeps the template copy when the model names a partner, who has not said yes to anything", async () => {
+    const partner = plan.partners[0]!.name;
+    const named = { ...good, eventDescription: `${good.eventDescription} With our friends at ${partner}.` };
+    const out = await writeCopy(plan, VENUE, read, async () => JSON.stringify(named));
+    expect(out.copy.writtenBy).toBe("template");
+    expect(out.checks.unverified.some((n) => partner.includes(n))).toBe(true);
+    expect(buildBrief(plan, VENUE, read).partners).toEqual([]);
   });
 
   it("keeps the template copy on failure, bad JSON, missing fields or banned words", async () => {

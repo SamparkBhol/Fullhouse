@@ -1,5 +1,6 @@
 import type { Because, MenuIdea, StreetRead, StreetTag, Venue } from "../../shared/contract.ts";
 import { ordinal } from "../../shared/words.ts";
+import { foodLed } from "../street/hosts.ts";
 import { streetTagLine } from "../street/words.ts";
 import { MENU_NAMESPACES, menuItem } from "./formats.ts";
 import { provIndex, streetTagsIndex } from "./provenance.ts";
@@ -52,7 +53,9 @@ function menuBecause(m: MenuTag, read: StreetRead, venue: Venue): Because | null
   return prov >= 0 ? { kind: "tag", text: streetTagLine(m.tag.name, venue.entity.name), provenance: prov } : null;
 }
 
+// A bookshop or a cinema with a coffee counter is not asked to change its menu for a night.
 export function menuFor(lead: StreetTag | null, read: StreetRead, venue: Venue): MenuIdea[] {
+  if (!foodLed(venue.entity)) return [];
   const tags = menuTags(read);
   const first = lead ? (tags.find((m) => m.tag.id === lead.id) ?? { tag: lead, source: "gap" as const, order: 0 }) : undefined;
   const ordered = first ? [first, ...tags.filter((m) => m.tag.id !== first.tag.id)] : tags;

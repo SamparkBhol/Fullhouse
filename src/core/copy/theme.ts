@@ -41,13 +41,16 @@ const NOT_A_TASTE = new Set(
 // Genres that are really subjects read as "books about cooking" or "stories about politics".
 const SUBJECT_GENRES: Record<string, string> = {
   food: "food", "food and drink": "food", cooking: "cooking", cookbooks: "cooking", culinary: "cooking", cuisine: "food",
-  travel: "travel", design: "design", art: "art", fashion: "fashion", race: "race", feminism: "feminism",
+  travel: "travel", design: "design", art: "art", fashion: "fashion",
   "social justice": "social justice", activism: "activism", politics: "politics", "political science": "politics",
   government: "politics", history: "history", "mental health": "mental health", relationships: "relationships",
   sports: "sport", science: "science", technology: "technology", business: "business", religion: "faith", nature: "nature",
 };
 
-const IDENTITY_GENRES: Record<string, string> = { lgbt: "LGBT", lgbtq: "LGBTQ", queer: "queer", gay: "gay", lesbian: "lesbian" };
+// Public copy never sorts a crowd by who people are, so gender, race and sexuality never become a theme.
+const IDENTITY = new Set(
+  ["lgbt", "lgbtq", "queer", "gay", "lesbian", "race", "feminism", "gender", "sexuality", "identity", "coming out", "african american", "black", "womens", "women", "mens"].map(normalizeName),
+);
 
 const PLURAL_GENRES: Record<string, string> = {
   thriller: "thrillers", documentary: "documentaries", musical: "musicals", mystery: "mysteries", western: "westerns",
@@ -69,10 +72,10 @@ const PROPER_WORDS: Record<string, string> = Object.fromEntries(
 
 const SUBJECT_KEYWORDS = new Set([
   "friendship", "love", "grief", "family", "identity", "ambition", "memory", "loss", "home", "immigration", "adolescence",
-  "growing up", "race", "class", "gender", "politics", "art", "food", "fashion", "community", "war", "dating", "marriage",
-  "sisters", "brothers", "motherhood", "fatherhood", "parenthood", "faith", "revenge", "survival", "heartbreak", "sexuality",
-  "feminism", "activism", "cooking", "dance", "dancing", "singing", "sport", "sports", "fame", "addiction", "mental health",
-  "ageing", "aging", "childhood", "youth", "high school", "college", "career", "divorce", "coming out", "poetry", "money",
+  "growing up", "class", "politics", "art", "food", "fashion", "community", "war", "dating", "marriage",
+  "sisters", "brothers", "motherhood", "fatherhood", "parenthood", "faith", "revenge", "survival", "heartbreak",
+  "activism", "cooking", "dance", "dancing", "singing", "sport", "sports", "fame", "addiction", "mental health",
+  "ageing", "aging", "childhood", "youth", "high school", "college", "career", "divorce", "poetry", "money",
 ]);
 
 const KIN: Record<string, string> = {
@@ -86,7 +89,8 @@ const GENRE_MODIFIERS: Record<string, string> = {
   medical: "medical", satire: "satirical", workplace: "workplace", musical: "musical",
 };
 
-const LEAD = /^(female|male|teenage|young|older|queer|gay|lesbian)\s+(protagonist|lead|hero|heroine)$/;
+// "Female protagonist" and "Gay lead" describe who a story is about, which public copy leaves alone.
+const LEAD = /^(female|male|teenage|young|older|queer|gay|lesbian|black|trans)\s+(protagonist|lead|hero|heroine|lawyer|doctor|detective)$/;
 const KIN_PAIR = /^(\w+)\s+(\w+)\s+relationships?$/;
 const DECADE = /^(1[89]|20)\d0s$/;
 const GENRE_KEYWORD = /^(.+?)\s+(comedy|drama|romance|thriller|horror)$/;
@@ -108,10 +112,9 @@ function looksLikeWords(text: string): boolean {
 
 function genrePhrase(name: string, noun: string): ThemePhrase | null {
   const key = normalizeName(name);
+  if (IDENTITY.has(key)) return null;
   const topic = SUBJECT_GENRES[key];
   if (topic) return subject(noun, `about ${topic}`);
-  const identity = IDENTITY_GENRES[key];
-  if (identity) return noun === "music" ? null : { text: `${identity} ${noun}`, kind: "subject" };
   if (NOT_A_TASTE.has(key) || NOT_A_TASTE.has(key.replace(/ music$/, "")) || !key) return null;
   const words = spoken(name);
   if (!looksLikeWords(words)) return null;
@@ -125,8 +128,7 @@ function genrePhrase(name: string, noun: string): ThemePhrase | null {
 function keywordPhrase(name: string, noun: string, city: string): ThemePhrase | null {
   const key = normalizeName(name);
   const about = (what: string): ThemePhrase => subject(noun, `about ${what}`);
-  const lead = LEAD.exec(key);
-  if (lead) return subject(noun, `with a ${lead[1]} lead`);
+  if (IDENTITY.has(key) || LEAD.test(key)) return null;
   if (key === "family relationships" || key === "family relationship") return about("family");
   const kin = KIN_PAIR.exec(key);
   if (kin) {

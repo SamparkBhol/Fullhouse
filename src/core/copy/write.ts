@@ -92,8 +92,9 @@ function logRefused(problem: string, raw: string): void {
   console.warn("model copy refused", JSON.stringify({ problem, length: raw.length, head: raw.slice(0, 240) }));
 }
 
+// A night at the partner's place keeps template copy: the model writes as the venue, and the pitch must come from it.
 export async function writeCopy(plan: NightPlan, venue: Venue, read: StreetRead, generate: Generate | null): Promise<NightPlan> {
-  if (!generate) return plan;
+  if (!generate || plan.match?.host === "partner") return plan;
   const brief = buildBrief(plan, venue, read);
   const allowed = briefNames(brief, plan, read);
   let raw: string;

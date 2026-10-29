@@ -69,20 +69,21 @@ describe("runBaseline", () => {
     expect(b.model).toBe("@cf/meta/llama-3.3-70b-instruct-fp8-fast");
     expect(b.at).toBe(NOW.toISOString());
     expect(b.plainNames.map((n) => [n.name, n.kind, n.status])).toEqual([
+      ["The Velvet Spoon", "place", "not_found"],
       ["Blue Hour Wine Bar", "place", "found_nearby"],
       ["Sora Ramen", "place", "found_far"],
-      ["The Velvet Spoon", "place", "not_found"],
       ["Norah Jones", "artist", "found_nearby"],
     ]);
-    expect(b.plainNames[1]?.note).toMatch(/^Sora Ramen is about \d+\.\d km away$/);
+    expect(b.plainNames[2]?.note).toMatch(/^Sora Ramen is about \d+\.\d km away$/);
+    expect(b.modelLabel).toBe("Llama 3.3 70B, an open model far smaller than the big chatbots");
     expect(summarise(b.plainNames)).toEqual({ found_nearby: 2, found_far: 1, not_found: 1 });
 
-    expect(b.fullHouseNames[0]).toMatchObject({ name: "Alice Coltrane", kind: "artist", status: "found_nearby", tied: true, tieNote: "1st among the artists Qloo returned for people who like Cafe Lumen" });
-    expect(b.fullHouseNames.slice(1).map((n) => n.name)).toEqual(plan.partners.map((p) => p.name));
-    expect(b.fullHouseNames.slice(1).every((n) => n.tied && /^\d+(st|nd|rd|th) of 5 places nearby people who like Cafe Lumen love$/.test(n.tieNote ?? ""))).toBe(true);
-    expect(b.fullHouseNames[1]?.note).toMatch(/^Checked by Qloo id as .+, about \d+ m away$/);
-    expect(b.plainNames[0]).toMatchObject({ tied: false, tieNote: "Not among the 5 places nearby Qloo ties to Cafe Lumen's audience" });
-    expect(f.calls.filter((c) => c.url.pathname === "/entities")).toHaveLength(1);
+    expect(b.fullHouseNames.map((n) => n.name)).toEqual(["Blue Hour Wine Bar", "Grand Street Cinema"]);
+    expect(b.fullHouseNames.every((n) => n.tied && /^\d+(st|nd|rd|th) of 5 places nearby people who like Cafe Lumen love$/.test(n.tieNote ?? ""))).toBe(true);
+    expect(b.fullHouseNames[0]?.note).toMatch(/^About \d+ m from Cafe Lumen, in the street read$/);
+    expect(b.plainNames[1]).toMatchObject({ tied: false, tieNote: "Not among the 5 places nearby Qloo ties to Cafe Lumen's audience" });
+    expect(f.calls.filter((c) => c.url.pathname === "/entities")).toHaveLength(0);
+    expect(b.method).toContain("would prove nothing");
     expect(b.method).toContain("is not proof that a place does not exist");
     expect(b.method).toContain("within 10 miles");
 
