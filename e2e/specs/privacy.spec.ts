@@ -1,6 +1,6 @@
 import { fakeQlooLog } from "../support/fake_log.ts";
 import { BASE_URL, QLOO_HOSTS } from "../support/env.ts";
-import { approveNight, createVenue, openAsOwner, planNight, readStreet } from "../support/owner.ts";
+import { approveNight, createVenue, neighbourSaysYes, openAsOwner, planNight, readStreet } from "../support/owner.ts";
 import { expect, test } from "../support/test.ts";
 
 const QLOO_PATHS = ["/search", "/v2/insights", "/v2/analysis/compare"];
@@ -10,6 +10,7 @@ test("Qloo gets only the venue and public things, and every call carries the key
   const owner = await createVenue(request, { name: "Larkspur Picture House", city: "Ghent", tz: "Europe/Brussels", ownerEmail: email });
   await readStreet(request, owner);
   const { plan } = await planNight(request, owner);
+  await neighbourSaysYes(request, owner, plan);
   const night = await approveNight(request, owner, plan, ["event_page", "ics", "owner_email"]);
   const logged = await request.post(`/api/venues/${owner.venue.id}/nights/${night.id}/result`, {
     headers: { authorization: `Bearer ${owner.token}` },
@@ -34,7 +35,7 @@ test("the browser only talks to Full House and the map tiles, never to Qloo", as
   const owner = await createVenue(request, { name: "Harbor Oyster House", city: "Portland", tz: "America/Los_Angeles" });
   await readStreet(request, owner);
   await openAsOwner(page, owner, "/street");
-  await expect(page.locator(".map.leaflet-container .pin-venue")).toBeVisible();
+  await expect(page.locator(".map.leaflet-container .pin-you")).toBeVisible();
   const tiles = (h: string) => h === "tile.openstreetmap.org" || h.endsWith(".tile.openstreetmap.org");
   // A tile the page CSP refused would never reach the network, so a tile request seen here passed img-src.
   await expect.poll(() => traffic.hosts().some(tiles)).toBe(true);

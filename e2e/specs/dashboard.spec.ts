@@ -34,19 +34,19 @@ test("venue home shows the numbers strip, and it opens the Numbers tab", async (
   await expect(page.getByRole("navigation", { name: "Your venue" }).getByRole("link", { name: "Numbers", exact: true })).toHaveAttribute("aria-current", "page");
   const next = page.locator('[data-pane="next"]');
   await expect(next.locator(".counter .sr-only")).toHaveText("1 RSVP for your next night");
-  await expect(next.locator(".tally-yes-words")).toHaveText("of 40 has said yes");
+  await expect(next.locator(".next-words")).toHaveText("of 40 has said yes");
 
   const nights = page.locator('[data-pane="nights"]');
   await nights.getByText("Show as a table").click();
   await expect(nights.locator("tbody tr")).toHaveCount(1);
-  await expect(nights.locator("tbody tr")).toContainText("On the street");
+  await expect(nights.locator("tbody tr")).toContainText("Coming up");
   await expect(page.locator('[data-pane="reads"]')).toHaveCount(0);
   await expect(page.getByRole("radio", { name: "10 s" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Check now" })).toHaveCount(0);
   await expect(page.locator('[data-pane="mondays"]')).toContainText(/Next run \w{3} \d+ \w{3}, 09:00\./);
 
   await page.getByRole("link", { name: "Nights", exact: true }).click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Your nights");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Fern Hall Records");
   await page.getByRole("link", { name: "Numbers", exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.locator('[data-pane="next"] .counter .sr-only')).toHaveText("1 RSVP for your next night");
@@ -77,7 +77,7 @@ test("a logged turnout shows against the room on the strip and the dashboard", a
   await openAsOwner(page, owner, "/dashboard");
   await expect(page.locator('[data-pane="next"]')).toContainText("No published night coming up.");
   const nights = page.locator('[data-pane="nights"]');
-  await expect(nights.locator(".night-done .tally-big")).toHaveText("27");
+  await expect(nights.locator(".night-done .nights-big")).toHaveText("27");
   await nights.getByText("Show as a table").click();
   await expect(nights.locator("tbody tr").first()).toContainText("Turnout logged");
   await expect(nights.locator("tbody tr").first()).toContainText("40");

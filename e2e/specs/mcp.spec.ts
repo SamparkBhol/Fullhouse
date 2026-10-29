@@ -40,10 +40,11 @@ test("the MCP endpoint initializes, lists the five tools and reads the street fo
   expect(call.result?.isError).toBeFalsy();
   const read = (call.result?.structuredContent as { read: { venueId: string; provenance: unknown[]; lovedPlaces: unknown[] } }).read;
   expect(read.venueId).toBe(owner.venue.id);
-  expect(read.provenance).toHaveLength(12);
+  expect(read.provenance.length).toBeLessThanOrEqual(30);
+  expect((read.provenance as Array<{ call: string }>).filter((p) => p.call === "loves_back").length).toBeGreaterThan(0);
   expect(read.lovedPlaces.length).toBeGreaterThan(0);
   const text = (call.result?.content as Array<{ type: string; text: string }>)[0]?.text ?? "";
-  expect(text).toMatch(/^Street read at .+: \d+ loved places nearby, \d+ picks, \d+ gaps, 12 Qloo calls\./);
+  expect(text).toMatch(/^Street read at .+: \d+ loved places nearby, \d+ picks, \d+ gaps, \d+ Qloo calls\./);
 
   const refused = await rpc(request, "tools/call", { name: "read_street", arguments: { venue_id: owner.venue.id, owner_token: "x".repeat(40) } });
   expect(refused.result?.isError).toBe(true);

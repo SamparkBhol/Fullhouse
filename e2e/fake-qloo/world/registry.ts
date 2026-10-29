@@ -12,4 +12,9 @@ export class PlaceRegistry {
   find(id: string): FakePlace | undefined {
     return this.byId.get(id.trim().toUpperCase());
   }
+
+  // Places a search has already answered with, such as the venue itself, so another place's crowd can love it back.
+  known(): FakePlace[] {
+    return [...this.byId.values()];
+  }
 }

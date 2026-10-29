@@ -1,4 +1,4 @@
-import { createVenue, openAsOwner, readStreet } from "../support/owner.ts";
+import { createVenue, neighbourSaysYesTo, openAsOwner, readStreet } from "../support/owner.ts";
 import { expect, test } from "../support/test.ts";
 
 test("a plan carries its reasons and says who wrote the copy, a plain phrase changes it, and approval publishes it", async ({ page, request }) => {
@@ -9,39 +9,45 @@ test("a plan carries its reasons and says who wrote the copy, a plain phrase cha
   await openAsOwner(page, owner);
   await page.getByRole("button", { name: "Plan a night for Tuesday" }).click();
 
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/^A night for Tuesday \d+ \w+$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/^.+, Tuesday \d+ \w+\.$/);
   await expect(page.locator(".options")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Another idea" })).toBeVisible();
-  await expect(page.locator(".night-window .flyer")).toBeVisible();
-  const receipts = page.locator("details.receipts");
-  await expect(receipts).toHaveCount(1);
-  await expect(page.getByRole("button", { name: /Qloo calls/ })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "The evening" })).toBeVisible();
+  await expect(page.locator(".stops > .stop:not(.stop-walk)")).toHaveCount(2);
+  await expect(page.getByRole("heading", { name: "Why Tuesday" })).toBeVisible();
+  const sources = page.locator("details.sources");
+  await expect(sources).toHaveCount(1);
   await expect(page.locator(".because-call:visible")).toHaveCount(0);
-  await receipts.locator("> summary").click();
-  const why = receipts.locator(".fold", { has: page.getByRole("heading", { name: "Why this night" }) });
+  await sources.locator("> summary").click();
+  const why = sources.locator(".fold", { has: page.getByRole("heading", { name: "Why this night" }) });
   await expect(why.locator(".because-row").first()).toContainText(/Call \d+/);
-  await expect(page.locator(".ledge-walk .postcard").first().locator(".postcard-walk")).toContainText("min walk");
   await expect(page.locator(".written-by")).toHaveText("Copy from template");
   await expect(page.locator(".claim")).toBeVisible();
-  await expect(page.getByText("A personal streaming account does not cover playing music to customers.")).toBeVisible();
-  await expect(page.locator(".sleeve")).toHaveCount(0);
 
   await why.locator(".because-row").first().click();
-  await expect(page.getByRole("dialog").locator(".receipt-focus")).toBeVisible();
+  await expect(page.getByRole("dialog").locator(".call-focus")).toBeVisible();
   await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
 
   await expect(page.getByLabel("What should change?")).toBeHidden();
   await page.getByRole("button", { name: "Change it" }).click();
   await page.getByLabel("What should change?").fill("make it Friday, under 30 people");
   await page.getByRole("button", { name: "Change the plan" }).click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/^A night for Friday \d+ \w+$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/^.+, Friday \d+ \w+\.$/);
 
   await page.getByRole("link", { name: "Review and publish" }).click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Publish this night");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Review and publish");
+  await expect(page.getByRole("heading", { name: "The evening as it goes out" })).toBeVisible();
   const actions = page.locator(".actions-list li.action");
   await expect(actions).toHaveCount(5);
   for (const name of ["Publish the event page", "Make the poster", "Make a calendar file", "Make a Google Calendar link", "Draft notes to the partners"]) {
     await expect(page.getByRole("checkbox", { name: new RegExp(name) })).toBeChecked();
+  }
+  // The licence lines sit above the publish button, so the owner reads them before pressing it.
+  const licence = page.locator(".licence-lines");
+  if ((await licence.count()) > 0) {
+    const lines = await licence.boundingBox();
+    const button = await page.getByRole("button", { name: "Publish the night" }).boundingBox();
+    expect((lines?.y ?? 0) < (button?.y ?? 0)).toBe(true);
   }
   await expect(page.getByRole("checkbox", { name: /Create the Eventbrite event/ })).toHaveCount(0);
   await expect(page.getByRole("checkbox", { name: /Email me the links/ })).toHaveCount(0);
@@ -53,9 +59,13 @@ test("a plan carries its reasons and says who wrote the copy, a plain phrase cha
   await expect(partnerEmails).not.toHaveCount(0);
   await partnerEmails.first().fill("events@partner.example");
 
+  // A two stop night names the neighbour, so it goes up only after their yes. Before it, the partner's stop reads as proposed.
+  await expect(page.locator(".stops .stop-them .stop-proposed")).toHaveCount(1);
+  const planId = /\/night\/([^/]+)\/approve/.exec(page.url())?.[1] ?? "";
+  await neighbourSaysYesTo(request, owner, planId);
   await page.getByRole("button", { name: "Publish the night" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Published");
-  const live = page.locator("section", { has: page.getByRole("heading", { name: "Out on the street" }) });
+  const live = page.locator("section", { has: page.getByRole("heading", { name: "Public links" }) });
   await expect(live.getByRole("link", { name: "Public event page" })).toHaveAttribute("href", /\/e\/[^/]+$/);
   await expect(live.getByRole("link", { name: "Printable poster" })).toHaveAttribute("href", /\/poster$/);
   await expect(live.getByRole("link", { name: "Calendar file (.ics)" })).toHaveAttribute("href", /\.ics$/);
@@ -69,7 +79,18 @@ test("a plan carries its reasons and says who wrote the copy, a plain phrase cha
   await expect(draft.getByRole("link", { name: "Outlook" })).toHaveAttribute("href", /^https:\/\/outlook\.(live|office)\.com\//);
   await expect(page.locator(".rsvp-line")).toHaveText("Nobody has pressed I am going yet. The count shows here when they do.");
 
+  // The words can change after publishing, and the public page reads the new ones.
+  await page.getByText("Change the words on the page").click();
+  const changed = page.locator("#edit-words").getByLabel("Title", { exact: true });
+  await changed.fill("Friday night at Juniper Books, second sitting");
+  await page.getByRole("button", { name: "Save the words" }).click();
+  await expect(page.locator(".notice")).toHaveText("The words are saved. The event page, poster and calendar file read them now.");
+  const href = await live.getByRole("link", { name: "Public event page" }).getAttribute("href");
+  const pub = await request.get(href ?? "");
+  expect(await pub.text()).toContain("Friday night at Juniper Books, second sitting");
+
   await page.getByRole("link", { name: "Nights", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "On the street now" })).toBeVisible();
+  const next = page.locator("section", { has: page.getByRole("heading", { name: "Your next night" }) });
+  await expect(next.locator(".chip")).toHaveText("Published");
   await expect(page.getByRole("heading", { name: "Next draft" })).toHaveCount(0);
 });

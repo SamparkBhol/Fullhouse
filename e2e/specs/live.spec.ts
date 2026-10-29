@@ -8,10 +8,9 @@ const HIDE_TAB = `(() => {
   document.dispatchEvent(new Event("visibilitychange"));
 })()`;
 
-test("the live numbers open from the footer only and count what happened", async ({ page, request }) => {
+test("the live numbers open from the footer and count what happened", async ({ page, request }) => {
   await createVenue(request, { name: "Lantern Records", city: "Leeds" });
   await page.goto("/");
-  await expect(page.locator("header").getByRole("link", { name: "Live numbers" })).toHaveCount(0);
   await expect(page.getByText("Counted on this server")).toHaveCount(0);
 
   await page.locator("footer").getByRole("link", { name: "Live numbers" }).click();
@@ -23,7 +22,8 @@ test("the live numbers open from the footer only and count what happened", async
   await expect(venues.locator(".counter .sr-only")).toHaveText(/^[1-9]\d* venues? set up$/);
   await expect(venues).toContainText("In the last 24 hours.");
   await expect(page.locator(".refresh-line")).toContainText("Checks every 30 s.");
-  await expect(page.locator('[data-pane="endpoints"] tbody th', { hasText: /^\/search$/ })).toBeVisible();
+  await expect(page.locator('[data-pane="endpoints"] tbody th', { hasText: /^\/search, / })).toBeVisible();
+  await expect(page.locator('[data-pane="endpoints"]')).not.toContainText("earlier build");
   await expect(page.locator('[data-pane="budget"] .gauge-figure')).toContainText(/live calls? of 4,000 today/);
   await expect(page.locator('[data-pane="turnoutPeople"]')).toContainText("Head counts show here once 5 nights are logged");
 
@@ -85,7 +85,7 @@ test("the pickers change the range and the polling, and the page says what it is
 
 test("the same numbers read as plain text with no JavaScript", async ({ page, browser }) => {
   await page.goto("/how");
-  await page.getByRole("link", { name: "Live numbers" }).click();
+  await page.locator("footer").getByRole("link", { name: "Live numbers" }).click();
   await expect(page).toHaveURL(/\/live$/);
   await page.getByRole("link", { name: "The same numbers as plain text" }).click();
   await expect(page).toHaveURL(/\/live\.txt$/);

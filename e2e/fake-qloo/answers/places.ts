@@ -22,8 +22,11 @@ export function placeInsights(q: Query, places: PlaceRegistry): Answer {
   const excluded = new Set(q.list("filter.exclude.entities").map((id) => id.toUpperCase()));
   const explain = q.one("feature.explainability") === "true" && ids.length > 0;
   const signal = ids.join(",");
-  const scored = places
-    .remember(placesAround(center))
+  const around = places.remember(placesAround(center));
+  const aroundIds = new Set(around.map((p) => p.id));
+  // With another place as the signal, the venue it sits beside is one of the places its crowd loves.
+  const nearby = ids.length && filterPoint ? places.known().filter((p) => !aroundIds.has(p.id) && haversineM(p.point, filterPoint) <= radius) : [];
+  const scored = [...around, ...nearby]
     .filter((p) => !filterPoint || haversineM(p.point, filterPoint) <= radius)
     .filter((p) => !excluded.has(p.id.toUpperCase()))
     .map((p) => ({ p, affinity: ids.length ? between(`${signal}|${p.id}`, 0.8, 0.99) : between(`area|${p.id}`, 0.9993, 0.99999) }))

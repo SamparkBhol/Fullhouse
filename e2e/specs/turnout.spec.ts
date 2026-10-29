@@ -18,7 +18,7 @@ test("after the night the owner logs how many came, and it stays with the venue"
   await page.getByRole("button", { name: "Save the turnout" }).click();
   await expect(page.locator(".notice")).toHaveText("Turnout saved.");
   await expect(page.locator(".big-line")).toHaveText("27 people came.");
-  await expect(page.locator(".monday-line")).toHaveText(/^27 of 40 seats\. Monday keeps .+ nights in the mix\.$/);
+  await expect(page.locator(".monday-line")).toHaveText(/^27 of 40 seats\. Monday keeps .+ in the mix\.$/);
 
   const res = await request.get(`/api/venues/${owner.venue.id}`, { headers: { authorization: `Bearer ${owner.token}` } });
   const saved = ((await res.json()) as { nights: Array<{ id: string; headcount?: number; status: string }> }).nights.find((n) => n.id === night.id);

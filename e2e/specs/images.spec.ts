@@ -18,22 +18,23 @@ test("covers and place photos come through the Worker's /img/ path and the brows
   const owner = await createVenue(request, { name: "Lantern Record Bar", city: "Leeds" });
   await openAsOwner(page, owner, "/street");
   await page.getByRole("button", { name: "Read the street" }).click();
-  const shelfImgs = page.locator(".shelf .cover img");
+  const shelfImgs = page.locator(".kinds .cover img");
   await expect.poll(() => shelfImgs.count()).toBeGreaterThan(20);
   const first = shelfImgs.first();
   await first.scrollIntoViewIfNeeded();
   await expect.poll(() => first.evaluate((i) => (i as unknown as Img).complete && (i as unknown as Img).naturalWidth > 0)).toBe(true);
 
-  const pins = page.locator(".map .pin-place img");
-  await expect.poll(() => pins.count()).toBeGreaterThan(0);
-  await expect.poll(async () => (await pins.evaluateAll(LOADED)).every((p) => p.ok)).toBe(true);
+  const photos = page.locator(".items .item > .cover img");
+  await expect.poll(() => photos.count()).toBeGreaterThan(0);
+  await photos.first().scrollIntoViewIfNeeded();
+  await expect.poll(async () => (await photos.first().evaluateAll(LOADED)).every((p) => p.ok)).toBe(true);
 
   const all = await page.locator("img").evaluateAll((imgs) => imgs.map((i) => (i as unknown as Img).getAttribute("src") ?? ""));
   expect(all.filter((s) => !s.startsWith("/img/") && !s.includes("tile.openstreetmap.org") && !s.startsWith("data:"))).toEqual([]);
   expect(all.some((s) => s.includes("images.qloo.com"))).toBe(false);
 
-  // A pick without an image shows its name on paper instead of a broken picture.
-  const blanks = page.locator(".shelf .cover-none .cover-paper");
+  // A pick without an image shows its name in type instead of a broken picture.
+  const blanks = page.locator(".kinds .cover-none .cover-paper");
   if ((await blanks.count()) > 0) await expect(blanks.first()).not.toHaveText("");
 
   const res = await request.get(all.find((s) => s.startsWith("/img/")) ?? "/img/missing");
@@ -51,7 +52,7 @@ test("the image path refuses anything but a Qloo image", async ({ request }) => 
   }
 });
 
-test("the public event page prints the feature's cover and shows nearby places, all from this site", async ({ page, request }) => {
+test("the public event page shows the feature's cover and the partner, all from this site", async ({ page, request }) => {
   const { night } = await publishedNight(request, { name: "Fernhill Bookshop", city: "Ghent", tz: "Europe/Brussels" });
   const res = await page.goto(`/e/${night.eventSlug}`);
   expect(res?.status()).toBe(200);
@@ -59,8 +60,8 @@ test("the public event page prints the feature's cover and shows nearby places, 
   expect(html).not.toContain("images.qloo.com");
   const imgs = await page.locator("img").evaluateAll(LOADED);
   expect(imgs.every((i) => i.src.startsWith("/img/"))).toBe(true);
-  if (night.feature?.image) await expect(page.locator(".flyer .print img")).toHaveCount(1);
-  // No partner has said yes yet, so the page names none of them.
-  await expect(page.locator(".near li")).toHaveCount(0);
-  for (const p of night.partners) await expect(page.locator("body")).not.toContainText(p.name);
+  if (night.feature?.image) await expect(page.locator(".event-head .art img")).toHaveCount(1);
+  // A two stop night goes up after the neighbour's yes, so it names that one place and no other.
+  await expect(page.locator(".with")).toHaveCount(night.pair ? 1 : 0);
+  for (const p of night.partners.filter((x) => x.id !== night.match?.partner.id)) await expect(page.locator("body")).not.toContainText(p.name);
 });

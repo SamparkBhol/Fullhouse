@@ -8,13 +8,17 @@ test("the public event page takes one RSVP per browser and the owner sees the co
   expect(res?.headers()["x-robots-tag"]).toContain("noindex");
   expect(res?.headers()["content-security-policy"]).toContain("script-src 'none'");
   await expect(page.locator("meta[property='og:title']")).toHaveCount(1);
-  await expect(page.locator(".kind")).toHaveText(/ night$/);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(night.feature?.name ?? night.copy.eventTitle);
+  await expect(page.locator(".kind")).toHaveText(/( night|^Book then film|^Screening then drinks|^Book club then drinks|^Listening party|^Quiz crawl)( with .+)?$/);
+  // A two stop night is headed by its own title; a long title is cut at its subtitle.
+  const title = night.pair ? night.copy.eventTitle : (night.feature?.name ?? night.copy.eventTitle);
+  const cut = /^(.{4,}?)\s*[:(]/.exec(title);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(title.length > 32 && cut?.[1] ? cut[1].trim() : title);
   await expect(page).toHaveTitle(/Copper Taproom/);
-  await expect(page.locator(".place")).toContainText("Copper Taproom");
+  await expect(page.locator(".place, .stops")).toContainText("Copper Taproom");
   // The count stays hidden until three people have said yes, so a new night never leads with a zero.
   await expect(page.locator(".rsvp .count")).toHaveCount(0);
-  await expect(page.locator("footer")).toContainText("Copper Taproom has not confirmed it.");
+  await expect(page.locator(".top-venue .state summary")).toHaveText("unconfirmed");
+  await expect(page.locator("footer")).not.toContainText("has not confirmed");
   await expect(page.getByRole("button", { name: "Report this page" })).toBeVisible();
 
   await page.getByRole("button", { name: "I am going" }).click();
@@ -64,10 +68,15 @@ test("the poster renders for print with a QR code to the event page", async ({ p
   });
   page.on("pageerror", (e) => problems.push(e.message));
   await page.goto(`/e/${night.eventSlug}/poster`);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(night.feature?.name || night.copy.posterHeadline || night.copy.eventTitle);
+  const head = night.pair ? night.copy.eventTitle : night.feature?.name || night.copy.posterHeadline || night.copy.eventTitle;
+  const short = /^(.{4,}?)\s*[:(]/.exec(head);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(night.pair && head.length > 32 && short?.[1] ? short[1].trim() : head);
   await expect(page.locator(".p-where")).toContainText("Marigold Bakery");
   await expect(page.locator(".p-qr svg")).toBeVisible();
-  await expect(page.locator(".p-url")).toHaveText(new RegExp(`/e/${night.eventSlug}$`));
+  await expect(page.locator(".p-url")).toHaveText(new RegExp(`/e/${night.shortSlug ?? night.eventSlug}$`));
+  await expect(page.locator("body")).not.toContainText("not confirmed");
+  const shortPage = await request.get(`/e/${night.shortSlug}`);
+  expect(shortPage.status()).toBe(200);
   await expect(page.getByRole("button", { name: "Print the poster" })).toBeVisible();
   await page.emulateMedia({ media: "print" });
   await expect(page.locator(".print-bar")).toBeHidden();

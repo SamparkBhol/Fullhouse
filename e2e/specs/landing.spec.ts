@@ -1,19 +1,22 @@
+import { pickCity } from "../support/city.ts";
 import { expect, test } from "../support/test.ts";
 
 test("the landing page says what Full House finds and looks the venue up as the owner types", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("Full House");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Find the shop down the street that shares your customers.");
-  await expect(page.getByLabel("City")).toHaveValue("London");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Your best partner is already on your street.");
+  await expect(page.getByLabel("City", { exact: true })).toHaveValue("London");
+  await expect(page.getByRole("button", { name: "use my location" })).toBeVisible();
   await expect(page.locator(".example")).toHaveCount(0);
-  await expect(page.locator(".counter")).toHaveCount(0);
+  await expect(page.locator(".steps > li")).toHaveCount(5);
+  await expect(page.locator("main")).not.toContainText(/^Qloo/m);
 
-  await page.getByLabel("City").fill("Leeds");
+  await pickCity(page, "Leeds");
   await page.getByRole("textbox", { name: "Your venue" }).fill("Larkspur Books");
   const picks = page.locator(".find-pick");
   await expect(picks.first()).toContainText("Larkspur Books");
   await expect(picks.first()).toContainText("Leeds");
-  await expect(page.getByRole("button", { name: /Look it up/ })).toHaveCount(0);
+  await expect(picks.first().locator(".find-address")).not.toBeEmpty();
 });
 
 test("the old start address opens the same one field search", async ({ page }) => {
@@ -22,10 +25,11 @@ test("the old start address opens the same one field search", async ({ page }) =
   await expect(page.getByLabel("Time zone")).toHaveCount(0);
 });
 
-test("the how page lists every Qloo call a read makes", async ({ page }) => {
+test("the how page lists every Qloo call, with no stale demographics row", async ({ page }) => {
   await page.goto("/how");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("How Full House works");
-  await expect(page.locator("ol.calls > li")).toHaveCount(8);
+  await expect(page.locator("ol.calls > li")).toHaveCount(10);
+  await expect(page.getByText("demographics")).toHaveCount(0);
   await expect(page.getByText("GET /v2/analysis/compare")).toBeVisible();
 });
 
