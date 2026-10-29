@@ -30,7 +30,7 @@ key="fake-$(random_secret)"
 secret="$(random_secret)"
 start_fake "$key" "$RUN_DIR/fake.log"
 no_ai_config
-write_env "$RUN_DIR/app.env" "QLOO_API_KEY=$key" "QLOO_BASE_URL=$FAKE_URL" "TOKEN_SECRET=$secret"
+write_env "$RUN_DIR/app.env" "QLOO_API_KEY=$key" "QLOO_BASE_URL=$FAKE_URL" "QLOO_IMAGE_BASE=$FAKE_URL" "TOKEN_SECRET=$secret"
 write_env "$RUN_DIR/nokey.env" "QLOO_BASE_URL=$FAKE_URL" "TOKEN_SECRET=$secret"
 unset key secret
 

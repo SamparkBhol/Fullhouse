@@ -5,6 +5,7 @@
 # With CLOUDFLARE_API_TOKEN in the environment the AI binding runs remotely. Without it, or when the remote
 # binding does not start, the Worker runs without the binding and plans use template copy.
 # The secrets go into a .dev.vars only this user can read, and it is deleted when the script stops.
+# A live run also deletes its local Worker state on exit, because that state caches Qloo answers.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -17,9 +18,11 @@ if [ -e "$DEV_VARS" ]; then
   exit 1
 fi
 mkdir -p "$RUN_DIR"
+# A live run's Worker state holds Qloo answers in its cache table, so it is removed with the run.
 cleanup() {
   stop_all
   rm -f "$DEV_VARS"
+  if [ "${LIVE:-0}" = "1" ]; then rm -rf "$RUN_DIR"/state-*; fi
 }
 trap cleanup EXIT
 trap 'exit 130' INT TERM HUP
@@ -28,6 +31,7 @@ echo "Building the web app"
 build_web "$RUN_DIR/build.log"
 
 base=""
+images=""
 if [ "${LIVE:-0}" = "1" ]; then
   if [ -z "${QLOO_API_KEY:-}" ]; then
     echo "LIVE=1 needs QLOO_API_KEY in the environment." >&2
@@ -40,9 +44,10 @@ else
   key="fake-$(random_secret)"
   start_fake "$key" "$RUN_DIR/fake.log"
   base="$FAKE_URL"
+  images="$FAKE_URL"
   qloo_line="fake server at $base, log at $base/__fake/log"
 fi
-write_env "$DEV_VARS" "QLOO_API_KEY=$key" "TOKEN_SECRET=$(random_secret)" ${base:+"QLOO_BASE_URL=$base"}
+write_env "$DEV_VARS" "QLOO_API_KEY=$key" "TOKEN_SECRET=$(random_secret)" ${base:+"QLOO_BASE_URL=$base"} ${images:+"QLOO_IMAGE_BASE=$images"}
 unset key QLOO_API_KEY QLOO_BASE_URL
 
 if [ -n "${CLOUDFLARE_API_TOKEN:-}" ] && start_worker app "$DEV_VARS" "$RUN_DIR/wrangler-remote-ai.log"; then

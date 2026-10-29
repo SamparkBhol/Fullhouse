@@ -12,8 +12,14 @@ test("a plan carries its reasons and says who wrote the copy, a plain phrase cha
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(/^A night for Tuesday \d+ \w+$/);
   await expect(page.locator(".options button")).toHaveCount(3);
   await expect(page.locator(".night-window .flyer")).toBeVisible();
-  const why = page.locator("section", { has: page.getByRole("heading", { name: "Why this night" }) });
+  const receipts = page.locator("details.receipts");
+  await expect(receipts).toHaveCount(1);
+  await expect(page.getByRole("button", { name: /Qloo calls/ })).toHaveCount(0);
+  await expect(page.locator(".because-call:visible")).toHaveCount(0);
+  await receipts.locator("> summary").click();
+  const why = receipts.locator(".fold", { has: page.getByRole("heading", { name: "Why this night" }) });
   await expect(why.locator(".because-row").first()).toContainText(/Call \d+/);
+  await expect(page.locator(".ledge-walk .postcard").first().locator(".postcard-walk")).toContainText("min walk");
   await expect(page.locator(".written-by")).toHaveText("Copy from template");
   await expect(page.locator(".claim")).toBeVisible();
   await expect(page.getByText("A personal streaming account does not cover playing music to customers.")).toBeVisible();
@@ -22,6 +28,8 @@ test("a plan carries its reasons and says who wrote the copy, a plain phrase cha
   await expect(page.getByRole("dialog").locator(".receipt-focus")).toBeVisible();
   await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
 
+  await expect(page.getByLabel("What should change?")).toBeHidden();
+  await page.getByRole("button", { name: "Change it" }).click();
   await page.getByLabel("What should change?").fill("make it Friday, under 30 people");
   await page.getByRole("button", { name: "Change the plan" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(/^A night for Friday \d+ \w+$/);
@@ -33,9 +41,14 @@ test("a plan carries its reasons and says who wrote the copy, a plain phrase cha
   const eventbrite = page.getByRole("checkbox", { name: /Create the Eventbrite event/ });
   await expect(eventbrite).toBeDisabled();
   await expect(eventbrite).not.toBeChecked();
-  for (const name of ["Publish the event page", "Make the poster", "Make a calendar file", "Make a Google Calendar link", "Draft notes to the partners", "Email me the links"]) {
+  for (const name of ["Publish the event page", "Make the poster", "Make a calendar file", "Make a Google Calendar link", "Draft notes to the partners"]) {
     await expect(page.getByRole("checkbox", { name: new RegExp(name) })).toBeChecked();
   }
+  await expect(page.getByRole("checkbox", { name: /Email me the links/ })).toBeDisabled();
+  await expect(page.getByText("Email is off on this server.")).toBeVisible();
+  const title = page.getByLabel("Title", { exact: true });
+  await expect(title).not.toHaveValue("");
+  await title.fill("Friday night at Juniper Books");
   const partnerEmails = page.locator(".partner-emails input[type=email]");
   await expect(partnerEmails).not.toHaveCount(0);
   await partnerEmails.first().fill("events@partner.example");
@@ -48,8 +61,8 @@ test("a plan carries its reasons and says who wrote the copy, a plain phrase cha
   await expect(live.getByRole("link", { name: "Calendar file (.ics)" })).toHaveAttribute("href", /\.ics$/);
   await expect(live.getByRole("link", { name: "Add to Google Calendar" })).toHaveAttribute("href", /^https:\/\/calendar\.google\.com\//);
 
+  await expect(page).toHaveTitle(/^Friday night at Juniper Books/);
   const yours = page.locator("section", { has: page.getByRole("heading", { name: "For you to send" }) });
-  await expect(yours.getByText("Email is not set up on this server, so nothing was sent.")).toBeVisible();
   const draft = yours.locator(".result").filter({ hasText: "Addressed to events@partner.example" });
   await expect(draft.getByRole("link", { name: /^Draft to / })).toHaveAttribute("href", /^mailto:events@partner\.example\?/);
   await expect(draft.getByRole("link", { name: "Gmail" })).toHaveAttribute("href", /^https:\/\/mail\.google\.com\//);
@@ -58,4 +71,5 @@ test("a plan carries its reasons and says who wrote the copy, a plain phrase cha
 
   await page.getByRole("link", { name: "Nights", exact: true }).click();
   await expect(page.getByRole("heading", { name: "On the street now" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Next draft" })).toHaveCount(0);
 });

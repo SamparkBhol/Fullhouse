@@ -6,4 +6,4 @@ function required(name: string): string {
 
 export const BASE_URL = required("E2E_BASE_URL");
 export const FAKE_QLOO_URL = required("FAKE_QLOO_URL");
-export const QLOO_HOSTS = [new URL(FAKE_QLOO_URL).host, "hackathon.api.qloo.com"];
+export const QLOO_HOSTS = [new URL(FAKE_QLOO_URL).host, "hackathon.api.qloo.com", "images.qloo.com"];

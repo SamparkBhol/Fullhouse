@@ -2,9 +2,11 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import type { AddressInfo } from "node:net";
 import { invalid, notFound, unauthorized, type Answer } from "./answers/answer.ts";
 import { compare } from "./answers/compare.ts";
+import { entities } from "./answers/entities.ts";
 import { insights } from "./answers/insights.ts";
 import { search } from "./answers/search.ts";
 import { trending } from "./answers/trending.ts";
+import { fakeCover, IMAGE_PATH } from "./image.ts";
 import { RequestLog } from "./log.ts";
 import { parseQuery, type Query } from "./params.ts";
 import { PlaceRegistry } from "./world/registry.ts";
@@ -17,6 +19,7 @@ export interface FakeQloo {
 
 const ROUTES: Record<string, (q: Query, places: PlaceRegistry) => Answer> = {
   "/search": search,
+  "/entities": entities,
   "/v2/insights": insights,
   "/v2/analysis/compare": compare,
   "/v2/trending": (q) => trending(q),
@@ -42,10 +45,16 @@ function keyCheck(req: IncomingMessage, apiKey: string): { header: "present" | "
   return { header: "present", accepted: value === apiKey };
 }
 
-// /__fake/log and /__fake/reset are for the tests; every other path answers like the Qloo host.
+// /__fake/log and /__fake/reset are for the tests, /i/ stands in for images.qloo.com, and every other path answers like the Qloo host.
 function handler(apiKey: string, log: RequestLog, places: PlaceRegistry) {
   return (req: IncomingMessage, res: ServerResponse): void => {
     const url = new URL(req.url ?? "/", "http://fake.qloo.local");
+    if (req.method === "GET" && IMAGE_PATH.test(url.pathname)) {
+      const png = fakeCover(url.pathname);
+      res.writeHead(200, { "content-type": "image/png", "content-length": String(png.length), etag: `"${png.length}-${url.pathname.length}"` });
+      res.end(png);
+      return;
+    }
     if (url.pathname === "/__fake/log") return send(res, 200, { requests: log.list() });
     if (url.pathname === "/__fake/reset" && req.method === "POST") {
       log.clear();
