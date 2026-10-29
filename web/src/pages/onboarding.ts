@@ -108,6 +108,6 @@ function showCandidates(results: HTMLElement, candidates: VenueCandidate[], city
       if (!existing) list.after(h("p", { class: "form-error", role: "alert" }, "Pick the place that is yours."));
       return;
     }
-    slotStep(picked, city);
+    void slotStep(picked, city);
   });
 }

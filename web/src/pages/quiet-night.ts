@@ -1,12 +1,15 @@
 import type { CreateVenueInput, QuietSlot, VenueCandidate } from "../../../src/shared/contract.ts";
 import { api } from "../api.ts";
 import { h, replace, uid } from "../dom.ts";
-import { WEEKDAY_ORDER, weekdayName } from "../format.ts";
+import { weekdayName } from "../../../src/shared/words.ts";
+import { readThenPlan } from "../first-night.ts";
+import { WEEKDAY_ORDER } from "../format.ts";
 import { navigate } from "../router.ts";
 import { rememberVenue, saveToken, tokenFromFragment } from "../store.ts";
 import { field } from "../ui/field.ts";
 import { focusHeading, page, title } from "../ui/shell.ts";
 import { failure, loading } from "../ui/states.ts";
+import { guessZone, nearLongitude } from "../zone-guess.ts";
 
 function zones(): string[] {
   try {
@@ -25,7 +28,7 @@ function deviceZone(): string {
   }
 }
 
-export function slotStep(candidate: VenueCandidate, city: string): void {
+export async function slotStep(candidate: VenueCandidate, city: string): Promise<void> {
   const main = page();
   const dayGroup = uid("day");
   const days = h(
@@ -56,9 +59,17 @@ export function slotStep(candidate: VenueCandidate, city: string): void {
   const here = deviceZone();
   const listed = zones();
   const tzList = listed.length && !listed.includes(here) ? [here, ...listed] : listed;
+  const guessed = guessZone(candidate, city, tzList);
+  const chosen = guessed ?? here;
   const tz: HTMLInputElement | HTMLSelectElement = tzList.length
-    ? h("select", null, tzList.map((z) => h("option", { value: z, selected: z === here }, z.replace(/_/g, " "))))
-    : h("input", { type: "text", value: here });
+    ? h("select", null, tzList.map((z) => h("option", { value: z, selected: z === chosen }, z.replace(/_/g, " "))))
+    : h("input", { type: "text", value: chosen });
+  const tzHint = guessed
+    ? "From the venue's address. Change it if it is wrong."
+    : nearLongitude(here, candidate.lng)
+      ? "Taken from this phone, because the address did not settle it. Change it if the venue is somewhere else."
+      : "Pick the venue's own zone. This phone's zone looks far from the venue, and nights would go out at the wrong hour.";
+  const health = await api.health();
   const email = h("input", { type: "email", autocomplete: "email", inputmode: "email" });
   const noLive = h("input", { type: "checkbox", id: uid("nolive") });
   const message = h("div", { "aria-live": "polite" });
@@ -73,8 +84,10 @@ export function slotStep(candidate: VenueCandidate, city: string): void {
       field("Length", length),
     ),
     field("How many people fit", capacity, "Optional. The plan keeps the night under this."),
-    field("Time zone", tz, "Taken from this phone. Change it if the venue is somewhere else."),
-    field("Your email", email, "Optional. Only used to send you the Monday draft. Never sent to Qloo."),
+    field("Time zone", tz, tzHint),
+    health.ownerEmail
+      ? field("Your email", email, "Optional. We send a link to confirm it first. After that it gets the Monday draft and your night's links. Never sent to Qloo.")
+      : h("p", { class: "hint" }, "Email is off on this server, so Full House sends no Monday email. The Monday draft waits on your venue page."),
     h(
       "div",
       { class: "check" },
@@ -146,7 +159,7 @@ export function slotStep(candidate: VenueCandidate, city: string): void {
       }
       saveToken(created.venue.id, token);
       rememberVenue({ id: created.venue.id, name: created.venue.entity.name, city: created.venue.city });
-      createdStep(created.venue.id, created.venue.entity.name, ownerUrl);
+      createdStep(created.venue.id, created.venue.entity.name, ownerUrl, token, quietSlot.weekday, Boolean(input.ownerEmail));
     } catch (err) {
       if (button) button.disabled = false;
       replace(message, failure(err, () => form.requestSubmit()));
@@ -154,7 +167,7 @@ export function slotStep(candidate: VenueCandidate, city: string): void {
   });
 }
 
-function createdStep(venueId: string, name: string, ownerUrl: string): void {
+function createdStep(venueId: string, name: string, ownerUrl: string, token: string, weekday: number, emailed: boolean): void {
   title("Your owner link");
   const linkField = h("input", { type: "text", readonly: true, value: ownerUrl, class: "owner-link", id: uid("link") });
   const status = h("p", { class: "copy-status", role: "status" });
@@ -176,6 +189,12 @@ function createdStep(venueId: string, name: string, ownerUrl: string): void {
     },
     "Copy the link",
   );
+  const slot = h("div", { "aria-live": "polite" });
+  const first = h("button", { class: "button button-big", type: "button" }, `Read the street and plan ${weekdayName(weekday)}`);
+  first.addEventListener("click", () => {
+    first.disabled = true;
+    void readThenPlan(venueId, token, weekday, slot, true, () => (first.disabled = false));
+  });
   replace(
     page(),
     h(
@@ -189,13 +208,16 @@ function createdStep(venueId: string, name: string, ownerUrl: string): void {
         h(
           "p",
           null,
-          "This link is the key to your venue. Anyone who has it can plan and publish nights for you. It is shown once, here. This phone remembers it, but save a copy in your notes or password manager for other devices.",
+          "This link is the key to your venue. Anyone who has it can plan and publish nights for you. This phone remembers it, so save a copy in your notes or password manager for other devices. You can make a new one on your venue page, which stops the old one working.",
         ),
+        emailed ? h("p", { class: "meta" }, "We sent a link to your email to confirm the address. Your owner link is not in that email.") : null,
         h("div", { class: "field" }, h("label", { for: linkField.id }, "Owner link"), linkField),
         h("p", { class: "actions" }, copy),
         status,
       ),
-      h("p", { class: "actions" }, h("a", { class: "button button-big", href: `/v/${encodeURIComponent(venueId)}` }, "Open my venue")),
+      h("p", { class: "actions" }, first),
+      slot,
+      h("p", { class: "aside-link" }, h("a", { href: `/v/${encodeURIComponent(venueId)}` }, "Open my venue first")),
     ),
   );
   focusHeading();

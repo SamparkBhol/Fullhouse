@@ -1,5 +1,5 @@
 import type { Night, NightPlan, PlanResponse, VenueState } from "../../src/shared/contract.ts";
-import { api } from "./api.ts";
+import { ApiFailure, api } from "./api.ts";
 import { h, replace } from "./dom.ts";
 import { isCurrent, ticket } from "./router.ts";
 import { loadToken, rememberVenue, saveToken, sessionGet, sessionSet, tokenFromFragment } from "./store.ts";
@@ -15,23 +15,16 @@ export interface VenueCtx {
 
 const cache = new Map<string, VenueState>();
 
-export function takeTokenFromUrl(id: string): string | null {
+// A token in the link is only kept once the server accepts it, so a crafted link cannot replace a good one.
+function tokenFromUrl(): string | null {
   const fromHash = tokenFromFragment(location.hash);
-  if (fromHash) {
-    saveToken(id, fromHash);
-    history.replaceState(null, "", location.pathname + location.search);
-    return fromHash;
-  }
-  return loadToken(id);
+  if (fromHash) history.replaceState(null, "", location.pathname + location.search);
+  return fromHash;
 }
 
 export function setState(id: string, state: VenueState): void {
   cache.set(id, state);
   rememberVenue({ id, name: state.venue.entity.name, city: state.venue.city });
-}
-
-export function cachedState(id: string): VenueState | undefined {
-  return cache.get(id);
 }
 
 export function liveNight(state: VenueState): Night | null {
@@ -89,27 +82,45 @@ export async function withVenue(
 ): Promise<void> {
   const main = page();
   const mine = ticket();
-  const token = takeTokenFromUrl(id);
-  if (!token) {
+  const offered = tokenFromUrl();
+  const saved = loadToken(id);
+  const cached = cache.get(id);
+  if (!offered && saved && cached && !opts.fresh) {
+    venueFascia(cached.venue, tab, liveNight(cached));
+    await render({ id, token: saved, state: cached }, main);
+    return;
+  }
+  if (!offered && !saved) {
     notSignedIn(main);
     return;
   }
-  const cached = cache.get(id);
-  if (cached && !opts.fresh) {
-    venueFascia(cached.venue, tab, liveNight(cached));
-    await render({ id, token, state: cached }, main);
-    return;
-  }
   replace(main, h("div", { class: "wrap" }, loading("Opening your venue")));
+  const open = async (token: string): Promise<VenueState> => {
+    const state = await api.state(id, token);
+    if (token !== saved) saveToken(id, token);
+    return state;
+  };
   const run = async (): Promise<void> => {
     try {
-      const state = await api.state(id, token);
+      let token = offered ?? saved ?? "";
+      let state: VenueState;
+      try {
+        state = await open(token);
+      } catch (err) {
+        if (!(err instanceof ApiFailure && err.status === 401 && offered && saved && saved !== offered)) throw err;
+        token = saved;
+        state = await open(token);
+      }
       if (!isCurrent(mine)) return;
       setState(id, state);
       venueFascia(state.venue, tab, liveNight(state));
       await render({ id, token, state }, main);
     } catch (err) {
       if (!isCurrent(mine)) return;
+      if (err instanceof ApiFailure && err.status === 401 && !saved) {
+        notSignedIn(main);
+        return;
+      }
       replace(main, h("div", { class: "wrap" }, h("h1", { class: "sr-only" }, "Venue"), failure(err, () => void run())));
     }
   };

@@ -39,3 +39,13 @@ export function squareAround(lat: number, lng: number, sideM: number): Bounds {
   const dLng = sideM / 2 / (111320 * Math.max(0.2, Math.cos((lat * Math.PI) / 180)));
   return { south: lat - dLat, north: lat + dLat, west: lng - dLng, east: lng + dLng };
 }
+
+export function bearingWord(fromLat: number, fromLng: number, toLat: number, toLng: number): string {
+  const y = Math.sin(((toLng - fromLng) * Math.PI) / 180) * Math.cos((toLat * Math.PI) / 180);
+  const x =
+    Math.cos((fromLat * Math.PI) / 180) * Math.sin((toLat * Math.PI) / 180) -
+    Math.sin((fromLat * Math.PI) / 180) * Math.cos((toLat * Math.PI) / 180) * Math.cos(((toLng - fromLng) * Math.PI) / 180);
+  const deg = ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+  const words = ["north", "north east", "east", "south east", "south", "south west", "west", "north west"];
+  return words[Math.round(deg / 45) % 8] ?? "near";
+}

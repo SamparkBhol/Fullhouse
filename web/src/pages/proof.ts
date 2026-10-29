@@ -1,7 +1,8 @@
 import type { Baseline, BaselineName } from "../../../src/shared/contract.ts";
 import { api } from "../api.ts";
 import { h, replace } from "../dom.ts";
-import { VERIFY_WORDS, count, moment } from "../format.ts";
+import { plural } from "../../../src/shared/words.ts";
+import { VERIFY_WORDS, moment } from "../format.ts";
 import { sessionGet, sessionSet } from "../store.ts";
 import { focusHeading, title } from "../ui/shell.ts";
 import { failure, loading } from "../ui/states.ts";
@@ -22,9 +23,19 @@ function countLine(names: BaselineName[]): string {
   const places = names.filter((n) => n.kind === "place");
   const others = names.filter((n) => n.kind !== "place");
   const parts: string[] = [];
-  if (places.length) parts.push(`${places.filter((n) => n.status === "found_nearby").length} of ${count(places.length, "place", "places")} found near you`);
-  if (others.length) parts.push(`${others.filter((n) => n.status !== "not_found").length} of ${count(others.length, "other name", "other names")} in Qloo's catalog`);
+  if (places.length) parts.push(`${places.filter((n) => n.status === "found_nearby").length} of ${plural(places.length, "place", "places")} found near you`);
+  if (others.length) parts.push(`${others.filter((n) => n.status !== "not_found").length} of ${plural(others.length, "other name", "other names")} in Qloo's catalog`);
   return `${parts.join(". ")}.`;
+}
+
+// Whether a name exists is the easy part; the line that matters is whether Qloo ties it to this venue's audience.
+function tiedCount(names: BaselineName[]): string {
+  const checked = names.filter((n) => n.tied !== undefined);
+  return `${checked.filter((n) => n.tied).length} of ${names.length}`;
+}
+
+function tiedLine(b: Baseline): HTMLElement {
+  return h("p", { class: "proof-tied" }, `Tied to your audience by Qloo: plain model ${tiedCount(b.plainNames)}, Full House ${tiedCount(b.fullHouseNames)}.`);
 }
 
 function nameList(names: BaselineName[], label: string, id: string, sub?: string): HTMLElement {
@@ -46,6 +57,7 @@ function nameList(names: BaselineName[], label: string, id: string, sub?: string
               h("span", { class: "verify-name" }, n.name),
               h("span", { class: "verify-status" }, statusWord(n)),
               n.note ? h("span", { class: "verify-note" }, n.note) : null,
+              n.tieNote ? h("span", { class: n.tied ? "verify-note verify-tied" : "verify-note" }, n.tieNote) : null,
             ),
           ),
         )
@@ -60,6 +72,7 @@ function renderResult(ctx: VenueCtx, b: Baseline): HTMLElement {
     h("p", { class: "meta" }, `Checked ${moment(b.at, ctx.state.venue.tz)}.`),
     h("h2", null, "The question"),
     h("p", { class: "quote" }, b.ask),
+    tiedLine(b),
     h(
       "div",
       { class: "proof-cols" },
@@ -102,7 +115,7 @@ function renderProof(ctx: VenueCtx, main: HTMLElement): void {
       h(
         "p",
         { class: "lede" },
-        "Full House asks a plain language model the question an owner would type into a chatbot, then looks up every place and artist it names on Qloo near you. It checks its own plan the same way.",
+        "Full House asks a plain language model the question an owner would type into a chatbot, then looks up every place and artist it names on Qloo near you, and whether Qloo ties each one to the people who like your venue. It checks its own plan the same way.",
       ),
       h("p", { class: "meta" }, "Running the check uses a few Qloo calls and one model call."),
       h("p", { class: "actions" }, button),

@@ -5,10 +5,10 @@ const CALLS: [string, string, string][] = [
   ["Find your venue", "GET /search", "Your venue's name and city as one search. You pick the right match from the list, with its address."],
   ["The street's taste", "GET /v2/insights, tag mode", "Your venue's map point. Qloo answers with the taste tags the area around it carries."],
   ["Your audience's taste", "GET /v2/insights, tag mode", "Your venue's Qloo id. Qloo answers with the tags that describe the people who like your venue."],
-  ["Places your audience loves", "GET /v2/insights, places", "Your venue's Qloo id and a 1.2 km circle around it. Qloo answers with nearby places people who like your venue also love, and why each one ranks."],
-  ["Two heat maps", "GET /v2/insights, heat map", "A 2 km circle, once with your venue as the signal and once with the street's top tags. Qloo answers with small map squares ranked by how strong that taste is in each."],
-  ["Where you differ", "GET /v2/analysis/compare", "Your venue against the five places your audience loves most. Tags you share are what you are already liked for. Tags two or more of them carry and you do not are the gap."],
-  ["Ideas for the night", "GET /v2/insights, artists, books, films, shows, podcasts", "Your venue's Qloo id and its map point, one call per kind. Qloo answers with what people who like your venue love, with the reason for each."],
+  ["Places your audience loves", "GET /v2/insights, places", "Your venue's Qloo id and a 1.2 km circle around it. Qloo answers with nearby places people who like your venue also love, their opening hours, and whether it tied each one to your venue."],
+  ["Two heat maps", "GET /v2/insights, heat map", "A 2 km circle, once with your venue as the signal and once with your venue's own kind of place, such as Book store or Cafe. Qloo answers with small map squares ranked by how strong that taste is in each."],
+  ["Where you differ", "GET /v2/analysis/compare", "Your venue against up to five places your audience loves that host people, such as cafes, cinemas and shops. Tags you share are what you are already liked for. Tags two or more of them carry and you do not show up under Found nearby, not here."],
+  ["Ideas for the night", "GET /v2/insights, artists, books, films, shows, podcasts", "Your venue's Qloo id, two places nearby your audience loves, and your map point, one call per kind. Qloo answers with what those audiences love, and for each pick how much of it came from your venue's crowd and how much from each place's."],
   ["Who your audience is", "GET /v2/insights, demographics", "Your venue's Qloo id. Qloo answers with how its audience leans by age and gender, in aggregate. It is never shown as a claim about a person."],
 ];
 
@@ -46,6 +46,8 @@ export function howPage(): void {
           null,
           "Nothing about your customers, because Full House never asks for it. Your email, the turnout you log and the RSVP counts stay with your venue. Qloo only receives your venue as a public place, its location, and public things like artists, books, films and places.",
         ),
+        h("p", null, "On the Proof tab, the names a plain language model suggested go to Qloo search too, only to check whether they exist."),
+        h("p", null, "A venue nobody opens for 8 weeks stops its Monday runs. After 6 months it is deleted with everything in it."),
         h("p", null, "Qloo's answers describe the taste of an area in aggregate. They are not claims about any person."),
       ),
       h(
@@ -55,7 +57,7 @@ export function howPage(): void {
         h(
           "p",
           null,
-          "The night is picked by plain rules from the Qloo answers: how high something ranks for your audience, whether it fits your venue and whether it fills a gap. The model only writes the words: the event description, the poster lines, the social post and the note to partners.",
+          "The night is picked by plain rules from the Qloo answers: how high something ranks for your audience, whether it fits your venue, and whether that kind of night answers a gap the read found, such as cinemas nearby and none here. Partners have to be open that night by Qloo's hours. The model only writes the words: the event description, the poster lines, the social post and the note to partners.",
         ),
         h(
           "p",
@@ -70,7 +72,7 @@ export function howPage(): void {
         h(
           "p",
           null,
-          "Before anything leaves Full House, one screen lists every action: the event page, the poster, calendar entries, notes to partners and Eventbrite. Notes to partners open in your own mail app, so you send them yourself. Every Monday the agent reads the street again and drafts the next night, and it waits for you.",
+          "Before anything leaves Full House, one screen lists every action and the exact words: the event page, the poster, calendar entries, notes to partners and Eventbrite. You can change the words there. Notes to partners open in your own mail app, so you send them yourself. You can take a page down at any time. Every Monday the agent reads the street again, leaves out what you already ran, drafts the next night, and waits for you.",
         ),
       ),
       h(

@@ -8,9 +8,9 @@ export interface RankedCell {
 
 export const HEAT_BUCKETS = 5;
 
+// The read marks a square Qloo had no data for; older reads only show it as rank 0 with popularity 0.
 function hasRead(cell: HeatCell): boolean {
-  if (typeof cell.affinityRank !== "number" || !Number.isFinite(cell.affinityRank)) return false;
-  // Qloo returns affinity 0 and popularity 0 with no affinity_rank for a point it has no data for.
+  if (cell.noRead || typeof cell.affinityRank !== "number" || !Number.isFinite(cell.affinityRank)) return false;
   return !(cell.affinityRank === 0 && (cell.popularity ?? 0) === 0);
 }
 

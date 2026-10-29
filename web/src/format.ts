@@ -1,13 +1,8 @@
-import type { NightFormat, QuietSlot, Trend, VerifyStatus } from "../../src/shared/contract.ts";
-
-export const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
+import type { NightFormat, QlooType, QuietSlot, Trend, VerifyStatus } from "../../src/shared/contract.ts";
+import { weekdayName } from "../../src/shared/words.ts";
 
 // QuietSlot.weekday follows Date.getDay(): 0 is Sunday.
 export const WEEKDAY_ORDER: QuietSlot["weekday"][] = [1, 2, 3, 4, 5, 6, 0];
-
-export function weekdayName(day: number): string {
-  return WEEKDAYS[day] ?? "that day";
-}
 
 export function pluralWeekday(day: number): string {
   return `${weekdayName(day)}s`;
@@ -23,7 +18,9 @@ export const FORMAT_NAMES: Record<NightFormat, string> = {
   tasting: "Tasting night",
 };
 
-export function formatName(format: NightFormat): string {
+// A TV show is watched an episode at a time, so its night is a watch night rather than a film night.
+export function formatName(format: NightFormat, featureType?: QlooType): string {
+  if (format === "film" && featureType === "tv_show") return "Watch night";
   return FORMAT_NAMES[format] ?? "Night";
 }
 
@@ -111,19 +108,13 @@ export function walk(m: number): string {
   return `about ${minutes} minute${minutes === 1 ? "" : "s"} on foot`;
 }
 
-export function ordinal(n: number): string {
-  const v = n % 100;
-  if (v >= 11 && v <= 13) return `${n}th`;
-  switch (n % 10) {
-    case 1:
-      return `${n}st`;
-    case 2:
-      return `${n}nd`;
-    case 3:
-      return `${n}rd`;
-    default:
-      return `${n}th`;
-  }
+export function walkMinutes(m: number): number | null {
+  return Number.isFinite(m) ? Math.max(1, Math.round(m / 80)) : null;
+}
+
+export function walkShort(m: number): string {
+  const n = walkMinutes(m);
+  return n === null ? "Walk unknown" : `${n} min walk`;
 }
 
 export const TREND_WORDS: Record<Trend, string> = {
@@ -138,29 +129,6 @@ export const VERIFY_WORDS: Record<VerifyStatus, string> = {
   found_far: "Found, but not nearby",
   not_found: "Not found in Qloo",
 };
-
-export function count(n: number, one: string, many: string): string {
-  return `${n} ${n === 1 ? one : many}`;
-}
-
-export function bearingWord(fromLat: number, fromLng: number, toLat: number, toLng: number): string {
-  const y = Math.sin(((toLng - fromLng) * Math.PI) / 180) * Math.cos((toLat * Math.PI) / 180);
-  const x =
-    Math.cos((fromLat * Math.PI) / 180) * Math.sin((toLat * Math.PI) / 180) -
-    Math.sin((fromLat * Math.PI) / 180) * Math.cos((toLat * Math.PI) / 180) * Math.cos(((toLng - fromLng) * Math.PI) / 180);
-  const deg = ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
-  const words = ["north", "north east", "east", "south east", "south", "south west", "west", "north west"];
-  return words[Math.round(deg / 45) % 8] ?? "near";
-}
-
-export function metresBetween(aLat: number, aLng: number, bLat: number, bLng: number): number {
-  const r = 6371000;
-  const dLat = ((bLat - aLat) * Math.PI) / 180;
-  const dLng = ((bLng - aLng) * Math.PI) / 180;
-  const s =
-    Math.sin(dLat / 2) ** 2 + Math.cos((aLat * Math.PI) / 180) * Math.cos((bLat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
-  return 2 * r * Math.asin(Math.sqrt(s));
-}
 
 export function prettyTag(name: string): string {
   const spaced = name.replace(/_/g, " ").replace(/^[^\p{L}\p{N}]+/u, "").trim();

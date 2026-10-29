@@ -12,7 +12,7 @@ export default defineConfig({
     emptyOutDir: true,
     target: "es2022",
     sourcemap: false,
-    // The worker sends a CSP with script-src 'self', so no inline polyfill.
+    // web/public/_headers sends a CSP with script-src 'self', so no inline polyfill.
     modulePreload: { polyfill: false },
     assetsInlineLimit: 0,
   },

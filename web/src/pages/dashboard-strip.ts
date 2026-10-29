@@ -25,12 +25,15 @@ function cell(label: string, ...value: (Node | string)[]): HTMLElement {
 
 // Venue home's window onto the Numbers tab: the next night's yes count, the last turnout and this week's reads.
 // With a night out, its flyer and yes count already sit above the strip, so the strip leaves that cell out.
-export function numbersStrip(id: string, token: string, tz: string, nightAbove = false): HTMLElement {
+export function numbersStrip(id: string, token: string, tz: string, nightAbove = false, onRsvps?: (n: number) => void): HTMLElement {
   const rsvps = doorCounter(saying("RSVP", "RSVPs", " for your next night"), "lit");
   const cells = h("dl", { class: "strip-cells" });
   const when = h("p", { class: "strip-when" }, "Checking now.");
   const fill = (d: VenueDashboard): void => {
-    if (d.next) rsvps.set(d.next.rsvps);
+    if (d.next) {
+      rsvps.set(d.next.rsvps);
+      onRsvps?.(d.next.rsvps);
+    }
     const next = d.next ? [rsvps.el, h("span", { class: "strip-unit" }, "said yes")] : [h("span", { class: "strip-none" }, "None out yet")];
     replace(
       cells,

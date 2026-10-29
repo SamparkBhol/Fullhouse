@@ -5,7 +5,7 @@ const CALL_NAMES: Record<string, string> = {
   venue_tags: "Your venue's taste tags",
   loved_places: "Places nearby your audience loves",
   heat_venue: "Heat map for your venue",
-  heat_street: "Heat map for the street's top tags",
+  heat_street: "Heat map for places like yours",
   compare: "Your venue against the places your audience loves",
   demographics: "Your audience in aggregate",
   insights_artist: "Artists your audience loves",

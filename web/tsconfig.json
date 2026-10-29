@@ -8,6 +8,8 @@
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
@@ -15,5 +17,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src", "../src/shared/contract.ts"]
+  "include": ["src", "../src/shared/contract.ts", "../src/shared/words.ts", "../src/shared/geo.ts", "../src/shared/turnout.ts", "../src/shared/images.ts"]
 }

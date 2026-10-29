@@ -3,9 +3,13 @@ import { h, replace } from "../dom.ts";
 import { formatName, longDate } from "../format.ts";
 import { navigate } from "../router.ts";
 import { fitHeadlines, flyer } from "../ui/flyer.ts";
-import { nightEvidence } from "../ui/night-evidence.ts";
+import { bigWindow, featureSay } from "../ui/night-room.ts";
+import { nightReceipts } from "../ui/night-receipts.ts";
+import { asItWillRead, onTheCounter, onTheSpeakers, walkingOver } from "../ui/night-windows.ts";
 import { refineBox } from "../ui/refine.ts";
 import { focusHeading, title } from "../ui/shell.ts";
+import { planOptions } from "../ui/taped.ts";
+import { ledgeRow } from "../ui/ledge.ts";
 import { planGroup, withVenue, type VenueCtx } from "../venue-context.ts";
 
 export function nightPage(id: string, planId: string): Promise<void> {
@@ -40,61 +44,63 @@ function renderGone(id: string, main: HTMLElement): void {
   focusHeading();
 }
 
-function switcher(plans: NightPlan[], onPick: (p: NightPlan) => void): HTMLElement | null {
-  if (plans.length < 2) return null;
-  const group = h("div", { class: "options", role: "group", "aria-label": "Choose between plans" });
-  for (const [i, p] of plans.entries()) {
-    const button = h("button", { type: "button", class: "option", "aria-pressed": i === 0 ? "true" : "false" }, formatName(p.format), p.feature ? h("span", null, p.feature.name) : null);
-    button.addEventListener("click", () => {
-      for (const b of group.querySelectorAll("button")) b.setAttribute("aria-pressed", "false");
-      button.setAttribute("aria-pressed", "true");
-      onPick(p);
-    });
-    group.append(button);
-  }
-  return group;
+// Publishing is the one thing that turns the window light on, so its button is the one in lamp light.
+function publishBar(approveHref: string, refine: HTMLElement): HTMLElement {
+  const change = h("button", { class: "button button-quiet button-big", type: "button", "aria-expanded": "false" }, "Change it");
+  change.addEventListener("click", () => {
+    const open = refine.hidden;
+    refine.hidden = !open;
+    change.setAttribute("aria-expanded", String(open));
+    if (!open) return;
+    const box = refine.querySelector<HTMLTextAreaElement>("textarea");
+    box?.scrollIntoView({ block: "center" });
+    box?.focus({ preventScroll: true });
+  });
+  return h(
+    "div",
+    { class: "publish-bar" },
+    h("a", { class: "button button-big button-lamp", href: approveHref }, "Review and publish"),
+    change,
+    h("p", { class: "publish-note" }, "The next screen lists everything that goes out: the event page, the poster, the calendar and the notes to partners. You tick what you want."),
+  );
 }
 
 function renderPlan(ctx: VenueCtx, main: HTMLElement, plan: NightPlan, alternatives: NightPlan[]): void {
   const venue = ctx.state.venue;
-  const calls = ctx.state.read?.provenance ?? [];
+  const read = ctx.state.read;
+  const calls = read?.provenance ?? [];
+  const name = venue.entity.name;
   const all = [plan, ...alternatives];
-  title(`${formatName(plan.format)}, ${longDate(plan.date)}`);
-  const windowCol = h("div", { class: "night-window" });
-  const evidenceCol = h("div", { class: "night-side" });
+  title(`${formatName(plan.format, plan.feature?.type)}, ${longDate(plan.date)}`);
+  const stage = h("div", { class: "night-stage" });
 
   const draw = (selected: NightPlan): void => {
     const approveHref = `/v/${encodeURIComponent(ctx.id)}/night/${encodeURIComponent(selected.id)}/approve`;
-    const toRefine = (): void => {
-      const box = evidenceCol.querySelector<HTMLTextAreaElement>(".refine textarea");
-      box?.scrollIntoView({ block: "center" });
-      box?.focus({ preventScroll: true });
-    };
+    const refine = h("div", { class: "refine-slot", hidden: true }, refineBox(ctx, selected));
     replace(
-      windowCol,
-      flyer(selected, venue, { headingLevel: "h2" }),
-      h("p", { class: "draft-note" }, "Draft. Nobody sees this until you publish it."),
-      h(
-        "p",
-        { class: "actions" },
-        h("a", { class: "button button-big", href: approveHref }, "Review and publish"),
-        h("button", { class: "button button-quiet button-big", type: "button", onclick: toRefine }, "Change it"),
-      ),
+      stage,
+      bigWindow({
+        lettering: "Draft. Only you can see it.",
+        flyer: flyer(selected, venue, { pinned: true, compact: true, headingLevel: "h2" }),
+        side: featureSay(selected, name, read && read.at === selected.readAt ? read : undefined),
+      }),
+      ledgeRow("The rest of the night", walkingOver(selected, name), onTheCounter(selected, name), onTheSpeakers(selected)),
+      h("div", { class: "night-foot" }, asItWillRead(selected), publishBar(approveHref, refine)),
+      refine,
+      nightReceipts(selected, name, calls, venue.tz),
     );
-    replace(evidenceCol, nightEvidence(selected, calls, venue.tz), refineBox(ctx, selected));
-    fitHeadlines(windowCol);
+    fitHeadlines(stage);
   };
 
-  const options = switcher(all, draw);
+  const options = planOptions(all, draw);
   replace(
     main,
     h(
       "div",
-      { class: "wrap wrap-wide" },
+      { class: "wrap wrap-wide night-page" },
       h("h1", { class: "page-title" }, `A night for ${longDate(plan.date)}`),
-      options ? h("p", { class: "meta" }, `${all.length} plans for this night. Tap one to see it.`) : null,
       options,
-      h("div", { class: "split split-night" }, windowCol, evidenceCol),
+      stage,
     ),
   );
   draw(plan);

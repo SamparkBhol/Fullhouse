@@ -4,7 +4,6 @@ import type {
   Baseline,
   CreateVenueInput,
   Night,
-  NightPlan,
   PlanInput,
   PlanResponse,
   StreetRead,
@@ -55,157 +54,77 @@ async function call<T>(path: string, init: { method?: string; body?: unknown; to
   return data as T;
 }
 
-function pickArray<T>(data: unknown, keys: string[]): T[] {
-  if (Array.isArray(data)) return data as T[];
-  if (data && typeof data === "object") {
-    for (const key of keys) {
-      const value = (data as Record<string, unknown>)[key];
-      if (Array.isArray(value)) return value as T[];
-    }
-  }
-  return [];
-}
-
 export interface CreatedVenue {
   venue: Venue;
   ownerToken: string;
   ownerUrl: string;
 }
 
-export function isPlanResponse(value: unknown): value is PlanResponse {
-  return !!value && typeof value === "object" && "plan" in value;
+export interface Health {
+  qloo: boolean;
+  ai: boolean;
+  ownerEmail: boolean;
 }
 
-function asPlanResponse(value: unknown): PlanResponse {
-  if (isPlanResponse(value)) {
-    return { plan: value.plan, alternatives: Array.isArray(value.alternatives) ? value.alternatives : [] };
-  }
-  return { plan: value as NightPlan, alternatives: [] };
-}
+let health: Promise<Health> | null = null;
+
+const venuePath = (id: string, rest = "") => `/api/venues/${encodeURIComponent(id)}${rest}`;
 
 export const api = {
-  async search(name: string, city: string): Promise<VenueCandidate[]> {
-    const data = await call<unknown>("/api/venues/search", { method: "POST", body: { name, city } });
-    return pickArray<VenueCandidate>(data, ["candidates", "results"]);
+  // Asked once per page load: whether this server can send email decides what the owner is offered.
+  health(): Promise<Health> {
+    health ??= call<Health>("/api/health").catch(() => ({ qloo: true, ai: false, ownerEmail: false }));
+    return health;
+  },
+  search(name: string, city: string): Promise<VenueCandidate[]> {
+    return call<VenueCandidate[]>("/api/venues/search", { method: "POST", body: { name, city } });
   },
   create(input: CreateVenueInput): Promise<CreatedVenue> {
     return call<CreatedVenue>("/api/venues", { method: "POST", body: input });
   },
   state(id: string, token: string): Promise<VenueState> {
-    return call<VenueState>(`/api/venues/${encodeURIComponent(id)}`, { token });
+    return call<VenueState>(venuePath(id), { token });
   },
   read(id: string, token: string): Promise<StreetRead> {
-    return call<StreetRead>(`/api/venues/${encodeURIComponent(id)}/read`, { method: "POST", token, body: {} });
+    return call<StreetRead>(venuePath(id, "/read"), { method: "POST", token, body: {} });
   },
-  async plan(id: string, token: string, input: PlanInput): Promise<PlanResponse> {
-    return asPlanResponse(await call<unknown>(`/api/venues/${encodeURIComponent(id)}/plan`, { method: "POST", token, body: input }));
+  plan(id: string, token: string, input: PlanInput): Promise<PlanResponse> {
+    return call<PlanResponse>(venuePath(id, "/plan"), { method: "POST", token, body: input });
   },
-  async refine(id: string, token: string, planId: string, request: string): Promise<PlanResponse> {
-    return asPlanResponse(
-      await call<unknown>(`/api/venues/${encodeURIComponent(id)}/refine`, { method: "POST", token, body: { planId, request } }),
-    );
+  refine(id: string, token: string, planId: string, request: string): Promise<PlanResponse> {
+    return call<PlanResponse>(venuePath(id, "/refine"), { method: "POST", token, body: { planId, request } });
   },
   approve(id: string, token: string, planId: string, input: ApproveInput): Promise<Night> {
-    return call<Night>(`/api/venues/${encodeURIComponent(id)}/nights/${encodeURIComponent(planId)}/approve`, {
-      method: "POST",
-      token,
-      body: input,
-    });
+    return call<Night>(venuePath(id, `/nights/${encodeURIComponent(planId)}/approve`), { method: "POST", token, body: input });
   },
-  result(id: string, token: string, nightId: string, headcount: number, note?: string): Promise<unknown> {
-    return call<unknown>(`/api/venues/${encodeURIComponent(id)}/nights/${encodeURIComponent(nightId)}/result`, {
-      method: "POST",
-      token,
-      body: note ? { headcount, note } : { headcount },
-    });
+  result(id: string, token: string, nightId: string, turnout: { headcount: number; note?: string; capacity?: number }): Promise<Night> {
+    return call<Night>(venuePath(id, `/nights/${encodeURIComponent(nightId)}/result`), { method: "POST", token, body: turnout });
   },
-  async eventbrite(id: string, token: string, privateToken: string): Promise<string | null> {
-    const data = await call<unknown>(`/api/venues/${encodeURIComponent(id)}/eventbrite`, {
-      method: "POST",
-      token,
-      body: { token: privateToken },
-    });
-    if (data && typeof data === "object") {
-      const record = data as Record<string, unknown>;
-      const org = record.organization ?? record.name;
-      if (typeof org === "string") return org;
-      if (org && typeof org === "object" && typeof (org as Record<string, unknown>).name === "string") {
-        return (org as Record<string, string>).name ?? null;
-      }
-    }
-    return null;
+  unpublish(id: string, token: string, nightId: string): Promise<Night> {
+    return call<Night>(venuePath(id, `/nights/${encodeURIComponent(nightId)}/unpublish`), { method: "POST", token, body: {} });
   },
-  remove(id: string, token: string): Promise<unknown> {
-    return call<unknown>(`/api/venues/${encodeURIComponent(id)}`, { method: "DELETE", token });
+  republish(id: string, token: string, nightId: string): Promise<Night> {
+    return call<Night>(venuePath(id, `/nights/${encodeURIComponent(nightId)}/republish`), { method: "POST", token, body: {} });
+  },
+  async eventbrite(id: string, token: string, privateToken: string): Promise<string> {
+    return (await call<{ organization: string }>(venuePath(id, "/eventbrite"), { method: "POST", token, body: { token: privateToken } })).organization;
+  },
+  disconnectEventbrite(id: string, token: string): Promise<{ disconnected: true }> {
+    return call<{ disconnected: true }>(venuePath(id, "/eventbrite"), { method: "DELETE", token });
+  },
+  newOwnerLink(id: string, token: string): Promise<{ ownerUrl: string; ownerToken: string }> {
+    return call<{ ownerUrl: string; ownerToken: string }>(venuePath(id, "/owner-link"), { method: "POST", token, body: {} });
+  },
+  requestEmail(id: string, token: string, email: string): Promise<Venue> {
+    return call<Venue>(venuePath(id, "/email"), { method: "POST", token, body: { email } });
+  },
+  confirmEmail(id: string, token: string, code: string): Promise<Venue> {
+    return call<Venue>(venuePath(id, "/email/confirm"), { method: "POST", token, body: { code } });
+  },
+  remove(id: string, token: string): Promise<{ deleted: true }> {
+    return call<{ deleted: true }>(venuePath(id), { method: "DELETE", token });
   },
   baseline(id: string, token: string): Promise<Baseline> {
-    return call<Baseline>(`/api/venues/${encodeURIComponent(id)}/baseline`, { method: "POST", token, body: {} });
+    return call<Baseline>(venuePath(id, "/baseline"), { method: "POST", token, body: {} });
   },
 };
-
-export interface Explained {
-  title: string;
-  body: string;
-  retry: boolean;
-}
-
-export function explain(err: unknown): Explained {
-  if (!(err instanceof ApiFailure)) {
-    return { title: "Something broke on this page", body: "Reload the page and try again.", retry: true };
-  }
-  const code = err.code.toLowerCase();
-  if (err.network) {
-    return {
-      title: "Full House is out of reach",
-      body: "This phone could not reach the Full House server. Check the connection, then try again.",
-      retry: true,
-    };
-  }
-  if (code === "qloo_key_missing") {
-    return {
-      title: "No Qloo key on this server",
-      body: "This Full House server has no Qloo key set, so it cannot read the street. Nothing was read and nothing was made up. Whoever runs this server needs to add the key. Then try again.",
-      retry: true,
-    };
-  }
-  if (code.includes("budget")) {
-    return {
-      title: "Today's Qloo budget is spent",
-      body: "This server has used all the Qloo calls it allows itself in a day, so it makes no new ones until the daily budget resets. Your saved read and your nights are still here.",
-      retry: false,
-    };
-  }
-  if (err.status === 429 || code.includes("rate") || code.includes("too_many")) {
-    return {
-      title: "Too many requests from this connection",
-      body: "Wait a minute, then try again.",
-      retry: true,
-    };
-  }
-  if (err.status === 401 || err.status === 403) {
-    return {
-      title: "This phone is not signed in to this venue",
-      body: "Open the owner link you saved when you created the venue. It signs this phone in.",
-      retry: false,
-    };
-  }
-  if (err.status === 404) {
-    return {
-      title: "Not found",
-      body: "This venue or night does not exist anymore, or the link is incomplete.",
-      retry: false,
-    };
-  }
-  if (code.includes("qloo")) {
-    return {
-      title: "Qloo did not answer",
-      body: err.detail ?? "The Qloo call failed. Nothing was filled in instead. Try again in a minute.",
-      retry: true,
-    };
-  }
-  return {
-    title: "The server could not do that",
-    body: err.detail ?? `It answered with ${err.code}. Try again.`,
-    retry: true,
-  };
-}

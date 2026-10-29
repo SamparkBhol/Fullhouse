@@ -2,7 +2,25 @@ import { api } from "../api.ts";
 import { h, replace, uid } from "../dom.ts";
 import { focusHeading, title } from "../ui/shell.ts";
 import { failure, loading } from "../ui/states.ts";
-import { refreshState, withVenue } from "../venue-context.ts";
+import { refreshState, withVenue, type VenueCtx } from "../venue-context.ts";
+
+export function disconnectBlock(ctx: VenueCtx): HTMLElement {
+  const slot = h("div", { "aria-live": "polite" });
+  const button = h("button", { class: "button button-quiet", type: "button" }, "Disconnect Eventbrite");
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    try {
+      await api.disconnectEventbrite(ctx.id, ctx.token);
+      await refreshState(ctx).catch(() => undefined);
+      replace(slot, h("p", { class: "notice", role: "status" }, "Disconnected. Full House no longer holds your Eventbrite token."));
+      button.remove();
+    } catch (err) {
+      button.disabled = false;
+      replace(slot, failure(err, () => button.click()));
+    }
+  });
+  return h("div", { class: "block" }, h("p", { class: "actions" }, button), slot);
+}
 
 export function eventbritePage(id: string): Promise<void> {
   return withVenue(id, "venue", (ctx, main) => {
@@ -43,9 +61,15 @@ export function eventbritePage(id: string): Promise<void> {
         h(
           "p",
           null,
-          "Full House checks the token with one call to Eventbrite and shows the organisation it belongs to. It is stored encrypted, used only for nights you approve, and never shown again, not even to you. Delete the key on Eventbrite to disconnect.",
+          "Full House checks the token with one call to Eventbrite and shows the organisation it belongs to. It is stored encrypted, used only for nights you approve, and never shown again, not even to you.",
+        ),
+        h(
+          "p",
+          null,
+          "A private token can act on your whole Eventbrite account, and Full House only uses it to create nights you approve. Disconnect removes the token from Full House. To stop it working everywhere, also delete the key on Eventbrite.",
         ),
         form,
+        venue.eventbrite ? disconnectBlock(ctx) : null,
       ),
     );
     focusHeading();
@@ -65,7 +89,7 @@ export function eventbritePage(id: string): Promise<void> {
         input.value = "";
         await refreshState(ctx).catch(() => undefined);
         if (button) button.disabled = false;
-        replace(slot, h("p", { class: "notice", role: "status" }, org ? `Connected to ${org}.` : "Connected."));
+        replace(slot, h("p", { class: "notice", role: "status" }, `Connected to ${org}.`));
       } catch (err) {
         if (button) button.disabled = false;
         replace(slot, failure(err, () => form.requestSubmit()));

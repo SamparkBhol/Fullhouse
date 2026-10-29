@@ -1,5 +1,5 @@
-import type { ActionKind, ApproveInput, NightPlan, Venue } from "../../../src/shared/contract.ts";
-import { api } from "../api.ts";
+import type { ActionKind, ApproveInput, EditableCopy, NightPlan, Venue } from "../../../src/shared/contract.ts";
+import { api, type Health } from "../api.ts";
 import { h, replace, uid } from "../dom.ts";
 import { formatName, longDate } from "../format.ts";
 import { navigate } from "../router.ts";
@@ -12,7 +12,7 @@ interface ActionInfo {
   kind: ActionKind;
   title: string;
   does: (venue: Venue, plan: NightPlan) => string;
-  available: (venue: Venue) => string | null;
+  available: (venue: Venue, health: Health) => string | null;
   checked: (venue: Venue) => boolean;
 }
 
@@ -59,39 +59,80 @@ const ACTIONS: ActionInfo[] = [
   {
     kind: "eventbrite",
     title: "Create the Eventbrite event",
-    does: (v) => (v.eventbrite ? `Creates and publishes the event on your Eventbrite account, ${v.eventbrite.organization}.` : "Creates the event on your Eventbrite account."),
+    does: (v) =>
+      `Creates the event on ${v.eventbrite ? v.eventbrite.organization : "your Eventbrite account"} and publishes it. Eventbrite lists it in its public search with your address.`,
     available: (v) => (v.eventbrite ? null : "Not connected yet."),
-    checked: (v) => !!v.eventbrite,
+    // Eventbrite puts the night in its public search, so it is never ticked for the owner.
+    checked: () => false,
   },
   {
     kind: "owner_email",
     title: "Email me the links",
-    does: (v) => (v.ownerEmail ? `Sends the links to ${v.ownerEmail}, if this server has email turned on. Only you get it.` : "Sends the links to your email."),
-    available: (v) => (v.ownerEmail ? null : "You did not give an email address when you created the venue."),
+    does: (v) => (v.ownerEmail ? `Sends the links to ${v.ownerEmail}. Only you get it.` : "Sends the links to your email."),
+    available: (v, health) =>
+      !health.ownerEmail
+        ? "Email is off on this server."
+        : v.ownerEmail
+          ? null
+          : v.pendingEmail
+            ? "Confirm your email first, from the link we sent you."
+            : "Add your email on the venue page first.",
     checked: (v) => !!v.ownerEmail,
   },
 ];
 
 export function approvePage(id: string, planId: string): Promise<void> {
-  return withVenue(id, "nights", (ctx, main) => {
+  return withVenue(id, "nights", async (ctx, main) => {
     const { plan } = planGroup(ctx.state, planId);
     if (!plan) {
       navigate(`/v/${encodeURIComponent(id)}/night/${encodeURIComponent(planId)}`, { replace: true });
       return;
     }
-    renderApprove(ctx, main, plan);
+    renderApprove(ctx, main, plan, await api.health());
   });
 }
 
-function renderApprove(ctx: VenueCtx, main: HTMLElement, plan: NightPlan): void {
+const EDITS: Array<{ key: keyof EditableCopy; label: string; long?: boolean }> = [
+  { key: "eventTitle", label: "Title" },
+  { key: "eventDescription", label: "Description", long: true },
+  { key: "posterHeadline", label: "Poster headline" },
+  { key: "posterSub", label: "Poster line" },
+];
+
+// The owner approves the exact words that go out, and can change them here.
+function wordsFieldset(plan: NightPlan, inputs: Map<keyof EditableCopy, HTMLInputElement | HTMLTextAreaElement>): HTMLElement {
+  const fields = EDITS.map((e) => {
+    const input = e.long ? h("textarea", { id: uid("copy"), rows: "5", maxlength: "1200" }) : h("input", { type: "text", id: uid("copy"), maxlength: "80" });
+    input.value = plan.copy[e.key];
+    inputs.set(e.key, input);
+    return h("div", { class: "field" }, h("label", { for: input.id }, e.label), input);
+  });
+  return h(
+    "fieldset",
+    { class: "actions-list" },
+    h("legend", null, "The words that go out"),
+    h("p", { class: "hint" }, "This is what guests read on the page, the poster and Eventbrite. Change anything. Dashes and a few overused words are not allowed."),
+    fields,
+    h("details", { class: "pitch" }, h("summary", null, "The note to partners"), h("p", { class: "quote" }, h("strong", null, plan.copy.partnerPitch.subject)), h("p", { class: "quote pre" }, plan.copy.partnerPitch.body)),
+  );
+}
+
+function editedCopy(plan: NightPlan, inputs: Map<keyof EditableCopy, HTMLInputElement | HTMLTextAreaElement>): EditableCopy | undefined {
+  const out: EditableCopy = {};
+  for (const [key, input] of inputs) if (input.value.trim() !== plan.copy[key]) out[key] = input.value.trim();
+  return Object.keys(out).length ? out : undefined;
+}
+
+function renderApprove(ctx: VenueCtx, main: HTMLElement, plan: NightPlan, health: Health): void {
   const venue = ctx.state.venue;
   title("Publish this night");
   const boxes = new Map<ActionKind, HTMLInputElement>();
   const emailInputs = new Map<string, HTMLInputElement>();
+  const copyInputs = new Map<keyof EditableCopy, HTMLInputElement | HTMLTextAreaElement>();
 
   const rows = ACTIONS.map((a) => {
     const id = uid("act");
-    const blocked = a.available(venue) ?? (a.kind === "outreach" && !plan.partners.length ? "No partners in this plan." : null);
+    const blocked = a.available(venue, health) ?? (a.kind === "outreach" && !plan.partners.length ? "No partners in this plan." : null);
     const box = h("input", { type: "checkbox", id, checked: !blocked && a.checked(venue), disabled: !!blocked });
     boxes.set(a.kind, box);
     const extra: HTMLElement[] = [];
@@ -126,11 +167,12 @@ function renderApprove(ctx: VenueCtx, main: HTMLElement, plan: NightPlan): void 
   const form = h(
     "form",
     { class: "form", novalidate: true },
+    wordsFieldset(plan, copyInputs),
     h("fieldset", { class: "actions-list" }, h("legend", null, "What Full House will do"), h("ul", null, rows)),
     h(
       "p",
       { class: "actions" },
-      h("button", { class: "button button-big", type: "submit" }, "Publish the night"),
+      h("button", { class: "button button-big button-lamp", type: "submit" }, "Publish the night"),
       h("a", { class: "button button-quiet", href: `/v/${encodeURIComponent(ctx.id)}/night/${encodeURIComponent(plan.id)}` }, "Back to the plan"),
     ),
     message,
@@ -142,7 +184,7 @@ function renderApprove(ctx: VenueCtx, main: HTMLElement, plan: NightPlan): void 
       "div",
       { class: "wrap" },
       h("h1", null, "Publish this night"),
-      h("p", { class: "lede" }, `${formatName(plan.format)}, ${longDate(plan.date)}, ${plan.start} to ${plan.end}.`),
+      h("p", { class: "lede" }, `${formatName(plan.format, plan.feature?.type)}, ${longDate(plan.date)}, ${plan.start} to ${plan.end}.`),
       h("p", null, "Nothing leaves Full House until you press Publish the night. This is everything it will do. Untick anything you do not want."),
       form,
     ),
@@ -169,6 +211,8 @@ function renderApprove(ctx: VenueCtx, main: HTMLElement, plan: NightPlan): void 
       return;
     }
     const input: ApproveInput = actions.includes("outreach") && Object.keys(partnerEmails).length ? { actions, partnerEmails } : { actions };
+    const copy = editedCopy(plan, copyInputs);
+    if (copy) input.copy = copy;
     const button = form.querySelector<HTMLButtonElement>("button[type=submit]");
     if (button) button.disabled = true;
     replace(message, loading("Publishing the night", ACTIONS.filter((a) => actions.includes(a.kind)).map((a) => a.title)));
