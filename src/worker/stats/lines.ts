@@ -41,6 +41,10 @@ export function lineFor(e: StatEvent): string | null {
       return e.nights ? "A venue logged the turnout of a night." : "A venue corrected the turnout of a night.";
     case "monday_run":
       return e.planned ? `A Monday run drafted a ${nightKind(e.proposal?.format ?? "")}.` : "A Monday run drafted nothing.";
+    case "invite_sent":
+      return "A venue asked the place down the street to share a night.";
+    case "invite_answered":
+      return e.answer === "yes" ? "A neighbour said yes to a shared night." : "A neighbour said not this time to a shared night.";
     case "mcp_call":
       return `An MCP client called ${e.tool}.`;
     case "qloo_error":

@@ -53,6 +53,14 @@ export function mondayEvent(venue: Venue, plan: NightPlan | null): StatEvent {
   return { kind: "monday_run", venueId: venue.id, planned: true, proposal: plan.feature ? { ...proposal, feature: plan.feature.name } : proposal };
 }
 
+export function inviteSentEvent(venueId: string): StatEvent {
+  return { kind: "invite_sent", venueId };
+}
+
+export function inviteAnsweredEvent(venueId: string, answer: "yes" | "no"): StatEvent {
+  return { kind: "invite_answered", venueId, answer };
+}
+
 export function forgetVenue(venue: Venue, lines: "nights" | "all"): StatEvent {
   return { kind: "forget_venue", venueId: venue.id, lines };
 }

@@ -12,6 +12,8 @@ export type StatEvent =
   // A correction carries the time the night was first counted, so it lands in the same hour as the first count.
   | { kind: "turnout"; venueId: string; nights: number; people: number; roomNights: number; seats: number; roomPeople: number; firstAt?: string }
   | { kind: "monday_run"; venueId: string; planned: boolean; proposal?: MondayProposal }
+  | { kind: "invite_sent"; venueId: string }
+  | { kind: "invite_answered"; venueId: string; answer: "yes" | "no" }
   | { kind: "mcp_call"; tool: string }
   | { kind: "qloo_call"; endpoint: string; cached: boolean; ms: number }
   | { kind: "qloo_error"; endpoint: string; error: string }

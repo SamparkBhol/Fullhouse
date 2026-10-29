@@ -78,6 +78,8 @@ function counts(t: Tally): StatsCounts {
     roomPeople: shown(t, "room_people"),
     mondayRuns: t.total("monday"),
     mondayPlanned: t.total("monday", "planned"),
+    invitesSent: t.total("invite", "sent"),
+    invitesAccepted: t.total("invite", "yes"),
     mcpCalls: t.total("mcp"),
     copyModel: t.total("plan", "model"),
     copyTemplate: t.total("plan", "template"),
