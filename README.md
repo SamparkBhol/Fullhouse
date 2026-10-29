@@ -1,6 +1,6 @@
 # Full House
 
-Full House fills a small venue's quiet night, every week. It reads what the street around a cafe, bookshop, bar or gallery loves from Qloo, plans one night for the slow slot with the reason beside every pick, and puts the night out after one yes from the owner.
+Full House finds the place down the street whose customers already love yours, and sets up the one night both crowds want, so you each send your regulars to the other.
 
 - Live app: https://fullhouse.sampark-bhol.workers.dev
 - Live numbers: https://fullhouse.sampark-bhol.workers.dev/live
@@ -8,58 +8,50 @@ Full House fills a small venue's quiet night, every week. It reads what the stre
 
 ## Why I built it
 
-Every independent venue has a night that dies. Tuesday at the bookshop cafe, Wednesday at the bar on the corner. The owner knows exactly which one, and the usual fixes are a discount or another reel. What fills a room is a night the people nearby already care about, run with places they already go to. Someone working the counter cannot see either of those. There is no booker, no marketing person and no spare hour.
+Every independent venue has a night that dies. Tuesday at the bookshop cafe, Wednesday at the bar on the corner. The usual fixes are a discount or another reel. What actually fills a room is a night that people already care about, put on with a place they already go to. Small venues do this all the time when the owners happen to know each other. The hard part is knowing which neighbour shares your customers, and what night both crowds would come out for.
 
-Qloo can see both. It knows, in aggregate, which films, artists, books and podcasts the people who like one particular venue are into, and which places nearby they also love. I wanted that in the hands of the person who has to fill the chairs on Thursday, as one plan they can read and approve in a minute.
-
-## Who pays
-
-The buyer is the owner of an independent cafe, bar, bookshop, record shop, brewery or gallery with one slow night a week and nobody to plan it. Toast's 2025 Voice of the Restaurant Industry survey had 46 percent of operators calling advertising moderately or extremely challenging, and r/smallbusiness has a post like "I've been open for four hours and have only sold two ice creams" most weeks.
-
-The plan is about 99 dollars a month per venue, so 500 venues is about 500,000 dollars a year. One weekly run costs 12 Qloo calls for the read and two Workers AI calls for the copy on the Workers Free plan; a refine adds one more model call. The first 100 venues would be reached by hand: walking into shops on streets where Qloo's data is dense, showing the owner their own street read on a phone, and leaving a printed flyer for their quiet night. There are no paying venues or pilots yet.
+Qloo can see both. Asked with the venue itself as the signal, it returns the real places nearby that the venue's own crowd loves, with their hours, and it can split any pick between two venues' crowds with its explainability scores. A plain chatbot guesses from fame: asked for partners for Housing Works Bookstore, one named a hotel Qloo lists as permanently closed and two businesses Qloo has no record of.
 
 ## What it does
 
-1. **Finds your venue.** Type the name and the city. Full House asks Qloo for matching places, drops namesakes in other countries once your city has a match, and you pick yours by its address. Then you say which night is quiet, when it starts and how many people fit.
-2. **Reads the street.** Twelve Qloo calls: the taste of the blocks around you, the taste of your own audience, the places within 1.2 km your audience loves, two heat maps, what your audience loves in five kinds of culture, how it leans by age and gender in aggregate, and what the places it loves have that you do not.
-3. **Plans one night.** Plain rules turn the read into a film, listening, quiz, book, podcast or tasting night for your quiet slot, at least two days out so partners and guests get notice: a feature, two or three partners within a 1 km walk that Qloo lists as open that night, menu ideas from your own audience's food tags and a playlist of artists. A kind of night that answers a gap the read found gets the edge, so cinemas nearby and none here lead to a film night. Two alternatives in other formats and with other features sit beside it. Every line carries its reason and the number of the Qloo call it came from.
-4. **Takes changes in your words.** "Make it Friday, no live music, under 40 people." The model turns the request into plan settings through a tool call with a strict schema. If that fails, a keyword parser does it.
-5. **Acts after one yes.** One screen shows the exact words that will go out, which you can change, and lists everything that will happen: a public event page with an RSVP counter, a printable A4 poster with a QR code, a calendar file and a Google Calendar link, a note to each partner drafted in your own mail app, the Eventbrite event if you connected Eventbrite and tick it, and the links emailed to you. Untick anything you do not want. Nothing leaves before you press Publish, and any page can be taken down later.
-6. **Learns from the night.** Afterwards you log how many people came, and the page says what next Monday will do with it.
-7. **Comes back every Monday** with a fresh read and a new night, leaves out what you already ran, and waits for your yes.
+1. **Type your venue.** One field. Qloo's matches show as you type, and you tap yours. Nothing else is asked first.
+2. **See your crowd.** The read lands while you watch: where the taste for your venue runs strongest on the street, then the artists, books, films, shows and podcasts your crowd is into.
+3. **Meet your match.** The place down the street your crowd loves most that can host people, minutes away on foot, with what both crowds share. Libraries, churches, parks and places Qloo lists as closed never come up.
+4. **The night both crowds want.** Full House asks Qloo with both places as the signal and picks the feature whose explainability split between the two crowds is nearest half and half. For Housing Works Bookstore and Angelika Film Center, 2 minutes apart, that was a watch night around The Other Two, with the split at 50 and 50. When no pick is near even, it says so and builds on your own crowd's pick instead.
+5. **Ask them.** One button opens your own share sheet or mail with an invite link. The neighbour's page shows the two places, the night, the split and what the two crowds share, with two buttons: We're in, and Not this time.
+6. **Their yes is the action.** Your screen flips to "Angelika Film Center is in" within seconds. Only then does the public event page, the poster and the calendar file carry both names. Before a yes, nothing public mentions them.
+7. **It comes back every Monday** with a fresh read and the next joint night, leaves out what you already ran, and waits for your yes.
 
-For Housing Works Bookstore Cafe on Crosby Street in SoHo, the live read planned a watch night around The Other Two, the TV show Qloo ranks first for people who like the shop and Angelika Film Center nearby. The partners are IFC Center, Roxy Cinema New York and Film Forum, each 10 or 11 minutes away on foot. Three of the five places its audience loves nearby are cinemas, and the bookshop is not one. The read shows that under "Found nearby, not here", and that gap is why the night is a screen night. City Lights Booksellers in San Francisco got a book night around 1919. The Photographers' Gallery in London got a book night around Wake Up, with a watch night around It's a Sin as an alternative.
-
-| The landing page | The night, on the venue's own flyer |
+| Type your venue | Your crowd lands |
 | --- | --- |
-| ![Full House landing page with the live counters](media/landing.png) | ![A watch night around The Other Two at Housing Works Bookstore](media/night.png) |
-| **The street read** | **The public event page** |
-| ![The street read for Housing Works Bookstore](media/street.png) | ![The public event page guests open](media/event-page.png) |
-| **Live numbers for the whole server** | **The venue's own numbers** |
-| ![Live numbers: venues, reads, nights, Qloo calls and response times](media/live.png) | ![The Numbers tab for one venue](media/numbers.png) |
+| ![The landing page with a real pair from a Qloo read](media/landing.png) | ![The crowd's picks and the night map](media/crowd.png) |
+| **Your match down the street** | **The night both crowds want** |
+| ![Angelika Film Center, 2 minutes from Housing Works Bookstore](media/match.png) | ![A watch night around The Other Two with the split between the two crowds](media/joint-night.png) |
+| **The neighbour's invite** | **Their yes flips your screen** |
+| ![The invite page with We're in and Not this time](media/invite-page.png) | ![The owner's screen after the neighbour said yes](media/the-flip.png) |
+| **Both names go up only after the yes** | **The demo video** |
+| ![The public event page with both names](media/event-page.png) | [temp/fullhouse-demo.mp4](temp/fullhouse-demo.mp4), 2:12 |
 
-Every screenshot is from the live site on 29 October 2026.
+Every screenshot is from the live site on 29 October 2026. In the video the neighbour's phone is played by us, and the test venue was deleted afterwards.
+
+## Who pays
+
+The buyer is the owner of an independent cafe, bar, bookshop, record shop, cinema or gallery with a slow night and nobody to plan it. The price is about 79 dollars a month per venue. Every invite is distribution: the neighbour's first joint night is free, and it sees its own crowd read on the invite page, which is how it becomes the next customer. One plan costs 12 Qloo calls for the read, 5 more for the joint read and two small model calls for the words, on the Cloudflare Workers free plan. There are no paying venues or pilots yet.
 
 ## How Qloo powers each step
 
-Here is the Housing Works read, call by call, from the live hackathon API on 27 October 2026. Calls 1 to 5 and 7 go out together, then compare, the second heat map and the five picks calls, which need the places from step 4. Every request is a GET to `https://hackathon.api.qloo.com` with the key in the `X-Api-Key` header, which never appears in the app. `<venue>` is Housing Works' Qloo id, `36B3A5EB-BE3D-4470-ACDC-F9B2FF54EA43`, and `<point>` is `POINT(-73.996575 40.724604)`, longitude first as insights expects.
+Every request is a GET to `https://hackathon.api.qloo.com` with the key in the `X-Api-Key` header, which only the Worker holds. A probe of about 380 live calls across 15 real venues set these choices before any of the app was written.
 
-1. **Find the venue.** `/search?query=Housing Works Bookstore Cafe New York&types=urn:entity:place&take=8`. Eight hits. Housing Works Bookstore at 126 Crosby St comes first with 82 tags. A New York Café in Budapest is dropped because the city already has a match, so the owner picks from seven addresses. One search with the city in the query found all 15 venues I tested. Looking the city up first sent "New York" to the middle of New York State.
-2. **The street's taste.** `/v2/insights?filter.type=urn:tag&signal.location=<point>&filter.tag.types=urn:tag:genre:place,urn:tag:ambience:qloo,urn:tag:specialty_dish:place,urn:tag:genre:media,urn:tag:genre:music&diversify.by=subtype&diversify.take=5&take=25`. 25 tags, five per namespace: Intimate, Social, Unique, Brunch, Cocktail Bar, Sandwich, Essays, soul. Their scores sit between 0.989 and 1.000, so the app shows them as a set, not a ranking.
-3. **Your audience's taste.** The same call with `signal.interests.entities=<venue>` instead of the location, three more namespaces (`keyword:media`, `cuisine:qloo`, `good_for:qloo`) and `take=40`. 40 tags with a real spread: Fries, Avocado Toast, folk, indie rock, LGBT, Book store, Cozy.
-4. **Places your audience loves.** `/v2/insights?filter.type=urn:entity:place&filter.location=<point>&filter.location.radius=1200&signal.interests.entities=<venue>&filter.exclude.entities=<venue>&feature.explainability=true&take=30`. 30 places, every one tied to the venue by explainability: Angelika Film Center, IFC Center, Chess Forum, Mercer Street Books & Records, Film Forum. The ten strongest are numbered on the map.
-5. **Two heat maps.** `/v2/insights?filter.type=urn:heatmap&filter.location=<point>&filter.location.radius=2000&signal.interests.entities=<venue>` gave 526 squares of about 150 m, the strongest about 40 m from the shop. The second map signals with the shop's own two kinds of place from step 3 through `signal.interests.tags=...&operator.signal.interests.tags=union`, and gave 641 squares showing where places like it run strongest.
-6. **What your audience loves.** `/v2/insights?filter.type=urn:entity:artist&signal.interests.entities=<venue>,<two places from step 4>&signal.location=<point>&feature.explainability=true&take=10`, then the same for `book`, `movie`, `tv_show` and `podcast`. The two places are the first loved places that host people, here Angelika Film Center and Village East by Angelika. Qloo's `warnings` said it could not use Village East for any type, and the read says so. Every pick shows its explainability share, such as Housing Works 0.61 and Angelika 0.39 for Rina Sawayama: Rina Sawayama, Kelsey Lu and Princess Nokia; 1919 and Friday Black; The Other Two and Shrill; 2 Dope Queens and Las Culturistas. The features of nights run in the last eight weeks go in `filter.exclude.entities`, so the Monday run brings new ones.
-7. **Your audience in aggregate.** `/v2/insights?filter.type=urn:demographics&signal.interests.entities=<venue>`. The owner reads "People who like Housing Works Bookstore on Qloo over index on the 55 and older and 35 to 44 age groups", with a line saying it describes an audience, not any person.
-8. **Where you differ.** `/v2/analysis/compare?a.signal.interests.entities=<venue>&b.signal.interests.entities=<five places from step 4 that host people>&take=20`. Landmarks, gardens and alleys are left out, because they cannot carry a gap a venue could act on. The shared list holds only Place and LGBTQ+ friendly. The useful part is the places' side minus the venue's side: Movie Theater and Food on three of the five, Arcade games on two, none of them on Housing Works.
-9. **The night.** No Qloo call. Movie Theater from step 8 gives film nights the edge, and the planner takes the top TV show. It keeps partners within a 1 km walk whose tags fit a film night, drops 9 nearby places that Qloo's hours show closed by 19:00 on Thursday, says where Qloo has no hours, and skips Angelika, the nearest cinema at 150 m, because Qloo files it as a cafe and event venue too, the same kind of place as Housing Works. The menu ideas are the audience's own food tags from step 3: fries, salad, toast.
-10. **Proof.** The Proof tab asks a plain model the question an owner would type into a chatbot, then looks up every place it names with `/search?query=<name>&types=urn:entity:place&filter.location=40.724604,-73.996575&filter.radius=10&take=5` (artists with `types=urn:entity:artist`, other names with no type). A name the artist search misses is searched again across the whole catalog, so an author comes back as an author. Places Qloo lists as permanently closed count as not found, and the name the model gave the night itself is not checked. Full House's own feature and partners are checked by id in one `/entities?entity_ids=...` call. Then every name found is looked for in the read: among the places nearby Qloo ties to the shop's audience, or among its picks. For Housing Works, IFC Center is 5th among the places nearby people who like the shop love, and the tab prints that line for every name on both sides.
+1. **Find the venue.** `/search` with the name and the city together. Searching the city first sent "New York" to the middle of New York State.
+2. **The street and the venue.** `filter.type=urn:tag` twice: once with `signal.location` for the blocks around the venue, once with `signal.interests.entities` set to the venue.
+3. **The places its crowd loves.** `urn:entity:place` with the venue as the signal inside a 1.2 km `filter.location` POINT and `feature.explainability`. A location alone returns near level scores and the same global names everywhere; the venue as the signal returns its actual neighbours.
+4. **The match.** The best of those that can host people, then `/v2/analysis/compare` between the venue and the partner for what both crowds share, and the partner's own crowd tags.
+5. **Where the taste runs strongest.** `urn:heatmap` with the venue as the signal, drawn as lit windows on a night map.
+6. **Your crowd's picks.** One insights call each for artist, book, movie, tv_show and podcast with the venue as the signal and the venue's point.
+7. **The joint read.** The same five types with `signal.interests.entities` set to both places and `feature.explainability` on. Each pick's two explainability scores, inside one response, become the split between the two crowds.
+8. **Proof.** A plain model is asked what an owner would ask a chatbot, and every place it names is looked up on Qloo search near the venue. The page leads with its hard failures: closed, not in Qloo, real but not tied to this crowd.
 
-### Why this needs Qloo
-
-Before building the read I probed the live API on 15 venues in 11 cities. With only a location as the signal, Qloo's answers go flat: the artist, book, film, show and podcast picks all scored between 0.757 and 0.765, nothing was explained, and the same global stars came back almost everywhere. With the venue's own entity in the signal, the lists split apart: 15 different first artists for 15 venues, and a per result explanation on 79 of 90 of those lists.
-
-That link, from a bookshop on Crosby Street to the films its visitors watch and the cinemas they walk to, is the whole product. A review site knows ratings, a map knows distances, Eventbrite knows events, and a chatbot knows what was on the internet when it was trained. None of them can say what the people who like this one venue also love, nearby and across film, music, books and podcasts, with a reason for each pick. Without that, the night is a guess.
+Trending is flat on the hackathon host, so Full House makes no "rising" claims. Ranks are compared only inside one response, and every reason on screen points at the call it came from in the Receipts drawer.
 
 ## The Monday agent
 
@@ -100,8 +92,9 @@ Each owner also has a Numbers tab behind their owner link: the RSVPs for the nex
 ## Privacy and safe use
 
 - **What Qloo receives:** the venue as a public place (its Qloo id and map point), ids of places and tags that Qloo itself returned, the names typed into a search, and, on the Proof tab, the names a plain language model suggested, sent to Qloo search only to check whether they exist. Nothing about customers, because Full House never asks for anything about them. The owner's email stays in the venue's Durable Object. RSVPs and turnout reach the public numbers only as counts added up across venues, and never reach Qloo.
+- **Consent both ways:** a partner is never named on a public page, poster or calendar file until it presses We're in on its own invite page. A night the partner hosts cannot be published before that yes. The model never sees partner names, so its copy cannot name one.
 - **Who posted a page:** until a venue confirms an email on its own website domain, its event page and poster say "Posted on Full House by whoever set up the venue. The venue has not confirmed it." Anyone can report a page, three reports take it offline, and the owner can take any page down.
-- **Aggregate, and said so:** every screen with Qloo data ends with a "Receipts" drawer that holds a "What this does not tell you" list. Demographics describe the venue's audience on Qloo, never the street's residents or any person. Ranks are positions within one answer, never percentages, and a missing score is never shown as zero.
+- **Aggregate, and said so:** every screen with Qloo data ends with a "Receipts" drawer that holds a "What this does not tell you" list. The read asks Qloo nothing about age or gender. Identity themes never reach public copy. Ranks are positions within one answer, never percentages, and a missing score is never shown as zero.
 - **Qloo's answer and Full House's choice stay apart:** each page has one "Receipts" drawer, closed until opened, that says how each part is known and lists each reason with the Qloo call it came from. Where a rule of mine made the choice, the line says so ("tagged movie theater, which Full House pairs with a film night").
 - **The model writes words, not facts:** plain rules pick the night. The model (Mistral Small 3.1 24B on Workers AI by default) gets a JSON brief of what Qloo returned and writes the description, poster lines, social post and partner note. A checker rejects any copy that names a person, place, work or brand that is not in the brief, fixed templates step in, and the plan says which writer was used.
 - **No outreach without the owner:** partner notes open in the owner's own mail app, Gmail or Outlook, unsent. The only email the app sends goes to an address the owner confirmed, at most three a day, and only when email is set up.
@@ -152,7 +145,7 @@ npm run build   # web app into web/dist
 npm run e2e     # Playwright, headless, against wrangler dev and the fake Qloo server
 ```
 
-Unit test fixtures are small hand written JSON shaped like Qloo's answers. The end to end run starts the Worker without the AI binding, so plans use templates, then restarts it without a key to check the page that says so. On 27 October 2026 all 341 unit tests and all 20 end to end specs passed, plus the key missing spec.
+Unit test fixtures are small hand written JSON shaped like Qloo's answers. The end to end run starts the Worker without the AI binding, so plans use templates, then restarts it without a key to check the page that says so. On 29 October 2026 all 514 unit tests and all 36 end to end specs passed, plus the key missing spec.
 
 `npm run probe` and `npm run live-read` run against the live API with `QLOO_API_KEY` set. They keep every raw answer in `../raw/live/`, beside the clone, so no Qloo response ever lands in the repository.
 
