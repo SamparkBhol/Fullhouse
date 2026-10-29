@@ -1,7 +1,7 @@
 import type { ActionKind, ActionResult, NightPlan, PlanInput, Venue } from "../../shared/contract.ts";
 import { esc } from "../pages/html.ts";
 import { eventUrl, placeLine } from "../pages/event.ts";
-import { guestLine } from "../pages/guest.ts";
+import { guestSource } from "../pages/guest.ts";
 import { makeSlug } from "../slug.ts";
 import { describeDate } from "../../core/index.ts";
 import { eventbriteUtc, nightWindow } from "../zones.ts";
@@ -54,7 +54,7 @@ function eventbriteHtml(night: NightPlan, venueName: string, url: string | undef
     .join("");
   return (
     paras +
-    `<p>${esc(guestLine(night, venueName))}. Qloo's taste data is a pattern across many people, not a fact about any one person.</p>` +
+    `<p>${esc(guestSource(venueName))}. Qloo's taste data is a pattern across many people, not a fact about any one person.</p>` +
     (url ? `<p>More details: <a href="${esc(url)}">${esc(url)}</a></p>` : "")
   );
 }

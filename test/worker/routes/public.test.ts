@@ -16,7 +16,8 @@ describe("public pages", () => {
     expect(res.headers.get("x-robots-tag")).toContain("noindex");
     const html = await res.text();
     expect(html).toContain("Jazz on vinyl night");
-    expect(html).toContain("0 said they are coming");
+    expect(html).not.toContain("said they are coming");
+    expect(html).toContain("I am going");
     expect(html).toContain("has not confirmed it");
   });
 
@@ -34,7 +35,10 @@ describe("public pages", () => {
     const otherBrowser = await req(h, `/e/${p.night.eventSlug}/rsvp`, { method: "POST", headers: { origin: ORIGIN, accept: "application/json" } });
     expect(await otherBrowser.json()).toEqual({ count: 2, already: false });
     const page = await (await req(h, `/e/${p.night.eventSlug}`, { headers: { cookie } })).text();
-    expect(page).toContain("2 said they are coming");
+    expect(page).not.toContain("2 said they are coming");
+    const third = await req(h, `/e/${p.night.eventSlug}/rsvp`, { method: "POST", headers: { origin: ORIGIN, accept: "application/json", "cf-connecting-ip": "203.0.113.8" } });
+    expect(await third.json()).toEqual({ count: 3, already: false });
+    expect(await (await req(h, `/e/${p.night.eventSlug}`, { headers: { cookie } })).text()).toContain("3 said they are coming");
     expect(page).toContain("You are on the list");
   });
 

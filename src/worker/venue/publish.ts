@@ -1,5 +1,6 @@
 import type { ApproveInput, Night } from "../../shared/contract.ts";
 import { applyCopyEdits } from "../../core/index.ts";
+import { plainName } from "../../shared/words.ts";
 import { runActions, type Published } from "../actions/run.ts";
 import { recordEvent } from "../stats/events.ts";
 import { forgetVenue, publishEvent, turnoutEvent, type Counted } from "../stats/makers.ts";
@@ -17,10 +18,17 @@ export async function approveNight(records: VenueRecords, deps: VenueDeps, planI
   const venue = await records.venue();
   if (!venue) return noVenue();
   const existing = await records.night(planId);
-  if (existing) return ok(existing.night);
+  if (existing) return ok({ ...existing.night, invites: await records.invitesFor(planId) });
   const proposals = await records.proposals();
   const record = proposals.find((r) => r.plan.id === planId);
   if (!record) return fail(404, "plan_not_found", "That plan is not among the current proposals.");
+  const accepted = await records.accepted(planId);
+  const partner = record.plan.match?.partner;
+  // A night at the partner's place cannot go up before the partner has agreed to host it.
+  if (record.plan.match?.host === "partner" && !accepted && partner) {
+    const p = plainName(partner.name);
+    return fail(409, "waiting_for_partner", `${p} hosts this night, so it goes up once ${p} says yes on its invite.`);
+  }
   const edited = input.copy ? applyCopyEdits(record.plan.copy, input.copy) : { copy: record.plan.copy };
   if ("problem" in edited) return fail(400, "copy_not_accepted", edited.problem);
   const plan = { ...record.plan, copy: edited.copy };
@@ -41,7 +49,8 @@ export async function approveNight(records: VenueRecords, deps: VenueDeps, planI
       ownerLink: await ownerLink(records, deps, venue, origin),
       ...(deps.slugRand ? { slugRand: deps.slugRand } : {}),
     });
-    const night: Night = { ...plan, status: "approved", actions: run.results, rsvps: 0 };
+    const results = partner && !accepted ? run.results.map((r) => (r.kind === "event_page" && r.ok ? { ...r, detail: `${r.detail} ${plainName(partner.name)} is not named on it until they say yes.` } : r)) : run.results;
+    const night: Night = { ...plan, status: "approved", actions: results, rsvps: 0 };
     if (run.slug) night.eventSlug = run.slug;
     await records.store.put(`night:${night.id}`, { night, input: record.input, published: run.published, chosen: run.published } satisfies NightRecord);
     if (run.slug) await records.store.put(`slug:${run.slug}`, night.id);
@@ -50,7 +59,7 @@ export async function approveNight(records: VenueRecords, deps: VenueDeps, planI
       "proposals",
       proposals.map((r) => (r.plan.id === planId ? { ...r, plan: { ...r.plan, status: "approved" as const } } : r)),
     );
-    return ok(night);
+    return ok({ ...night, invites: await records.invitesFor(night.id) });
   } catch (err) {
     return failure(err, "publish the night");
   }

@@ -1,13 +1,19 @@
-import type { Generate, Qloo, ReadOptions } from "../../core/index.ts";
+import type { Generate, JointRead, MatchOutcome, Qloo, ReadOptions } from "../../core/index.ts";
 import type {
   ApproveInput,
   Baseline,
   CreateVenueInput,
+  EntityRef,
+  Invite,
+  JointExample,
+  LovedPlace,
+  Match,
   Night,
   NightPlan,
   PlanInput,
   PlanResponse,
   StreetRead,
+  Rising,
   Venue,
   VenueCandidate,
   VenueState,
@@ -16,6 +22,7 @@ import type { VenueDashboard } from "../../shared/stats.ts";
 import type { RefineCore } from "../ai.ts";
 import type { AiLike } from "../env.ts";
 import type { PublicNight } from "../pages/event.ts";
+import type { PublicInvite } from "../pages/invite.ts";
 import { isQlooError, qlooFailure } from "../qloo/errors.ts";
 import type { StatsSink } from "../stats/events.ts";
 
@@ -23,7 +30,10 @@ export interface CoreFns extends RefineCore {
   readStreet(q: Qloo, venue: Venue, opts?: ReadOptions): Promise<StreetRead>;
   planNights(read: StreetRead, venue: Venue, input: PlanInput, now: Date, origin: NightPlan["origin"], newId: () => string): PlanResponse;
   writeCopy(plan: NightPlan, venue: Venue, read: StreetRead, generate: Generate | null): Promise<NightPlan>;
-  runBaseline(q: Qloo, venue: Venue, read: StreetRead, plan: NightPlan, generate: Generate, model: string): Promise<Baseline>;
+  runBaseline(q: Qloo, venue: Venue, read: StreetRead, plan: NightPlan | null, generate: Generate, model: string): Promise<Baseline>;
+  matchFor(q: Qloo, venue: Venue, read: StreetRead, partnerId?: string): Promise<MatchOutcome | null>;
+  readJoint(q: Qloo, venue: Venue, read: StreetRead, partner: LovedPlace, exclude?: EntityRef[]): Promise<JointRead>;
+  planJoint(read: StreetRead, joint: Rising[], venue: Venue, match: Match, input: PlanInput, now: Date, origin: NightPlan["origin"], newId: () => string): PlanResponse;
   nextMondayNine(tz: string, now: Date): Date;
 }
 
@@ -68,6 +78,13 @@ export interface VenueApi {
   rsvp(slug: string, browser: string): Promise<Out<{ count: number; already: boolean }>>;
   monday(): Promise<Out<MondayRun>>;
   dashboard(): Promise<Out<VenueDashboard>>;
+  match(partnerId?: string): Promise<Out<Match>>;
+  invite(planId: string, partnerId: string, origin: string): Promise<Out<Invite>>;
+  invites(): Promise<Out<Invite[]>>;
+  publicInvite(slug: string): Promise<Out<PublicInvite>>;
+  answerInvite(slug: string, answer: "yes" | "no"): Promise<Out<Invite>>;
+  example(): Promise<Out<JointExample>>;
+  precomputeProof(): Promise<Out<Baseline | null>>;
 }
 
 export interface MondayRun {

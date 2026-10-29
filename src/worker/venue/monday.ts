@@ -10,6 +10,7 @@ import { failure, noVenue, ok, type MondayRun, type Out, type VenueDeps } from "
 import { armAlarm } from "./alarm.ts";
 import { ownerLink } from "./owner.ts";
 import { freshRead, qlooFor, withCopy } from "./planning.ts";
+import { planWithMatch } from "./joint.ts";
 import type { VenueRecords } from "./records.ts";
 
 const DAY_MS = 86_400_000;
@@ -98,8 +99,9 @@ export async function runMonday(records: VenueRecords, deps: VenueDeps): Promise
     if (q) {
       const read = await freshRead(records, deps, q, venue);
       const input = mondayInput(venue, (await records.nights()).map((r) => r.night));
-      const response = deps.core.planNights(read, venue, input, deps.now(), "monday", deps.newId);
-      const plan = await withCopy(deps, response.plan, venue, read);
+      const joint = await planWithMatch(records, deps, read, venue, input, "monday");
+      const response = joint.response;
+      const plan = await withCopy(deps, response.plan, venue, joint.read);
       await records.saveProposals({ plan, alternatives: response.alternatives, input }, input);
       recordEvent(deps.stats, planEvent(venue, plan));
       drafted = plan;

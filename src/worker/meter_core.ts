@@ -1,7 +1,7 @@
 import type { Store } from "./store.ts";
 import { secondsToUtcMidnight, utcDay } from "./zones.ts";
 
-export type LimitKind = "create" | "search" | "rsvp" | "rsvp_night" | "baseline" | "read" | "plan" | "report";
+export type LimitKind = "create" | "search" | "rsvp" | "rsvp_night" | "baseline" | "read" | "plan" | "report" | "match" | "invite" | "invite_answer";
 
 export const IP_LIMITS: Record<LimitKind, number> = {
   create: 20,
@@ -12,6 +12,9 @@ export const IP_LIMITS: Record<LimitKind, number> = {
   read: 30,
   plan: 60,
   report: 10,
+  match: 60,
+  invite: 30,
+  invite_answer: 20,
 };
 
 // New sign ups can spend only this share of the daily budget, so they never starve venues that already run.

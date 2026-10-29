@@ -1,4 +1,4 @@
-import type { NightPlan, PlanInput, PlanResponse, StreetRead, Venue, Night } from "../../shared/contract.ts";
+import type { Invite, Match, Night, NightPlan, PlanInput, PlanResponse, Rising, StreetRead, Venue } from "../../shared/contract.ts";
 import type { Published } from "../actions/run.ts";
 import type { Sealed } from "../crypto.ts";
 import type { Counted } from "../stats/makers.ts";
@@ -30,6 +30,14 @@ export interface EmailCode {
   email: string;
   code: string;
   at: string;
+}
+
+// The joint read for one partner and one street read, kept so changing the day does not ask Qloo again.
+export interface JointRecord {
+  readAt: string;
+  partnerId: string;
+  rising: Rising[];
+  limits: string[];
 }
 
 const MAX_PROPOSALS = 12;
@@ -79,6 +87,35 @@ export class VenueRecords {
     if (!id) return null;
     const [venue, rec] = await Promise.all([this.venue(), this.night(id)]);
     return venue && rec ? { venue, rec } : null;
+  }
+
+  // The owner's choice of partner holds for the read it was made on; a fresh read starts from its own top candidate.
+  async match(): Promise<Match | undefined> {
+    const [read, chosen] = await Promise.all([this.read(), this.store.get<Match>("match")]);
+    if (!read) return undefined;
+    return chosen && chosen.readAt === read.at ? chosen : read.match;
+  }
+
+  async joint(readAt: string, partnerId: string): Promise<JointRecord | undefined> {
+    const j = await this.store.get<JointRecord>("joint");
+    return j && j.readAt === readAt && j.partnerId.toUpperCase() === partnerId.toUpperCase() ? j : undefined;
+  }
+
+  async invites(): Promise<Invite[]> {
+    return [...(await this.store.list<Invite>("invite:")).values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async invitesFor(planId: string): Promise<Invite[]> {
+    return (await this.invites()).filter((i) => i.planId === planId);
+  }
+
+  async accepted(planId: string): Promise<Invite | undefined> {
+    return (await this.invitesFor(planId)).find((i) => i.status === "accepted");
+  }
+
+  async inviteBySlug(slug: string): Promise<Invite | undefined> {
+    const id = await this.store.get<string>(`islug:${slug}`);
+    return id ? this.store.get<Invite>(`invite:${id}`) : undefined;
   }
 
   // Every mail the app sends counts, so a typo in an address can never turn it into a mailer.

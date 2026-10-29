@@ -10,6 +10,8 @@ import {
   CreateVenueSchema,
   EmailSchema,
   EventbriteSchema,
+  InviteSchema,
+  MatchSchema,
   parse,
   PlanInputSchema,
   RefineSchema,
@@ -71,7 +73,7 @@ function nightId(c: Ctx): string | null {
   return NIGHT_ID_RE.test(id) ? id : null;
 }
 
-function nightRoutes(app: Hono<AppEnv>): void {
+function nightRoutes(app: Hono<AppEnv>, deps: AppDeps): void {
   app.post("/api/venues/:id/nights/:planId/approve", async (c) => {
     const planId = nightId(c);
     if (!planId) return apiError(404, "plan_not_found", "No plan with that id.");
@@ -81,6 +83,15 @@ function nightRoutes(app: Hono<AppEnv>): void {
     if (p.value.partnerEmails) input.partnerEmails = p.value.partnerEmails;
     if (p.value.copy) input.copy = Object.fromEntries(Object.entries(p.value.copy).filter(([, v]) => v !== undefined));
     return send(await c.var.venue.approve(planId, input, originOf(c)));
+  });
+
+  app.post("/api/venues/:id/nights/:planId/invite", async (c) => {
+    const planId = nightId(c);
+    if (!planId) return apiError(404, "plan_not_found", "No plan with that id.");
+    const p = parse(InviteSchema, await readBody(c));
+    if (!p.ok) return apiError(400, "invalid_input", p.detail);
+    await limit(c, deps, "invite");
+    return send(await c.var.venue.invite(planId, p.value.partnerId, originOf(c)));
   });
 
   app.post("/api/venues/:id/nights/:nightId/result", async (c) => {
@@ -151,7 +162,17 @@ export function ownerRoutes(app: Hono<AppEnv>, deps: AppDeps): void {
     return send(await c.var.venue.refine(p.value.planId, p.value.request));
   });
 
-  nightRoutes(app);
+  // The match comes with the read; only a switch to a runner up asks Qloo again.
+  app.post("/api/venues/:id/match", async (c) => {
+    const p = parse(MatchSchema, await readBody(c));
+    if (!p.ok) return apiError(400, "invalid_input", p.detail);
+    if (p.value.partnerId) await limit(c, deps, "match");
+    return send(await c.var.venue.match(p.value.partnerId));
+  });
+
+  app.get("/api/venues/:id/invites", async (c) => send(await c.var.venue.invites()));
+
+  nightRoutes(app, deps);
   accountRoutes(app);
 
   app.post("/api/venues/:id/baseline", async (c) => {

@@ -65,7 +65,7 @@ describe("Meter", () => {
   });
 
   it("has the limits the spec names", () => {
-    expect(IP_LIMITS).toEqual({ create: 20, search: 120, rsvp: 60, rsvp_night: 3, baseline: 10, read: 30, plan: 60, report: 10 });
+    expect(IP_LIMITS).toEqual({ create: 20, search: 120, rsvp: 60, rsvp_night: 3, baseline: 10, read: 30, plan: 60, report: 10, match: 60, invite: 30, invite_answer: 20 });
   });
 });
 

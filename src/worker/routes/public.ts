@@ -18,7 +18,7 @@ async function browserKey(c: Ctx, slug: string, cookie: string): Promise<string>
 }
 
 // Public posts come from the event page itself: a cross site post is refused, and a JSON post must say where it came from.
-function fromEventPage(c: Ctx, wantsJson: boolean): boolean {
+export function fromEventPage(c: Ctx, wantsJson: boolean): boolean {
   const site = c.req.header("sec-fetch-site");
   if (site && site !== "same-origin") return false;
   if (wantsJson && !c.req.header("origin")) return false;

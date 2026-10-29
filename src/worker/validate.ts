@@ -63,6 +63,14 @@ export const ApproveSchema = z.object({
     .optional(),
 });
 
+const qlooId = z.string().trim().regex(/^[A-Za-z0-9-]{1,80}$/, "not a Qloo place id");
+
+export const MatchSchema = z.object({ partnerId: qlooId.optional() });
+
+export const InviteSchema = z.object({ partnerId: qlooId });
+
+export const AnswerSchema = z.object({ answer: z.enum(["yes", "no"]) });
+
 export const EmailSchema = z.object({ email });
 
 export const ConfirmSchema = z.object({ code: z.string().regex(/^[A-Za-z0-9_-]{20,64}$/, "that is not a confirmation code") });

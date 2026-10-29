@@ -3,6 +3,7 @@ import type { Qloo, QlooCache, ReadOptions } from "../../src/core/index.ts";
 import type {
   Baseline,
   LovedPlace,
+  Match,
   NightPlan,
   PlanInput,
   PlanResponse,
@@ -39,7 +40,14 @@ export function loved(id: string, name: string): LovedPlace {
 
 export const PARTNERS = [loved("P-1", "Kaffee Kanal"), loved("P-2", "Paper & Ink Books")];
 
-export function fakeRead(venueId: string, at = "2026-10-25T10:00:00.000Z"): StreetRead {
+export const RUNNER_UP = loved("P-3", "Kino am Kanal");
+
+export function fakeMatch(at: string, partner: LovedPlace = PARTNERS[0]!): Match {
+  const others = [...PARTNERS, RUNNER_UP].filter((p) => p.id !== partner.id).slice(0, 2);
+  return { partner, runnersUp: others, shared: [{ id: "urn:tag:genre:music:jazz", name: "Jazz", namespace: "urn:tag:genre:music", rank: 1 }], readAt: at, provenance: [1] };
+}
+
+export function fakeRead(venueId: string, at = "2026-10-25T10:00:00.000Z", withMatch = false): StreetRead {
   return {
     venueId,
     at,
@@ -50,8 +58,9 @@ export function fakeRead(venueId: string, at = "2026-10-25T10:00:00.000Z"): Stre
     venueTags: [],
     shared: [],
     gaps: [],
-    lovedPlaces: PARTNERS,
+    lovedPlaces: [...PARTNERS, RUNNER_UP],
     rising: [],
+    ...(withMatch ? { match: fakeMatch(at) } : {}),
     limits: ["Qloo data covers places with enough signal."],
     provenance: [],
   };
@@ -107,9 +116,11 @@ export interface FakeCoreLog {
   reads: Array<{ venueId: string; hadPrevious: boolean; exclude: string[] }>;
   plans: Array<{ input: PlanInput; origin: NightPlan["origin"] }>;
   copies: number;
+  matches?: string[];
+  joints?: string[];
 }
 
-export function fakeCore(log: FakeCoreLog = { reads: [], plans: [], copies: 0 }): CoreFns & { log: FakeCoreLog } {
+export function fakeCore(log: FakeCoreLog = { reads: [], plans: [], copies: 0 }, mode: { joint?: boolean } = {}): CoreFns & { log: FakeCoreLog } {
   return {
     log,
     REFINE_TOOL,
@@ -117,7 +128,7 @@ export function fakeCore(log: FakeCoreLog = { reads: [], plans: [], copies: 0 })
     applyRefine,
     async readStreet(_q: Qloo, venue: Venue, opts?: ReadOptions) {
       log.reads.push({ venueId: venue.id, hadPrevious: Boolean(opts?.previous), exclude: (opts?.exclude ?? []).map((e) => e.id) });
-      return fakeRead(venue.id);
+      return fakeRead(venue.id, undefined, mode.joint);
     },
     planNights(_read, venue, input, now, origin, newId): PlanResponse {
       log.plans.push({ input, origin });
@@ -132,10 +143,25 @@ export function fakeCore(log: FakeCoreLog = { reads: [], plans: [], copies: 0 })
       return { ...plan, copy: { ...plan.copy, writtenBy: "model" } };
     },
     async runBaseline(_q, _venue, _read, plan, _generate, model): Promise<Baseline> {
-      return { at: "2026-10-25T10:00:00.000Z", ask: `Plan a night like ${plan.copy.eventTitle}`, model, plainText: "x", plainNames: [], fullHouseNames: [], method: "fake" };
+      return { at: "2026-10-25T10:00:00.000Z", ask: `Plan a night like ${plan?.copy.eventTitle ?? "nothing yet"}`, model, plainText: "x", plainNames: [], fullHouseNames: [], method: "fake" };
     },
     nextMondayNine(_tz: string, now: Date) {
       return new Date(now.getTime() + 3 * 86400000);
+    },
+    async matchFor(_q, _venue, read, partnerId) {
+      (log.matches ??= []).push(partnerId ?? "");
+      const partner = read.lovedPlaces.find((p) => p.id === partnerId);
+      if (!partner) return null;
+      return { match: fakeMatch(read.at, partner), read: { ...read, provenance: [...read.provenance] }, limits: [] };
+    },
+    async readJoint(_q, _venue, read, partner) {
+      (log.joints ??= []).push(partner.id);
+      return { partnerId: partner.id, rising: [], limits: [], read };
+    },
+    planJoint(_read, _joint, venue, match, input, now, origin, newId): PlanResponse {
+      log.plans.push({ input, origin });
+      const plan = { ...fakePlan(newId(), venue.id, input, origin, now), partners: [match.partner] };
+      return { plan: { ...plan, match: { partner: match.partner, shared: match.shared, split: { venue: 52, partner: 48 }, host: "both" } }, alternatives: [] };
     },
   };
 }

@@ -1,17 +1,13 @@
 import { describe, expect, it } from "vitest";
-import type { LovedPlace, Rising } from "../../src/shared/contract.ts";
+import type { Rising } from "../../src/shared/contract.ts";
 import { renderEventPage, renderPoster, type PublicNight } from "../../src/worker/pages/event.ts";
-import { featureArt, nearbyPlaces } from "../../src/worker/pages/event_art.ts";
+import { featureArt } from "../../src/worker/pages/event_art.ts";
 
 const COVER = "https://images.qloo.com/i/2575A4C0-5459-42E9-B119-FE7CFC8D558B-420x-auto.jpg";
 const NOW = new Date("2026-10-25T10:00:00Z");
 
 function feature(over: Partial<Rising> = {}): Rising {
   return { id: "a1", name: "Alice Coltrane", type: "artist", rank: 1, trend: "unknown", because: [], image: COVER, ...over };
-}
-
-function place(over: Partial<LovedPlace> = {}): LovedPlace {
-  return { id: "p1", name: "Tin Cup", type: "place", lat: 0, lng: 0, distanceM: 410, rank: 1, tags: [], because: [], image: COVER, ...over };
 }
 
 function night(over: Partial<PublicNight> = {}): PublicNight {
@@ -31,7 +27,8 @@ function night(over: Partial<PublicNight> = {}): PublicNight {
     city: "Berlin",
     lat: 52.52,
     lng: 13.405,
-    reason: "The artist Qloo ranks 1st for people who like Blue Hour Records",
+    reason: "People who like Blue Hour Records go for jazz",
+    source: "Picked with Qloo taste data for people who like Blue Hour Records",
     verified: false,
     rsvps: 3,
     going: false,
@@ -48,38 +45,29 @@ describe("art on the public pages", () => {
     expect(featureArt({ feature: null })).toBeNull();
   });
 
-  it("lists up to three nearby places with walking minutes and never calls them partners", () => {
-    const places = nearbyPlaces([place(), place({ name: "Two", distanceM: 30, image: undefined }), place({ name: "Three" }), place({ name: "Four" })], "Blue Hour Records");
-    expect(places.map((p) => p.name)).toEqual(["Tin Cup", "Two", "Three"]);
-    expect(places.map((p) => p.walkMin)).toEqual([5, 1, 5]);
-    expect(places[1]?.image).toBeUndefined();
-    expect(places.every((p) => !/partner/i.test(p.reason))).toBe(true);
-  });
-
   it("prints the cover beside the headline on the event page and the poster, from this site only", () => {
-    const n = night({ feature: "Alice Coltrane", art: { image: "/img/i/a-420x-auto.jpg", shape: "square" }, nearby: nearbyPlaces([place()], "Blue Hour Records") });
+    const n = night({ feature: "Alice Coltrane", art: { image: "/img/i/a-420x-auto.jpg", shape: "square" } });
     const page = renderEventPage(n, "https://x.example", NOW);
     expect(page).toContain('<div class="head"><h1>Alice Coltrane</h1><span class="print print-square"><img src="/img/i/a-420x-auto.jpg" alt=""');
-    expect(page).toContain("Close by, for before or after");
-    expect(page).toContain("5 min walk");
     expect(page).not.toContain("images.qloo.com");
     const poster = renderPoster(n, "https://x.example");
     expect(poster).toContain("<h1>Alice Coltrane</h1>");
     expect(poster).toContain('class="print print-square"');
   });
 
-  it("says a reason every nearby place shares once, above the postcards, and keeps names free of spaced dashes", () => {
-    const nearby = nearbyPlaces([place({ name: ["Angelika Film Center & Cafe", "New York"].join(" - ") }), place({ name: "Two" })], "Blue Hour Records");
-    const page = renderEventPage(night({ nearby }), "https://x.example", NOW);
-    expect(page.match(/Loved by people who like Blue Hour Records/g)).toHaveLength(1);
-    expect(page).toContain('<p class="near-why">Loved by people who like Blue Hour Records.</p>');
-    expect(page).toContain("<strong>Angelika Film Center &amp; Cafe, New York</strong>");
-    expect(page).not.toContain(" - New York");
+  it("names the partner only once it said yes, as the other half of the night, without spaced dashes", () => {
+    const before = renderEventPage(night(), "https://x.example", NOW);
+    expect(before).not.toContain("Put on with");
+    expect(before).not.toContain("Close by");
+    const name = ["Angelika Film Center & Cafe", "New York"].join(" - ");
+    const after = renderEventPage(night({ partner: { name, walkMin: 2, hosts: false } }), "https://x.example", NOW);
+    expect(after).toContain("Put on with Angelika Film Center &amp; Cafe, New York");
+    expect(after).toContain("2 min walk");
+    expect(after).not.toContain(" - New York");
   });
 
   it("leaves the flyer as type alone when the night has no cover", () => {
     const page = renderEventPage(night({ feature: "Alice Coltrane" }), "https://x.example", NOW);
     expect(page).not.toContain('class="head"');
-    expect(page).not.toContain("Close by");
   });
 });

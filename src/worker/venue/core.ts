@@ -2,6 +2,9 @@ import type {
   ApproveInput,
   Baseline,
   CreateVenueInput,
+  Invite,
+  JointExample,
+  Match,
   Night,
   PlanInput,
   PlanResponse,
@@ -13,6 +16,7 @@ import type {
 import type { VenueDashboard } from "../../shared/stats.ts";
 import { refineInput } from "../ai.ts";
 import type { PublicNight } from "../pages/event.ts";
+import type { PublicInvite } from "../pages/invite.ts";
 import { QLOO_KEY_MISSING } from "../qloo/errors.ts";
 import { venueDashboard } from "../stats/dashboard.ts";
 import { recordEvent } from "../stats/events.ts";
@@ -25,6 +29,9 @@ import { connectEventbrite, disconnectEventbrite } from "./eventbrite.ts";
 import { runMonday } from "./monday.ts";
 import { checkOwner, confirmEmail, initVenue, requestEmail, rotateOwnerLink } from "./owner.ts";
 import { FRESH_READS_PER_DAY, freshRead, qlooFor, takeReadSlot, withCopy } from "./planning.ts";
+import { answerInvite, createInvite, publicInvite } from "./invites.ts";
+import { jointExample, matchNow, planWithMatch } from "./joint.ts";
+import { precomputeProof, runProof } from "./proof.ts";
 import { publicNight, rsvp } from "./public.ts";
 import { approveNight, logTurnout, reportNight, republishNight, unpublishNight } from "./publish.ts";
 import { VenueRecords } from "./records.ts";
@@ -77,10 +84,13 @@ export class VenueCore implements VenueApi {
     ]);
     const weekAhead = this.deps.now().getTime() + 8 * 86_400_000;
     const next = !alarm || alarm > weekAhead ? await armAlarm(this.records, this.deps, venue.tz) : alarm;
+    const invites = await this.records.invites();
     const state: VenueState = {
       venue,
       proposals: proposals.filter((r) => r.plan.status === "proposed").map((r) => r.plan),
-      nights: nights.map((r) => r.night).sort((a, b) => `${a.date}${a.start}`.localeCompare(`${b.date}${b.start}`)),
+      nights: nights
+        .map((r) => ({ ...r.night, invites: invites.filter((i) => i.planId === r.night.id) }))
+        .sort((a, b) => `${a.date}${a.start}`.localeCompare(`${b.date}${b.start}`)),
       nextAlarm: new Date(next).toISOString(),
     };
     if (read) state.read = read;
@@ -112,8 +122,9 @@ export class VenueCore implements VenueApi {
         if (!(await takeReadSlot(this.records, utcDay(this.deps.now())))) return readLimit();
         read = await freshRead(this.records, this.deps, q, venue);
       }
-      const response = this.deps.core.planNights(read, venue, input, this.deps.now(), "owner", this.deps.newId);
-      const plan = await withCopy(this.deps, response.plan, venue, read);
+      const joint = await planWithMatch(this.records, this.deps, read, venue, input, "owner");
+      const response = joint.response;
+      const plan = await withCopy(this.deps, response.plan, venue, joint.read);
       recordEvent(this.deps.stats, planEvent(venue, plan));
       const out: PlanResponse = { plan, alternatives: response.alternatives, input };
       await this.records.saveProposals(out, input);
@@ -136,8 +147,9 @@ export class VenueCore implements VenueApi {
         record.input,
         request,
       );
-      const response = this.deps.core.planNights(read, venue, input, this.deps.now(), "refine", this.deps.newId);
-      const plan = await withCopy(this.deps, response.plan, venue, read);
+      const joint = await planWithMatch(this.records, this.deps, read, venue, input, "refine");
+      const response = joint.response;
+      const plan = await withCopy(this.deps, response.plan, venue, joint.read);
       recordEvent(this.deps.stats, planEvent(venue, plan));
       const out: PlanResponse = { plan, alternatives: response.alternatives, input, refine: { method, request } };
       await this.records.saveProposals(out, input, record.plan.createdAt);
@@ -183,25 +195,12 @@ export class VenueCore implements VenueApi {
     return ok({ deleted: true });
   }
 
-  async baseline(): Promise<Out<Baseline>> {
-    const venue = await this.records.venue();
-    if (!venue) return noVenue();
-    if (!this.deps.generate) return fail(503, "ai_unavailable", "The language model is not available here, so the plain model comparison cannot run.");
-    const q = qlooFor(this.deps, venue);
-    if (!q) return keyMissing();
-    const read = await this.records.read();
-    if (!read) return fail(409, "no_read", "Run the street read first.");
-    const proposals = await this.records.proposals();
-    const nights = (await this.records.nights()).map((r) => r.night).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    const plan = proposals[0]?.plan ?? nights[0];
-    if (!plan) return fail(409, "no_plan", "Plan a night first, then compare it with the plain model.");
-    try {
-      const result = await this.deps.core.runBaseline(q, venue, read, plan, this.deps.generate, this.deps.model);
-      await this.records.store.put("baseline", result);
-      return ok(result);
-    } catch (err) {
-      return failure(err, "run the plain model comparison");
-    }
+  baseline(): Promise<Out<Baseline>> {
+    return runProof(this.records, this.deps);
+  }
+
+  precomputeProof(): Promise<Out<Baseline | null>> {
+    return precomputeProof(this.records, this.deps);
   }
 
   publicNight(slug: string, browser: string | null): Promise<Out<PublicNight>> {
@@ -214,6 +213,30 @@ export class VenueCore implements VenueApi {
 
   monday(): Promise<Out<MondayRun>> {
     return runMonday(this.records, this.deps);
+  }
+
+  match(partnerId?: string): Promise<Out<Match>> {
+    return matchNow(this.records, this.deps, partnerId);
+  }
+
+  invite(planId: string, partnerId: string, origin: string): Promise<Out<Invite>> {
+    return createInvite(this.records, this.deps, planId, partnerId, origin);
+  }
+
+  async invites(): Promise<Out<Invite[]>> {
+    return ok(await this.records.invites());
+  }
+
+  publicInvite(slug: string): Promise<Out<PublicInvite>> {
+    return publicInvite(this.records, slug);
+  }
+
+  answerInvite(slug: string, answer: "yes" | "no"): Promise<Out<Invite>> {
+    return answerInvite(this.records, this.deps, slug, answer);
+  }
+
+  example(): Promise<Out<JointExample>> {
+    return jointExample(this.records);
   }
 
   async dashboard(): Promise<Out<VenueDashboard>> {

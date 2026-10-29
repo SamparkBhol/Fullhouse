@@ -25,7 +25,8 @@ function night(over: Partial<PublicNight> = {}): PublicNight {
     city: "Berlin",
     lat: 52.52,
     lng: 13.405,
-    reason: "The artist Qloo ranks 1st for people who like Blue Hour Records",
+    reason: "People who like Blue Hour Records go for jazz",
+    source: "Picked with Qloo taste data for people who like Blue Hour Records",
     verified: false,
     rsvps: 3,
     going: false,
@@ -76,7 +77,8 @@ describe("event page", () => {
     expect(html).toContain('href="/how"');
     expect(html).toContain('<form method="post" action="/e/jazz-night-abcdefghijkm-abcde/rsvp">');
     expect(html).toContain("3 said they are coming");
-    expect(html).toContain("<p>The artist Qloo ranks 1st for people who like Blue Hour Records.</p>");
+    expect(html).toContain("<p>People who like Blue Hour Records go for jazz.</p>");
+    expect(html).not.toMatch(/ranks \d|1st/);
     expect(html).toContain("Times are local to the venue, Berlin time.");
     expect(html).toContain('href="/e/jazz-night-abcdefghijkm-abcde.ics"');
     expect(html).toContain("calendar.google.com");
@@ -168,5 +170,38 @@ describe("slugs", () => {
     expect(venueIdFromSlug("jazz-abcdefghijkl-abcde")).toBeNull();
     expect(venueIdFromSlug("jazz")).toBeNull();
     expect(venueIdFromSlug("JAZZ-abcdefghijkm-abcde")).toBeNull();
+  });
+});
+
+describe("event page text", () => {
+  it("leads with the feature and who made it, and keeps the yes count back until three people said yes", () => {
+    const two = renderEventPage(night({ feature: "Las Culturistas", by: "Matt Rogers and Bowen Yang", rsvps: 2 }), "https://x.example", NOW);
+    expect(two).toContain("<h1>Las Culturistas</h1>");
+    expect(two).toContain('<p class="by">Matt Rogers and Bowen Yang</p>');
+    expect(two).not.toContain("said they are coming");
+    expect(two).toContain("I am going");
+    expect(renderEventPage(night({ rsvps: 3 }), "https://x.example", NOW)).toContain("3 said they are coming");
+  });
+});
+
+describe("invite page", () => {
+  it("escapes every name from Qloo and the owner", async () => {
+    const { renderInvitePage } = await import("../../src/worker/pages/invite.ts");
+    const html = renderInvitePage(
+      {
+        slug: "x-abcdefghijkm-abcdefghijkm",
+        status: "waiting",
+        venue: { name: EVIL, address: EVIL },
+        partner: { name: EVIL },
+        walkMin: 3,
+        verified: false,
+        night: { date: "2026-11-05", start: "19:00", end: "22:00", tz: "Europe/Berlin", kind: "Book night", feature: EVIL, at: EVIL },
+        split: { venue: 50, partner: 50 },
+        shared: [EVIL],
+      },
+      "https://x.example",
+    );
+    expect(html).not.toContain("<script>");
+    expect(html).not.toContain("<img src=x");
   });
 });

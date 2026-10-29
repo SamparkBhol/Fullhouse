@@ -1,12 +1,26 @@
-import { buildIcs } from "../actions/ics.ts";
 import { gcalUrl } from "../actions/links.ts";
 import { describeDate } from "../../core/index.ts";
 import { nightWindow } from "../zones.ts";
+import { calendarDetails } from "./calendar.ts";
 import { zoneCity } from "./guest.ts";
-import { headWithArt, nearbySection, ledgeHtml, type PublicArt, type PublicNearby } from "./event_art.ts";
+import { headWithArt, ledgeHtml, partnerSection, type PublicArt } from "./event_art.ts";
 import { esc, safeHref } from "./html.ts";
-import { qrSvg } from "../qr/svg.ts";
-import { PAGE_CSS, PRINT_SCRIPT } from "./style.ts";
+import { plainName } from "../../shared/words.ts";
+import { PAGE_CSS } from "./style.ts";
+
+export { renderIcs, calendarDetails } from "./calendar.ts";
+export { renderPoster } from "./poster.ts";
+
+// Below this the count says more about an empty room than about the night, so the page leaves it out.
+export const COUNT_SHOWN_FROM = 3;
+
+// Only set once the partner said yes on its invite page.
+export interface PublicPartner {
+  name: string;
+  walkMin: number;
+  image?: string;
+  hosts: boolean;
+}
 
 export interface PublicNight {
   slug: string;
@@ -17,19 +31,22 @@ export interface PublicNight {
   posterSub: string;
   kind?: string;
   feature?: string;
+  by?: string;
   art?: PublicArt;
-  nearby?: PublicNearby[];
+  partner?: PublicPartner;
   writtenBy: "model" | "template" | "owner";
   date: string;
   start: string;
   end: string;
   tz: string;
   venueName: string;
+  placeName?: string;
   address?: string;
   city: string;
   lat: number;
   lng: number;
   reason: string;
+  source: string;
   verified: boolean;
   rsvps: number;
   going: boolean;
@@ -44,14 +61,14 @@ export function eventUrl(origin: string, slug: string): string {
   return `${origin}/e/${slug}`;
 }
 
-export function placeLine(n: Pick<PublicNight, "venueName" | "address" | "city">): string {
+export function placeLine(n: Pick<PublicNight, "venueName" | "placeName" | "address" | "city">): string {
   const rest = [n.address, n.city].filter((p): p is string => Boolean(p && p.trim()));
   const unique = rest.filter((p, i) => !(i > 0 && rest[0]?.toLowerCase().includes(p.toLowerCase())));
-  return [n.venueName, ...unique].join(", ");
+  return [n.placeName ?? n.venueName, ...unique].join(", ");
 }
 
 // Qloo's street address usually ends with the city already.
-function addressLine(n: Pick<PublicNight, "address" | "city">): string {
+export function addressLine(n: Pick<PublicNight, "address" | "city">): string {
   if (n.address && n.address.toLowerCase().includes(n.city.toLowerCase())) return n.address;
   return [n.address, n.city].filter(Boolean).join(", ");
 }
@@ -65,7 +82,7 @@ function paragraphs(text: string): string {
     .join("");
 }
 
-function head(title: string, description: string, url: string): string {
+export function head(title: string, description: string, url: string): string {
   return (
     `<!doctype html><html lang="en"><head><meta charset="utf-8">` +
     `<meta name="viewport" content="width=device-width, initial-scale=1">` +
@@ -98,13 +115,8 @@ export function isPast(n: Pick<PublicNight, "date" | "start" | "end" | "tz">, no
   }
 }
 
-export function calendarDetails(n: PublicNight, origin: string): string {
-  const link = n.published.page ? `\n${eventUrl(origin, n.slug)}` : "";
-  return `${n.description.trim()}\n\nPicked with Qloo taste data.${link}`;
-}
-
 // Until the venue confirms it, the page says plainly who posted it, so nobody mistakes it for the venue's own word.
-function postedBy(n: PublicNight): string {
+export function postedBy(n: Pick<PublicNight, "venueName" | "verified">): string {
   const v = esc(n.venueName);
   return n.verified ? `Made with Full House for ${v}.` : `Posted on Full House by whoever set up ${v}. ${v} has not confirmed it.`;
 }
@@ -131,9 +143,10 @@ export function renderEventPage(n: PublicNight, origin: string, now: Date): stri
   } catch {
     calendar = "";
   }
+  const counted = n.rsvps >= COUNT_SHOWN_FROM;
   const rsvp = past
-    ? `<p class="count">${n.rsvps} said they would come</p><p class="going">This night has passed.</p>`
-    : `<p class="count" aria-live="polite">${n.rsvps} said they are coming</p>` +
+    ? `${counted ? `<p class="count">${n.rsvps} said they would come</p>` : ""}<p class="going">This night has passed.</p>`
+    : (counted ? `<p class="count" aria-live="polite">${n.rsvps} said they are coming</p>` : "") +
       (n.going
         ? `<p class="going">You are on the list. See you there.</p>`
         : `<form method="post" action="/e/${esc(n.slug)}/rsvp"><button type="submit">I am going</button></form>`);
@@ -151,10 +164,11 @@ export function renderEventPage(n: PublicNight, origin: string, now: Date): stri
     (past ? "" : `<span class="pendant" aria-hidden="true"></span>`) +
     `<div class="win-inside"><article class="flyer${past ? "" : " lit"}">` +
     `<p class="when"><span>${esc(describeDate(n.date))}</span><span>${esc(`${n.start} to ${n.end}`)}</span></p>` +
-    (n.kind ? `<p class="kind">${esc(n.kind)}</p>` : "") +
+    (n.kind ? `<p class="kind">${esc(n.kind)}${n.partner ? ` with ${esc(plainName(n.partner.hosts ? n.venueName : n.partner.name))}` : ""}</p>` : "") +
     headWithArt(`<h1>${esc(n.feature || n.title)}</h1>`, n.art) +
+    (n.by ? `<p class="by">${esc(n.by)}</p>` : "") +
     `<div class="desc">${paragraphs(n.description)}</div>` +
-    `<p class="place">${esc(n.venueName)}${address ? `<span>${esc(address)}</span>` : ""}</p>` +
+    `<p class="place">${esc(plainName(n.placeName ?? n.venueName))}${address ? `<span>${esc(address)}</span>` : ""}</p>` +
     `<p class="tz">Times are local to the venue, ${esc(zoneCity(n.tz))}.</p>` +
     copyNote +
     `</article>` +
@@ -163,61 +177,15 @@ export function renderEventPage(n: PublicNight, origin: string, now: Date): stri
     ledgeHtml(
       "why",
       "Why this night, here",
-      `<p>${esc(n.reason)}.</p>` +
-        `<p class="limits">Picked with Qloo taste data for people who like ${esc(n.venueName)}. It is a pattern across many people, not a fact about any one person, and it says nothing about who will come. <a href="/how">How this works</a></p>`,
+      (n.reason ? `<p>${esc(n.reason)}.</p>` : "") +
+        `<p class="limits">${esc(n.source)}. It is a pattern across many people, not a fact about any one person, and it says nothing about who will come. <a href="/how">How this works</a></p>`,
     ) +
-    nearbySection(n.nearby) +
+    partnerSection(n.partner, n.venueName) +
     calendar +
     `<footer><p>${n.published.poster ? `<a href="/e/${esc(n.slug)}/poster">Printable poster</a>. ` : ""}${postedBy(n)}</p>` +
     `<form method="post" action="/e/${esc(n.slug)}/report"><button class="quiet" type="submit">Report this page</button></form></footer>` +
     `</main></body></html>`
   );
-}
-
-export function renderPoster(n: PublicNight, origin: string): string {
-  const url = eventUrl(origin, n.slug);
-  const shortUrl = url.replace(/^https?:\/\//, "");
-  const when = `${describeDate(n.date)}, ${n.start} to ${n.end}`;
-  const reason = `${n.reason}.`;
-  let qr = "";
-  if (n.published.page) {
-    try {
-      qr = `<div class="p-qr">${qrSvg(url, `QR code for ${shortUrl}`)}</div>`;
-    } catch {
-      qr = "";
-    }
-  }
-  const foot = n.published.page
-    ? `<div><p class="p-url">${esc(shortUrl)}</p><p class="p-src">Picked with Qloo taste data. Scan the code or type the link to say you are coming. ${postedBy(n)}</p></div>${qr}`
-    : `<div><p class="p-src">Picked with Qloo taste data. ${postedBy(n)}</p></div>`;
-  return (
-    head(`Poster: ${n.title}`, `${titleAt(n)}, ${when}`, `${url}/poster`) +
-    `<body><div class="print-bar"><button id="print" type="button">Print the poster</button><span>A4 portrait. Turn off headers and footers in the print dialog.</span></div>` +
-    `<main class="poster">` +
-    `<p class="when">${esc(when)}</p>` +
-    (n.kind ? `<p class="kind">${esc(n.kind)}</p>` : "") +
-    headWithArt(`<h1>${esc(n.feature || n.posterHeadline || n.title)}</h1>`, n.art) +
-    (n.posterSub ? `<p class="p-sub">${esc(n.posterSub)}</p>` : "") +
-    `<p class="p-where"><strong>${esc(n.venueName)}</strong>${n.address ? `<br>${esc(n.address)}` : ""}</p>` +
-    `<p class="p-why">${esc(reason)}</p>` +
-    `<div class="p-foot">${foot}</div>` +
-    `</main><script>${PRINT_SCRIPT}</script></body></html>`
-  );
-}
-
-export function renderIcs(n: PublicNight, origin: string, now: Date): string {
-  const w = nightWindow(n, n.tz);
-  return buildIcs({
-    uid: `${n.nightId}@fullhouse`,
-    start: w.start,
-    end: w.end,
-    stamp: now,
-    summary: titleAt(n),
-    description: calendarDetails(n, origin),
-    location: placeLine(n),
-    ...(n.published.page ? { url: eventUrl(origin, n.slug) } : {}),
-    geo: { lat: n.lat, lng: n.lng },
-  });
 }
 
 export function renderMissing(): string {

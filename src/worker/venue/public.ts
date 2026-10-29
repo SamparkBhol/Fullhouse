@@ -1,12 +1,29 @@
-import { FORMATS } from "../../core/index.ts";
-import { capFirst } from "../../shared/words.ts";
-import { isPast, type PublicNight } from "../pages/event.ts";
-import { featureArt, nearbyPlaces } from "../pages/event_art.ts";
-import { guestLine } from "../pages/guest.ts";
+import type { Invite, LovedPlace, Night } from "../../shared/contract.ts";
+import { proxiedImage } from "../../shared/images.ts";
+import { plainName } from "../../shared/words.ts";
+import { isPast, type PublicNight, type PublicPartner } from "../pages/event.ts";
+import { featureArt } from "../pages/event_art.ts";
+import { guestLine, guestSource } from "../pages/guest.ts";
 import { recordEvent } from "../stats/events.ts";
 import { rsvpEvent } from "../stats/makers.ts";
 import { fail, ok, type Out, type VenueDeps } from "./api.ts";
+import { kindOf, walkMinutes } from "./invites.ts";
 import type { VenueRecords } from "./records.ts";
+
+function placeOf(n: Night, invite: Invite): LovedPlace | undefined {
+  const id = invite.partner.id.toUpperCase();
+  return [n.match?.partner, ...n.partners].find((p): p is LovedPlace => Boolean(p) && (p as LovedPlace).id.toUpperCase() === id);
+}
+
+// A partner is named in public only once its invite says accepted.
+function partnerView(n: Night, invite: Invite): { view: PublicPartner; place: LovedPlace | undefined } {
+  const place = placeOf(n, invite);
+  const hosts = n.match?.host === "partner" && n.match.partner.id.toUpperCase() === invite.partner.id.toUpperCase();
+  const view: PublicPartner = { name: invite.partner.name, walkMin: walkMinutes(place?.distanceM ?? 0), hosts };
+  const image = proxiedImage(place?.image ?? invite.partner.image);
+  if (image) view.image = image;
+  return { view, place };
+}
 
 export async function publicNight(records: VenueRecords, slug: string, browser: string | null): Promise<Out<PublicNight>> {
   const found = await records.nightBySlug(slug);
@@ -14,6 +31,9 @@ export async function publicNight(records: VenueRecords, slug: string, browser: 
   const { venue, rec } = found;
   const n = rec.night;
   const going = browser ? (await records.store.get<number>(`rsvp:${n.id}:${browser}`)) !== undefined : false;
+  const accepted = await records.accepted(n.id);
+  const partner = accepted ? partnerView(n, accepted) : null;
+  const partnerName = partner ? plainName(partner.view.name) : undefined;
   const pub: PublicNight = {
     slug,
     nightId: n.id,
@@ -30,21 +50,29 @@ export async function publicNight(records: VenueRecords, slug: string, browser: 
     city: venue.city,
     lat: venue.entity.lat,
     lng: venue.entity.lng,
-    reason: guestLine(n, venue.entity.name),
+    reason: guestLine(n, venue.entity.name, partnerName),
+    source: guestSource(venue.entity.name, partnerName),
     verified: venue.verified === true,
     rsvps: n.rsvps,
     going,
     published: rec.published,
+    kind: kindOf(n),
   };
   if (venue.entity.address) pub.address = venue.entity.address;
+  if (partner) {
+    pub.partner = partner.view;
+    if (partner.view.hosts && partner.place) {
+      pub.placeName = partner.place.name;
+      pub.lat = partner.place.lat;
+      pub.lng = partner.place.lng;
+      if (partner.place.address) pub.address = partner.place.address;
+      else delete pub.address;
+    }
+  }
   if (n.feature) pub.feature = n.feature.name;
+  if (n.feature?.by) pub.by = n.feature.by;
   const art = featureArt(n);
   if (art) pub.art = art;
-  const nearby = nearbyPlaces(n.partners ?? [], venue.entity.name);
-  if (nearby.length) pub.nearby = nearby;
-  if (FORMATS[n.format]) pub.kind = capFirst(FORMATS[n.format].label);
-  // The owner app calls a TV show night a watch night, so the public page uses the same words.
-  if (n.format === "film" && n.feature?.type === "tv_show") pub.kind = "Watch night";
   return ok(pub);
 }
 

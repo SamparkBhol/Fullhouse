@@ -5,6 +5,7 @@ import { API_HEADERS, apiError, BODY_LIMIT, corsHeaders, originAllowed, prefligh
 import { MCP_VERSION } from "./mcp.ts";
 import { renderMissing } from "./pages/event.ts";
 import { imageRoutes } from "./routes/images.ts";
+import { exampleRoutes, inviteRoutes } from "./routes/invite.ts";
 import { mcpRoutes } from "./routes/mcp.ts";
 import { ownerRoutes } from "./routes/owner.ts";
 import { publicRoutes } from "./routes/public.ts";
@@ -25,7 +26,7 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
 
   app.onError(async (err, c) => {
     if (isBodyLimit(err)) return apiError(413, "body_too_large", TOO_LARGE);
-    const page = c.req.path.startsWith("/e/");
+    const page = c.req.path.startsWith("/e/") || c.req.path.startsWith("/i/");
     if (err instanceof HttpError) {
       if (page && err.status !== 429) return pageResponse(renderMissing(), err.status);
       const res = apiError(err.status, err.code, err.detail);
@@ -52,6 +53,7 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
   app.use("/api/*", capped);
   app.use("/mcp", capped);
   app.use("/e/*", capped);
+  app.use("/i/*", capped);
 
   app.get("/api/health", (c) =>
     json({
@@ -65,11 +67,13 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
     }),
   );
 
+  exampleRoutes(app, deps);
   ownerRoutes(app, deps);
   statsRoutes(app, deps);
   app.all("/api/*", () => apiError(404, "not_found", "No such API route."));
   mcpRoutes(app, deps);
   publicRoutes(app, deps);
+  inviteRoutes(app, deps);
   imageRoutes(app);
 
   app.all("*", async (c) => {

@@ -16,6 +16,7 @@ export interface Env {
   RESEND_API_KEY?: string;
   RESEND_FROM?: string;
   EXTRA_ORIGINS?: string;
+  EXAMPLE_VENUE?: string;
 }
 
 export const DEFAULT_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";

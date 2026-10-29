@@ -1,12 +1,40 @@
 import { DurableObject } from "cloudflare:workers";
-import { applyRefine, createQloo, nextMondayNine, parseRefineFallback, planNights, readStreet, REFINE_TOOL, runBaseline, writeCopy } from "../core/index.ts";
-import type { ApproveInput, Baseline, CreateVenueInput, Night, PlanInput, PlanResponse, StreetRead, Venue, VenueCandidate, VenueState } from "../shared/contract.ts";
+import {
+  applyRefine,
+  createQloo,
+  matchFor,
+  nextMondayNine,
+  parseRefineFallback,
+  planJoint,
+  planNights,
+  readJoint,
+  readStreet,
+  REFINE_TOOL,
+  runBaseline,
+  writeCopy,
+} from "../core/index.ts";
+import type {
+  ApproveInput,
+  Baseline,
+  CreateVenueInput,
+  Invite,
+  JointExample,
+  Match,
+  Night,
+  PlanInput,
+  PlanResponse,
+  StreetRead,
+  Venue,
+  VenueCandidate,
+  VenueState,
+} from "../shared/contract.ts";
 import type { VenueDashboard } from "../shared/stats.ts";
 import { makeGenerate } from "./ai.ts";
 import { modelOf, resendOf, tokenSecretOf, type Env } from "./env.ts";
 import { newNightId } from "./ids.ts";
 import type { MeterApi } from "./meter_core.ts";
 import type { PublicNight } from "./pages/event.ts";
+import type { PublicInvite } from "./pages/invite.ts";
 import { buildQloo } from "./qloo/build.ts";
 import { cacheApiCache, sqlCache, tieredCache, type SqlLike } from "./qloo/caches.ts";
 import { StatsBuffer, type StatsApi } from "./stats/buffer.ts";
@@ -15,7 +43,7 @@ import { doStore } from "./store.ts";
 import type { CoreFns, MondayRun, Out, VenueApi } from "./venue/api.ts";
 import { VenueCore } from "./venue/core.ts";
 
-export const CORE_FNS: CoreFns = { readStreet, planNights, writeCopy, runBaseline, nextMondayNine, REFINE_TOOL, parseRefineFallback, applyRefine };
+export const CORE_FNS: CoreFns = { readStreet, planNights, writeCopy, runBaseline, nextMondayNine, REFINE_TOOL, parseRefineFallback, applyRefine, matchFor, readJoint, planJoint };
 
 export function meterStub(env: Env): MeterApi {
   return env.METER.get(env.METER.idFromName("global")) as unknown as MeterApi;
@@ -75,8 +103,32 @@ export class VenueAgent extends DurableObject<Env> implements VenueApi {
   state(): Promise<Out<VenueState>> {
     return this.core().state();
   }
-  read(): Promise<Out<StreetRead>> {
-    return this.run((c) => c.read());
+  // The proof runs after the read has answered, in its own run, so the owner never waits for it.
+  async read(): Promise<Out<StreetRead>> {
+    const out = await this.run((c) => c.read());
+    if (out.ok) this.ctx.waitUntil(this.run((c) => c.precomputeProof()).catch(() => undefined));
+    return out;
+  }
+  precomputeProof(): Promise<Out<Baseline | null>> {
+    return this.run((c) => c.precomputeProof());
+  }
+  match(partnerId?: string): Promise<Out<Match>> {
+    return this.run((c) => c.match(partnerId));
+  }
+  invite(planId: string, partnerId: string, origin: string): Promise<Out<Invite>> {
+    return this.run((c) => c.invite(planId, partnerId, origin));
+  }
+  invites(): Promise<Out<Invite[]>> {
+    return this.core().invites();
+  }
+  publicInvite(slug: string): Promise<Out<PublicInvite>> {
+    return this.core().publicInvite(slug);
+  }
+  answerInvite(slug: string, answer: "yes" | "no"): Promise<Out<Invite>> {
+    return this.ctx.blockConcurrencyWhile(() => this.run((c) => c.answerInvite(slug, answer)));
+  }
+  example(): Promise<Out<JointExample>> {
+    return this.core().example();
   }
   plan(input: PlanInput): Promise<Out<PlanResponse>> {
     return this.run((c) => c.plan(input));
