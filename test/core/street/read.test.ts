@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AGGREGATE_LIMIT, FIRST_READ_LIMIT, QlooError, RANK_LIMIT, createQloo, readStreet, type QlooCache } from "../../../src/core/index.ts";
+import { AGGREGATE_LIMIT, FIRST_READ_LIMIT, NO_DEMOGRAPHICS, QlooError, RANK_LIMIT, createQloo, readStreet, type QlooCache } from "../../../src/core/index.ts";
 import type { Because, StreetRead } from "../../../src/shared/contract.ts";
 import { CENTER, NOW, VENUE, VENUE_ID, fakeFetch, streetRoute, type Route } from "../../fixtures/street.ts";
 
@@ -21,13 +21,15 @@ function expectValidProvenance(read: StreetRead) {
     expect(b.provenance, b.text).toBeLessThan(read.provenance.length);
   }
   for (const h of read.heat) expect(read.provenance[h.provenance]?.call).toMatch(/^heat_/);
-  if (read.demographics) expect(read.provenance[read.demographics.provenance]?.call).toBe("demographics");
+  for (const i of read.match?.provenance ?? []) expect(["loved_places", "compare", "partner_tags"]).toContain(read.provenance[i]?.call);
 }
+
+const WINE_BAR = "A1B2C3D4-1111-4A2B-9C3D-0E1F2A3B4C11";
 
 const paramsOf = (calls: Array<{ url: URL }>, match: (p: URLSearchParams) => boolean) => calls.find((c) => match(c.url.searchParams))?.url.searchParams;
 
 describe("readStreet", () => {
-  it("follows the probed call plan: twelve calls, the venue as signal, no trending", async () => {
+  it("follows the call plan: twelve calls, the venue alone as the signal for its picks, no demographics, no trending", async () => {
     const { q, calls } = setup();
     const read = await readStreet(q, VENUE);
 
@@ -37,8 +39,8 @@ describe("readStreet", () => {
       "venue_tags",
       "loved_places",
       "heat_venue",
-      "demographics",
       "compare",
+      "partner_tags",
       "heat_street",
       "insights_artist",
       "insights_book",
@@ -55,10 +57,10 @@ describe("readStreet", () => {
     expect(JSON.stringify(read)).not.toContain(KEY);
 
     const artist = paramsOf(calls, (p) => p.get("filter.type") === "urn:entity:artist");
-    expect(artist?.get("signal.interests.entities")).toBe(`${VENUE_ID},A1B2C3D4-1111-4A2B-9C3D-0E1F2A3B4C11,A1B2C3D4-5555-4A2B-9C3D-0E1F2A3B4C15`);
+    expect(artist?.get("signal.interests.entities")).toBe(VENUE_ID);
     expect(artist?.get("signal.location")).toBe("POINT(-73.958 40.721)");
-    expect(paramsOf(calls, (p) => p.get("filter.type") === "urn:demographics")?.has("signal.location")).toBe(false);
-    expect(paramsOf(calls, (p) => p.has("b.signal.interests.entities"))?.get("b.signal.interests.entities")?.split(",")).toHaveLength(5);
+    expect(calls.some((c) => c.url.searchParams.get("filter.type") === "urn:demographics")).toBe(false);
+    expect(paramsOf(calls, (p) => p.has("b.signal.interests.entities"))?.get("b.signal.interests.entities")).toBe(WINE_BAR);
     expect(read).toMatchObject({ venueId: "venue-1", at: NOW.toISOString(), center: CENTER, radiusM: 1200 });
     expectValidProvenance(read);
   });
@@ -68,8 +70,12 @@ describe("readStreet", () => {
 
     expect(read.streetTags.slice(0, 3).map((t) => [t.name, t.rank])).toEqual([["Jazz", 1], ["Intimate", 2], ["Documentary", 3]]);
     expect(read.venueTags[0]?.name).toBe("Cozy");
-    expect(read.shared.map((t) => t.name)).toEqual(["Coffee", "Cafe"]);
-    expect(read.gaps.map((g) => g.tag.name)).toEqual(["Wine", "Live music", "Date Night", "Bar"]);
+    expect(read.match?.partner.name).toBe("Blue Hour Wine Bar");
+    expect(read.match?.runnersUp.map((p) => p.name)).toEqual(["Grand Street Cinema"]);
+    expect(read.match?.readAt).toBe(read.at);
+    expect(read.shared.map((t) => t.name)).toEqual(["Jazz", "indie", "Documentary", "Cozy", "Working", "Coffee", "Cafe"]);
+    expect(read.match?.shared).toEqual(read.shared);
+    expect(read.gaps[0]?.because.map((b) => b.text)).toEqual(["Carried by Blue Hour Wine Bar, not by Cafe Lumen"]);
 
     expect(read.lovedPlaces.map((p) => [p.name, p.distanceM])).toEqual([
       ["Blue Hour Wine Bar", 176],
@@ -94,13 +100,14 @@ describe("readStreet", () => {
       ["Where the taste for Cafe Lumen runs strongest", 5],
       ["Where places like Cafe Lumen run strongest", 3],
     ]);
-    expect(read.demographics?.summary).toMatch(/^People who like Cafe Lumen on Qloo over index on the 25 to 29 and 30 to 34 age groups, leaning female\./);
+    expect(read.demographics).toBeUndefined();
 
     expect(read.limits).toEqual([
       "Qloo scores the street's taste tags almost level, so they are shown as a set, not a ranking.",
       "Qloo returned no TV shows for Cafe Lumen.",
       "Qloo did not use Cafe Lumen itself for the podcasts, so those picks reflect the area only and are not ranked.",
       FIRST_READ_LIMIT,
+      NO_DEMOGRAPHICS,
       RANK_LIMIT,
       AGGREGATE_LIMIT,
     ]);
@@ -114,9 +121,9 @@ describe("readStreet", () => {
   it("turns a failed optional call into a limits line and keeps the rest", async () => {
     const broken: Route = (url) => (url.pathname === "/v2/analysis/compare" ? { status: 500, body: { errors: [{ message: "boom" }] } } : undefined);
     const read = await readStreet(setup([broken]).q, VENUE);
-    expect(read.limits[0]).toBe("Venue versus nearby places comparison failed (Qloo server error), so that part of the read is missing.");
+    expect(read.limits[0]).toBe("Cafe Lumen compared with Blue Hour Wine Bar failed (Qloo server error), so that part of the read is missing.");
     expect(read.provenance.some((p) => p.call === "compare")).toBe(false);
-    expect(read.shared.map((t) => t.name)).toEqual(["Jazz", "Documentary", "Natural Wine", "Cozy"]);
+    expect(read.shared.map((t) => t.name)).toEqual(["Jazz", "indie", "Documentary", "Cozy", "Working", "Cafe"]);
     expect(read.gaps).toEqual([]);
     expect(read.lovedPlaces).toHaveLength(5);
     expectValidProvenance(read);
@@ -131,7 +138,8 @@ describe("readStreet", () => {
     expect(read.lovedPlaces).toEqual([]);
     expect(read.heat).toEqual([]);
     expect(read.limits).toContain("Nearby places failed (timed out), so that part of the read is missing.");
-    expect(read.limits).toContain("Cafe Lumen was not compared with nearby places because none came back, so this read shows no gap.");
+    expect(read.limits).toContain("No place near Cafe Lumen that hosts people came back from Qloo, so there is no neighbour to match with yet.");
+    expect(read.match).toBeUndefined();
     expect(read.limits.some((l) => l.startsWith("Venue heatmap failed"))).toBe(true);
     expectValidProvenance(read);
   });

@@ -11,7 +11,7 @@ function remap(list: Because[], rowOf: (ref: number) => number): Because[] {
 
 // Steps cite calls by ref; the finished read cites rows of its provenance list.
 export function settleProvenance(draft: DraftRead, rows: Provenance[], rowOf: (ref: number) => number): StreetRead {
-  const { demographics, ...rest } = draft;
+  const { match, ...rest } = draft;
   const read: StreetRead = {
     ...rest,
     heat: rest.heat.flatMap((h) => (rowOf(h.provenance) < 0 ? [] : [{ ...h, provenance: rowOf(h.provenance) }])),
@@ -20,7 +20,10 @@ export function settleProvenance(draft: DraftRead, rows: Provenance[], rowOf: (r
     gaps: rest.gaps.map((g) => ({ ...g, because: remap(g.because, rowOf) })),
     provenance: rows,
   };
-  const demoRow = demographics ? rowOf(demographics.provenance) : -1;
-  if (demographics && demoRow >= 0) read.demographics = { ...demographics, provenance: demoRow };
+  if (match) {
+    const provenance = match.provenance.map(rowOf).filter((row) => row >= 0);
+    const settle = <T extends { because: Because[] }>(p: T): T => ({ ...p, because: remap(p.because, rowOf) });
+    read.match = { ...match, partner: settle(match.partner), runnersUp: match.runnersUp.map(settle), provenance };
+  }
   return read;
 }

@@ -4,9 +4,9 @@ import { QlooError } from "../qloo/errors.ts";
 import { withStreetTags } from "./because.ts";
 import { createRunner, type Runner } from "./runner.ts";
 import { settleProvenance } from "./settle.ts";
-import { compareStep } from "./steps/compare.ts";
+import { matchCandidates } from "../match/candidates.ts";
+import { matchStep } from "../match/step.ts";
 import { crossDomain } from "./steps/cross_domain.ts";
-import { demographicsStep } from "./steps/demographics.ts";
 import { conceptHeat, venueHeat } from "./steps/heat.ts";
 import { readLimits } from "./steps/limits.ts";
 import { LOVED_RADIUS_M, lovedPlaces } from "./steps/loved_places.ts";
@@ -18,6 +18,9 @@ import { venueFingerprint } from "./steps/venue_tags.ts";
 export const READ_CAP = 30;
 export const CONCURRENCY = 3;
 const CONCEPT_TAGS = 2;
+
+export const NO_DEMOGRAPHICS =
+  "This read does not ask Qloo for the age or gender of anyone's audience, so it says nothing about who your customers are.";
 
 export interface ReadOptions {
   previous?: StreetRead;
@@ -34,40 +37,41 @@ export async function readStreet(q: Qloo, venue: Venue, opts: ReadOptions = {}):
   const ctx = resolveVenue(venue, q.now?.() ?? new Date());
   const run = createRunner(q, READ_CAP, CONCURRENCY);
 
-  const [street, audience, loved, venueMap, demo] = await Promise.all([
+  const [street, audience, loved, venueMap] = await Promise.all([
     streetFingerprint(run, ctx),
     venueFingerprint(run, ctx),
     lovedPlaces(run, ctx),
     venueHeat(run, ctx),
-    demographicsStep(run, ctx),
   ]);
   const places = loved.loved?.places ?? [];
-  const concepts = (audience.audience?.tags ?? []).filter((t) => t.namespace === "urn:tag:genre:place").slice(0, CONCEPT_TAGS);
-  const [compared, conceptMap, cross] = await Promise.all([
-    compareStep(run, ctx, { partners: places, street: street.street, audience: audience.audience }),
+  const venueTags = audience.audience?.tags ?? [];
+  const concepts = venueTags.filter((t) => t.namespace === "urn:tag:genre:place").slice(0, CONCEPT_TAGS);
+  const readAt = ctx.now.toISOString();
+  const [matched, conceptMap, cross] = await Promise.all([
+    matchStep(run, ctx, matchCandidates(places, venue), venueTags, loved.loved?.ref ?? null, readAt),
     conceptHeat(run, ctx, concepts),
-    crossDomain(run, ctx, { loved: places, exclude: opts.exclude ?? [] }),
+    crossDomain(run, ctx, { exclude: opts.exclude ?? [], anchors: [] }),
   ]);
   const moved = noteChanges(cross.rising, opts.previous, ctx);
   assertAnswered(run);
 
   const { rows, rowOf } = run.provenance();
-  const stepNotes = [street, audience, loved, venueMap, conceptMap, compared, cross, moved, demo].flatMap((s) => s.limits);
+  const stepNotes = [...[street, audience, loved, venueMap, conceptMap, matched, cross, moved].flatMap((s) => s.limits), NO_DEMOGRAPHICS];
   const heat = [venueMap.layer, conceptMap.layer].filter((l): l is HeatLayer => l !== null);
   return settleProvenance(
     {
       venueId: venue.id,
-      at: ctx.now.toISOString(),
+      at: readAt,
       center: ctx.center,
       radiusM: LOVED_RADIUS_M,
       heat,
       streetTags: street.street?.tags ?? [],
       venueTags: audience.audience?.tags ?? [],
-      shared: compared.shared,
-      gaps: compared.gaps,
+      shared: matched.match?.shared ?? [],
+      gaps: matched.gaps,
       lovedPlaces: withStreetTags(places, street.street, audience.audience, ctx.name),
       rising: withStreetTags(moved.rising, street.street, audience.audience, ctx.name),
-      ...(demo.demographics ? { demographics: demo.demographics } : {}),
+      ...(matched.match ? { match: matched.match } : {}),
       limits: readLimits(run.notes(), stepNotes, rows),
     },
     rows,

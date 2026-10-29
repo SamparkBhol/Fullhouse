@@ -24,6 +24,7 @@ export interface QEntity {
   explain: ExplainRow[];
   closed: boolean;
   hours?: WeekHours;
+  channel?: string;
 }
 
 export interface OpenSpan {
@@ -120,6 +121,8 @@ export function parseEntity(raw: unknown): QEntity | null {
   if (disambiguation) e.disambiguation = disambiguation;
   const image = str(obj(props.image).url);
   if (image) e.image = image;
+  const channel = str(props.channel);
+  if (channel) e.channel = channel;
   const url = str(props.website);
   if (url && /^https?:\/\//i.test(url)) e.url = url;
   return e;

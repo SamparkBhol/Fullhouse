@@ -33,6 +33,8 @@ export type StatEventKind =
   | "rsvp"
   | "turnout"
   | "monday_run"
+  | "invite_sent"
+  | "invite_answered"
   | "mcp_call"
   | "qloo_error";
 
@@ -50,6 +52,8 @@ export interface StatsCounts {
   roomPeople: number | null;
   mondayRuns: number;
   mondayPlanned: number;
+  invitesSent?: number;
+  invitesAccepted?: number;
   mcpCalls: number;
   copyModel: number;
   copyTemplate: number;

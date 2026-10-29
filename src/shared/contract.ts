@@ -132,6 +132,7 @@ export interface Rising extends EntityRef {
   tags?: string[];
   venueSignal?: boolean;
   explain?: { entityId: string; share: number }[];
+  by?: string;
 }
 
 export interface Gap {
@@ -158,8 +159,33 @@ export interface StreetRead {
   lovedPlaces: LovedPlace[];
   rising: Rising[];
   demographics?: Demographics;
+  match?: Match;
   limits: string[];
   provenance: Provenance[];
+}
+
+export interface MatchPartner extends LovedPlace {}
+
+export interface CrowdSplit {
+  venue: number;
+  partner: number;
+}
+
+export interface Match {
+  partner: MatchPartner;
+  runnersUp: MatchPartner[];
+  shared: StreetTag[];
+  readAt: string;
+  provenance: number[];
+}
+
+export type NightHost = "venue" | "partner" | "both";
+
+export interface PlanMatch {
+  partner: MatchPartner;
+  shared: StreetTag[];
+  split: CrowdSplit | null;
+  host: NightHost;
 }
 
 export type NightFormat =
@@ -219,6 +245,7 @@ export interface NightPlan {
   readAt: string;
   status: "proposed" | "approved" | "done" | "skipped";
   maxPeople?: number;
+  match?: PlanMatch;
 }
 
 export interface PlanResponse {
@@ -261,6 +288,45 @@ export interface Night extends NightPlan {
   headcount?: number;
   resultNote?: string;
   withdrawnAt?: string;
+  invites?: Invite[];
+}
+
+export type InviteStatus = "waiting" | "accepted" | "declined";
+
+export interface Invite {
+  id: string;
+  slug: string;
+  url: string;
+  planId: string;
+  partner: EntityRef;
+  status: InviteStatus;
+  createdAt: string;
+  answeredAt?: string;
+}
+
+export interface InviteInput {
+  partnerId: string;
+}
+
+export interface InviteAnswer {
+  answer: "yes" | "no";
+}
+
+export interface ExamplePlace {
+  name: string;
+  image?: string;
+}
+
+export interface JointExample {
+  venue: ExamplePlace;
+  partner: ExamplePlace;
+  distanceM: number;
+  minutes: number;
+  title: string;
+  format: NightFormat;
+  feature?: string;
+  split: CrowdSplit | null;
+  shared: string[];
 }
 
 export interface VenueState {
@@ -292,6 +358,7 @@ export interface Baseline {
   plainNames: BaselineName[];
   fullHouseNames: BaselineName[];
   method: string;
+  modelLabel?: string;
 }
 
 export interface ApiError {

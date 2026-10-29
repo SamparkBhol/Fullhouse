@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { LovedPlace } from "../../../src/shared/contract.ts";
-import { CROSS_TYPES, anchorsFor, crossDomain } from "../../../src/core/street/steps/cross_domain.ts";
+import { CROSS_TYPES, crossDomain } from "../../../src/core/street/steps/cross_domain.ts";
 import { VENUE_ID } from "../../fixtures/street.ts";
 import { answer, stepSetup } from "./helpers.ts";
 
 const typeIs = (urn: string) => (p: URLSearchParams) => p.get("filter.type") === urn;
-const NONE = { loved: [], exclude: [] };
+const NONE = { anchors: [], exclude: [] };
 
 const BAR_ID = "A1B2C3D4-1111-4A2B-9C3D-0E1F2A3B4C11";
 const CINEMA_ID = "A1B2C3D4-5555-4A2B-9C3D-0E1F2A3B4C15";
@@ -16,7 +16,6 @@ function loved(id: string, name: string, tags: string[], url?: string): LovedPla
 
 const BAR = loved(BAR_ID, "Blue Hour Wine Bar", ["urn:tag:genre:place:wine_bar"], "https://bluehour.example");
 const CINEMA = loved(CINEMA_ID, "Grand Street Cinema", ["urn:tag:genre:place:movie_theater"], "https://grandstreetcinema.example");
-const PARK = loved("PARK-1", "McCarren Park", ["urn:tag:genre:place:park"]);
 
 function film(id: string, name: string, affinity: number, explain: Array<[string, number]>) {
   return {
@@ -83,9 +82,9 @@ describe("crossDomain", () => {
     ]);
   });
 
-  it("adds two loved places that host people to the signal and shows each pick's explainability share", async () => {
+  it("reads the anchors it is given beside the venue and shows each pick's explainability share", async () => {
     const { run, ctx, calls } = stepSetup([answer(typeIs("urn:entity:movie"), SHARED_FILMS)]);
-    const { rising, anchors, limits } = await crossDomain(run, ctx, { loved: [PARK, BAR, CINEMA], exclude: [] });
+    const { rising, anchors, limits } = await crossDomain(run, ctx, { anchors: [BAR, CINEMA], exclude: [] });
     expect(anchors.map((a) => a.name)).toEqual(["Blue Hour Wine Bar", "Grand Street Cinema"]);
     expect(calls[0]?.url.searchParams.get("signal.interests.entities")).toBe(`${VENUE_ID},${BAR_ID},${CINEMA_ID}`);
     const top = rising.find((r) => r.type === "movie")!;
@@ -109,7 +108,7 @@ describe("crossDomain", () => {
 
   it("asks Qloo to leave out the features of recent nights and says so", async () => {
     const { run, ctx, calls } = stepSetup();
-    const { limits } = await crossDomain(run, ctx, { loved: [], exclude: [{ id: "FILM-1", name: "The Farewell", type: "movie" }] });
+    const { limits } = await crossDomain(run, ctx, { anchors: [], exclude: [{ id: "FILM-1", name: "The Farewell", type: "movie" }] });
     expect(calls.every((c) => c.url.searchParams.get("filter.exclude.entities") === "FILM-1")).toBe(true);
     expect(limits).toContain("Left out because you ran them: The Farewell.");
   });
@@ -124,8 +123,12 @@ describe("crossDomain", () => {
   });
 });
 
-describe("anchorsFor", () => {
-  it("skips places that cannot host people", () => {
-    expect(anchorsFor([PARK, CINEMA]).map((a) => a.name)).toEqual(["Grand Street Cinema"]);
+describe("the street read's own picks", () => {
+  it("say people who like the venue alone, because no other place is in the signal", async () => {
+    const { run, ctx, calls } = stepSetup();
+    const { rising, anchors } = await crossDomain(run, ctx, NONE);
+    expect(anchors).toEqual([]);
+    expect(calls.every((c) => c.url.searchParams.get("signal.interests.entities") === VENUE_ID)).toBe(true);
+    expect(rising.filter((r) => r.venueSignal).every((r) => r.because[0]!.text.includes("for people who like Cafe Lumen,"))).toBe(true);
   });
 });
