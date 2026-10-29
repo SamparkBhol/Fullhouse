@@ -1,22 +1,17 @@
 import type { DashboardMonday, DashboardNight, VenueDashboard } from "../../../src/shared/stats.ts";
-import { columns } from "../charts/columns.ts";
 import { saying } from "../charts/counter.ts";
 import { fitChart } from "../charts/fit.ts";
-import { legend, pane } from "../charts/panel.ts";
-import { roomBars } from "../charts/rooms.ts";
+import { legend } from "../charts/panel.ts";
 import { asTable } from "../charts/table.ts";
-import { count, dayMonth, stamp } from "../charts/time.ts";
-import { nightTimeline, type TimelineMark } from "../charts/timeline.ts";
+import { tallyColumns, type TallyNight } from "../charts/tally.ts";
+import { count, stamp } from "../charts/time.ts";
 import { h } from "../dom.ts";
 import { formatName, longDate, shortDate, todayIn } from "../format.ts";
-import { empty } from "../ui/states.ts";
 import type { BoardTools } from "./live-board.ts";
 
-const ROOM_ROWS = 8;
-const READ_COLUMNS = 12;
-const READ_COLUMN_MAX = 64;
+const LISTED = 5;
 
-type NightKind = TimelineMark["kind"];
+type NightKind = TallyNight["kind"];
 
 const KIND_WORDS: Record<NightKind, string> = { lit: "On the street", done: "Turnout logged", open: "Waiting for turnout", withdrawn: "Taken down" };
 
@@ -28,144 +23,78 @@ function kindOf(n: DashboardNight, today: string): NightKind {
 
 const orNone = (v: number | undefined, none: string): string => (v === undefined ? none : count(v));
 
-export function nextPane(d: VenueDashboard, tools: BoardTools): HTMLElement {
-  const line = "How many said yes on the event page of your next published night. It counts up by itself.";
-  if (!d.next) {
-    return pane({ key: "next", title: "Next night", line, span: "side", body: [empty("No published night coming up. Publish one and its RSVPs show here as they come in.")] });
-  }
+// One part of the tally board: a chalk heading, the line that says what it counts, then the marks.
+function part(key: string, heading: string, line: string | null, ...body: (Node | null)[]): HTMLElement {
+  const id = `pane-${key}`;
+  return h("section", { class: `tally-part tally-${key}`, "data-pane": key, "aria-labelledby": id }, h("h2", { class: "tally-title", id }, heading), line ? h("p", { class: "tally-line" }, line) : null, ...body);
+}
+
+const chalkEmpty = (text: string): HTMLElement => h("p", { class: "tally-empty" }, text);
+
+function nextPart(d: VenueDashboard, tools: BoardTools): HTMLElement {
+  if (!d.next) return part("next", "Next night", null, chalkEmpty("No published night coming up. Publish one and its RSVPs show here as they come in."));
   const n = d.next;
-  const counter = tools.counter("next", saying("RSVP", "RSVPs", " for your next night"), "lit");
+  const counter = tools.counter("next", saying("RSVP", "RSVPs", " for your next night"), "lit", 1);
   counter.set(n.rsvps);
-  const room = n.room ? `${count(n.rsvps)} of a room of ${count(n.room)} have said yes.` : "No room size set for this night.";
-  return pane({
-    key: "next",
-    title: "Next night",
-    line,
-    span: "side",
-    body: [counter.el, h("p", { class: "stat-caption" }, `${n.title}, ${longDate(n.date)} at ${n.start}.`), h("p", { class: "pane-note" }, room)],
-  });
+  const said = n.rsvps === 1 ? "has said yes" : "have said yes";
+  return part(
+    "next",
+    "Next night",
+    null,
+    h("div", { class: "tally-yes-count" }, counter.el, h("span", { class: "tally-yes-words", "aria-hidden": "true" }, n.room ? `of ${count(n.room)} ${said}` : said)),
+    h("p", { class: "tally-caption" }, `${n.title}, ${longDate(n.date)} at ${n.start}.`),
+    h("p", { class: "tally-note" }, n.room ? "Counted on the event page as people say yes." : "Counted on the event page as people say yes. No room size is set for this night."),
+  );
 }
 
-function nightRows(nights: DashboardNight[], today: string): (string | number)[][] {
-  return [...nights].reverse().map((n) => [longDate(n.date), n.title, KIND_WORDS[kindOf(n, today)], n.rsvps, orNone(n.headcount, "not logged"), orNone(n.room, "not set")]);
-}
-
-export function nightsPane(d: VenueDashboard): HTMLElement {
-  const today = todayIn(d.tz);
-  const line = "Each square is a night on its date. Yellow is out on the street now, filled ones have a turnout, hollow ones still need one.";
-  if (!d.nights.length) {
-    return pane({ key: "nights", title: "Your nights", line, span: "wide", body: [empty("No published nights yet. Each night you publish gets a square here on its date.")] });
-  }
-  const marks: TimelineMark[] = d.nights.map((n) => ({
-    date: n.date,
-    kind: kindOf(n, today),
+function tallyNight(n: DashboardNight, today: string): TallyNight {
+  const kind = kindOf(n, today);
+  const [weekday = "", ...rest] = shortDate(n.date).split(" ");
+  return {
+    weekday,
+    day: rest.join(" "),
+    kind,
     title: `${n.title}, ${longDate(n.date)}`,
-    rows: [
-      { label: "Said yes", value: count(n.rsvps), mark: "lit" },
-      { label: "Came", value: orNone(n.headcount, "not logged"), mark: "solid" },
-      { label: "Room", value: orNone(n.room, "not set"), mark: "outline" },
-    ],
-  }));
-  const host = h("div", { class: "chart-host" });
-  fitChart(host, (w) => nightTimeline(marks, today, w));
-  return pane({
-    key: "nights",
-    title: "Your nights",
-    line,
-    span: "wide",
-    body: [
-      legend([
-        { label: "On the street", mark: "lit" },
-        { label: "Turnout logged", mark: "solid" },
-        { label: "Waiting for turnout", mark: "outline" },
-      ]),
-      host,
-      asTable("nights", { caption: "Your nights", head: ["Date", "Night", "Where it stands", "Said yes", "Came", "Room"], rows: nightRows(d.nights, today), numeric: [false, false, false, true, true, true] }),
-    ],
-  });
-}
-
-function roomNote(n: DashboardNight): string {
-  const came = n.headcount === undefined ? "turnout not logged" : `${count(n.headcount)} came`;
-  return [came, `${count(n.rsvps)} said yes`, n.room === undefined ? null : `room ${count(n.room)}`].filter(Boolean).join(", ");
-}
-
-export function roomsPane(d: VenueDashboard): HTMLElement {
-  const line = "The box is your room. The filled bar is who came. The yellow mark is how many said yes on the event page.";
-  // A night still ahead has nothing to compare yet; it shows under Next night and Your nights.
-  const today = todayIn(d.tz);
-  const recent = [...d.nights].filter((n) => !n.withdrawn && (n.date < today || n.headcount !== undefined)).reverse().slice(0, ROOM_ROWS);
-  if (!recent.length) {
-    return pane({ key: "rooms", title: "How full the house was", line, span: "wide", body: [empty("Nothing to compare yet. After a night, log how many came and it shows here against your room.")] });
-  }
-  const rows = recent.map((n) => ({
-    label: shortDate(n.date),
-    note: roomNote(n),
     rsvps: n.rsvps,
     ...(n.headcount !== undefined ? { came: n.headcount } : {}),
     ...(n.room !== undefined ? { room: n.room } : {}),
-  }));
-  const host = h("div", { class: "chart-host" });
-  fitChart(host, (w) => roomBars(rows, w));
-  return pane({
-    key: "rooms",
-    title: "How full the house was",
-    line,
-    span: "wide",
-    body: [
-      legend([
-        { label: "Room", mark: "outline" },
-        { label: "Came", mark: "solid" },
-        { label: "Said yes", mark: "tick" },
-      ]),
-      host,
-      asTable("rooms", {
-        caption: "Room, turnout and RSVPs per night",
-        head: ["Date", "Night", "Room", "Came", "Said yes"],
-        rows: recent.map((n) => [longDate(n.date), n.title, orNone(n.room, "not set"), orNone(n.headcount, "not logged"), n.rsvps]),
-        numeric: [false, false, true, true, true],
-      }),
+    rows: [
+      { label: "Said yes", value: count(n.rsvps), mark: "tick" },
+      { label: "Came", value: orNone(n.headcount, "not logged"), mark: "hatched" },
+      { label: "Room", value: orNone(n.room, "not set"), mark: "outline" },
+      { label: "Where it stands", value: KIND_WORDS[kind] },
     ],
-  });
+  };
 }
 
-export function readsPane(d: VenueDashboard): HTMLElement {
-  const line = "Each column is one read of your street. Solid parts were fresh Qloo calls, hatched parts came from the cache.";
-  const reads = d.reads.slice(-READ_COLUMNS);
-  if (!reads.length) {
-    return pane({ key: "reads", title: "Street reads", line, span: "wide", body: [empty("No street reads yet. Each read shows here with the Qloo calls it made.")] });
-  }
-  const host = h("div", { class: "chart-host" });
-  fitChart(host, (w) =>
-    columns(
-      {
-        name: "Street reads by date",
-        series: [
-          { name: "Live calls", values: reads.map((r) => r.calls), mark: "solid" },
-          { name: "From cache", values: reads.map((r) => r.cached), mark: "hatched" },
-        ],
-        tick: (i) => dayMonth(reads[i]?.at ?? "", d.tz),
-        span: (i) => stamp(reads[i]?.at ?? "", d.tz),
-        maxBar: READ_COLUMN_MAX,
-        height: 180,
-      },
-      w,
-    ),
-  );
-  return pane({
-    key: "reads",
-    title: "Street reads",
+function nightsPart(d: VenueDashboard): HTMLElement {
+  const today = todayIn(d.tz);
+  const line = "Each column is a night. The dashed box is your room, the chalk shading is who came, the yellow stroke is how many said yes.";
+  if (!d.nights.length) return part("nights", "Your nights", line, chalkEmpty("No published nights yet. Each night you publish gets a column here."));
+  const marks = d.nights.map((n) => tallyNight(n, today));
+  const host = h("div", { class: "chart-host tally-host" });
+  fitChart(host, (w) => tallyColumns(marks, w));
+  return part(
+    "nights",
+    "Your nights",
     line,
-    span: "wide",
-    body: [
-      legend([
-        { label: "Live calls", mark: "solid", value: count(reads.reduce((s, r) => s + r.calls, 0)) },
-        { label: "From cache", mark: "hatched", value: count(reads.reduce((s, r) => s + r.cached, 0)) },
-      ]),
-      host,
-      asTable("reads", { caption: "Street reads", head: ["When", "Live calls", "From cache"], rows: [...reads].reverse().map((r) => [stamp(r.at, d.tz), r.calls, r.cached]), numeric: [false, true, true] }),
-    ],
-  });
+    legend([
+      { label: "Room", mark: "outline" },
+      { label: "Came", mark: "hatched" },
+      { label: "Said yes", mark: "tick" },
+    ]),
+    host,
+    asTable("nights", {
+      caption: "Your nights",
+      head: ["Date", "Night", "Where it stands", "Said yes", "Came", "Room"],
+      rows: [...d.nights].reverse().map((n) => [longDate(n.date), n.title, KIND_WORDS[kindOf(n, today)], n.rsvps, orNone(n.headcount, "not logged"), orNone(n.room, "not set")]),
+      numeric: [false, false, false, true, true, true],
+    }),
+  );
+}
+
+function chalkList(rows: [string, string, string?][]): HTMLElement {
+  return h("ol", { class: "tally-list" }, rows.map(([when, what, cls]) => h("li", { class: cls ?? null }, h("span", { class: "tally-when" }, when), h("span", { class: "tally-what" }, what))));
 }
 
 function mondayRunLine(m: DashboardMonday): string {
@@ -175,23 +104,27 @@ function mondayRunLine(m: DashboardMonday): string {
   return `Drafted a ${kind} for ${longDate(p.date)} at ${p.start}: ${p.title}.${p.published ? " You published it." : ""}`;
 }
 
-export function mondaysPane(d: VenueDashboard): HTMLElement {
+function mondaysPart(d: VenueDashboard): HTMLElement {
   const next = d.nextAlarm ? `Next run ${stamp(d.nextAlarm, d.tz)}.` : "No Monday run is scheduled yet.";
   const runs = [...d.mondays].reverse();
-  return pane({
-    key: "mondays",
-    title: "Monday runs",
-    line: "Every Monday at 09:00 your agent reads the street again and drafts a night. It never publishes one on its own.",
-    span: "side",
-    body: [
-      h("p", { class: "pane-note" }, next),
-      runs.length
-        ? h(
-            "ol",
-            { class: "log" },
-            runs.map((m) => h("li", { class: `log-row ${m.proposal?.published ? "log-published" : ""}` }, h("time", { datetime: m.at }, stamp(m.at, d.tz)), h("span", { class: "log-line" }, mondayRunLine(m)))),
-          )
-        : empty("No Monday runs yet. The first one shows here with the night it drafted."),
-    ],
-  });
+  return part(
+    "mondays",
+    "Monday runs",
+    "Every Monday at 09:00 your agent reads the street again and drafts a night. It never publishes one on its own.",
+    h("p", { class: "tally-caption" }, next),
+    runs.length
+      ? chalkList(runs.slice(0, LISTED).map((m) => [stamp(m.at, d.tz), mondayRunLine(m), m.proposal?.published ? "tally-published" : undefined]))
+      : chalkEmpty("No Monday runs yet. The first one shows here with the night it drafted."),
+  );
+}
+
+// The venue's own tally board behind the bar: next night's yes count, the nights in chalk columns,
+// then the Monday runs along the bottom.
+export function tallyBoard(d: VenueDashboard, tools: BoardTools): HTMLElement {
+  return h(
+    "div",
+    { class: "slate tally" },
+    h("div", { class: "tally-top-row" }, nextPart(d, tools), nightsPart(d)),
+    h("div", { class: "tally-bottom-row" }, mondaysPart(d)),
+  );
 }

@@ -8,7 +8,6 @@ import { nightReceipts } from "../ui/night-receipts.ts";
 import { asItWillRead, onTheCounter, onTheSpeakers, walkingOver } from "../ui/night-windows.ts";
 import { refineBox } from "../ui/refine.ts";
 import { focusHeading, title } from "../ui/shell.ts";
-import { planOptions } from "../ui/taped.ts";
 import { ledgeRow } from "../ui/ledge.ts";
 import { planGroup, withVenue, type VenueCtx } from "../venue-context.ts";
 
@@ -45,7 +44,7 @@ function renderGone(id: string, main: HTMLElement): void {
 }
 
 // Publishing is the one thing that turns the window light on, so its button is the one in lamp light.
-function publishBar(approveHref: string, refine: HTMLElement): HTMLElement {
+function publishBar(approveHref: string, refine: HTMLElement, another: HTMLElement | null): HTMLElement {
   const change = h("button", { class: "button button-quiet button-big", type: "button", "aria-expanded": "false" }, "Change it");
   change.addEventListener("click", () => {
     const open = refine.hidden;
@@ -61,6 +60,7 @@ function publishBar(approveHref: string, refine: HTMLElement): HTMLElement {
     { class: "publish-bar" },
     h("a", { class: "button button-big button-lamp", href: approveHref }, "Review and publish"),
     change,
+    another,
     h("p", { class: "publish-note" }, "The next screen lists everything that goes out: the event page, the poster, the calendar and the notes to partners. You tick what you want."),
   );
 }
@@ -70,11 +70,12 @@ function renderPlan(ctx: VenueCtx, main: HTMLElement, plan: NightPlan, alternati
   const read = ctx.state.read;
   const calls = read?.provenance ?? [];
   const name = venue.entity.name;
-  const all = [plan, ...alternatives];
   title(`${formatName(plan.format, plan.feature?.type)}, ${longDate(plan.date)}`);
   const stage = h("div", { class: "night-stage" });
 
-  const draw = (selected: NightPlan): void => {
+  const draw = (selected: NightPlan, others: NightPlan[]): void => {
+    const next = others[0];
+    const another = next ? h("button", { class: "link-button publish-another", type: "button", onclick: () => draw(next, [...others.slice(1), selected]) }, "Another idea") : null;
     const approveHref = `/v/${encodeURIComponent(ctx.id)}/night/${encodeURIComponent(selected.id)}/approve`;
     const refine = h("div", { class: "refine-slot", hidden: true }, refineBox(ctx, selected));
     replace(
@@ -82,27 +83,25 @@ function renderPlan(ctx: VenueCtx, main: HTMLElement, plan: NightPlan, alternati
       bigWindow({
         lettering: "Draft. Only you can see it.",
         flyer: flyer(selected, venue, { pinned: true, compact: true, headingLevel: "h2" }),
-        side: featureSay(selected, name, read && read.at === selected.readAt ? read : undefined),
+        side: featureSay(selected, name),
       }),
       ledgeRow("The rest of the night", walkingOver(selected, name), onTheCounter(selected, name), onTheSpeakers(selected)),
-      h("div", { class: "night-foot" }, asItWillRead(selected), publishBar(approveHref, refine)),
+      h("div", { class: "night-foot" }, asItWillRead(selected), publishBar(approveHref, refine, another)),
       refine,
       nightReceipts(selected, name, calls, venue.tz),
     );
     fitHeadlines(stage);
   };
 
-  const options = planOptions(all, draw);
   replace(
     main,
     h(
       "div",
       { class: "wrap wrap-wide night-page" },
       h("h1", { class: "page-title" }, `A night for ${longDate(plan.date)}`),
-      options,
       stage,
     ),
   );
-  draw(plan);
+  draw(plan, alternatives);
   focusHeading();
 }

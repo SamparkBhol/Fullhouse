@@ -28,7 +28,7 @@ function cell(label: string, ...value: (Node | string)[]): HTMLElement {
 export function numbersStrip(id: string, token: string, tz: string, nightAbove = false, onRsvps?: (n: number) => void): HTMLElement {
   const rsvps = doorCounter(saying("RSVP", "RSVPs", " for your next night"), "lit");
   const cells = h("dl", { class: "strip-cells" });
-  const when = h("p", { class: "strip-when" }, "Checking now.");
+  const when = h("p", { class: "strip-when", hidden: true });
   const fill = (d: VenueDashboard): void => {
     if (d.next) {
       rsvps.set(d.next.rsvps);
@@ -48,10 +48,10 @@ export function numbersStrip(id: string, token: string, tz: string, nightAbove =
     token,
     every: () => EVERY_MS,
     onData: fill,
+    // Only a failed check is worth a line; a working one shows in the numbers themselves.
     onState: (s) => {
-      if (s.kind === "fresh") when.textContent = `Checks every 30 s. Last check ${clockTime(s.at, tz)}.`;
-      else if (s.kind === "failed") when.textContent = `The check at ${clockTime(s.at, tz)} failed. ${s.detail}`;
-      else if (s.kind === "paused") when.textContent = "Paused while this tab is hidden.";
+      when.hidden = s.kind !== "failed";
+      if (s.kind === "failed") when.textContent = `The check at ${clockTime(s.at, tz)} failed. ${s.detail}`;
     },
   });
   return h(

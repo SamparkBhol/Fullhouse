@@ -12,7 +12,7 @@ interface ActionInfo {
   kind: ActionKind;
   title: string;
   does: (venue: Venue, plan: NightPlan) => string;
-  available: (venue: Venue, health: Health) => string | null;
+  ready: (venue: Venue, health: Health) => boolean;
   checked: (venue: Venue) => boolean;
 }
 
@@ -22,28 +22,28 @@ const ACTIONS: ActionInfo[] = [
     title: "Publish the event page",
     does: (v) =>
       `Puts a public page for this night online with the date, time, ${v.entity.name}, its address and an RSVP button that only counts. Search engines are asked not to list it.`,
-    available: () => null,
+    ready: () => true,
     checked: () => true,
   },
   {
     kind: "poster",
     title: "Make the poster",
     does: () => "Makes a printable A4 poster of this flyer for your window.",
-    available: () => null,
+    ready: () => true,
     checked: () => true,
   },
   {
     kind: "ics",
     title: "Make a calendar file",
     does: () => "Makes a calendar file that anyone can add to their phone from the event page.",
-    available: () => null,
+    ready: () => true,
     checked: () => true,
   },
   {
     kind: "gcal",
     title: "Make a Google Calendar link",
     does: () => "Makes a link that adds the night to a Google Calendar.",
-    available: () => null,
+    ready: () => true,
     checked: () => true,
   },
   {
@@ -53,7 +53,7 @@ const ACTIONS: ActionInfo[] = [
       p.partners.length
         ? `Opens a ready written note to ${p.partners.length === 1 ? "the partner" : `each of the ${p.partners.length} partners`} in your own mail app. Nothing is sent until you press send there.`
         : "This plan has no partners, so there is nothing to draft.",
-    available: () => null,
+    ready: () => true,
     checked: () => true,
   },
   {
@@ -61,7 +61,7 @@ const ACTIONS: ActionInfo[] = [
     title: "Create the Eventbrite event",
     does: (v) =>
       `Creates the event on ${v.eventbrite ? v.eventbrite.organization : "your Eventbrite account"} and publishes it. Eventbrite lists it in its public search with your address.`,
-    available: (v) => (v.eventbrite ? null : "Not connected yet."),
+    ready: (v) => Boolean(v.eventbrite),
     // Eventbrite puts the night in its public search, so it is never ticked for the owner.
     checked: () => false,
   },
@@ -69,14 +69,7 @@ const ACTIONS: ActionInfo[] = [
     kind: "owner_email",
     title: "Email me the links",
     does: (v) => (v.ownerEmail ? `Sends the links to ${v.ownerEmail}. Only you get it.` : "Sends the links to your email."),
-    available: (v, health) =>
-      !health.ownerEmail
-        ? "Email is off on this server."
-        : v.ownerEmail
-          ? null
-          : v.pendingEmail
-            ? "Confirm your email first, from the link we sent you."
-            : "Add your email on the venue page first.",
+    ready: (v, health) => health.ownerEmail && Boolean(v.ownerEmail),
     checked: (v) => !!v.ownerEmail,
   },
 ];
@@ -111,7 +104,7 @@ function wordsFieldset(plan: NightPlan, inputs: Map<keyof EditableCopy, HTMLInpu
     "fieldset",
     { class: "actions-list" },
     h("legend", null, "The words that go out"),
-    h("p", { class: "hint" }, "This is what guests read on the page, the poster and Eventbrite. Change anything. Dashes and a few overused words are not allowed."),
+    h("p", { class: "hint" }, "This is what guests read on the page and the poster. Change anything. Dashes and a few overused words are not allowed."),
     fields,
     h("details", { class: "pitch" }, h("summary", null, "The note to partners"), h("p", { class: "quote" }, h("strong", null, plan.copy.partnerPitch.subject)), h("p", { class: "quote pre" }, plan.copy.partnerPitch.body)),
   );
@@ -130,17 +123,14 @@ function renderApprove(ctx: VenueCtx, main: HTMLElement, plan: NightPlan, health
   const emailInputs = new Map<string, HTMLInputElement>();
   const copyInputs = new Map<keyof EditableCopy, HTMLInputElement | HTMLTextAreaElement>();
 
-  const rows = ACTIONS.map((a) => {
+  // Only what will happen is listed: an action this venue or server cannot run gets no row at all.
+  const offered = ACTIONS.filter((a) => a.ready(venue, health) && !(a.kind === "outreach" && !plan.partners.length));
+  const rows = offered.map((a) => {
     const id = uid("act");
-    const blocked = a.available(venue, health) ?? (a.kind === "outreach" && !plan.partners.length ? "No partners in this plan." : null);
-    const box = h("input", { type: "checkbox", id, checked: !blocked && a.checked(venue), disabled: !!blocked });
+    const box = h("input", { type: "checkbox", id, checked: a.checked(venue) });
     boxes.set(a.kind, box);
     const extra: HTMLElement[] = [];
-    if (blocked) extra.push(h("p", { class: "hint action-hint" }, blocked));
-    if (a.kind === "eventbrite" && !venue.eventbrite) {
-      extra.push(h("p", { class: "action-link" }, h("a", { href: `/v/${encodeURIComponent(ctx.id)}/eventbrite` }, "Connect Eventbrite")));
-    }
-    if (a.kind === "outreach" && plan.partners.length) {
+    if (a.kind === "outreach") {
       const fields = plan.partners.map((p) => {
         const input = h("input", { type: "email", id: uid("pe"), autocomplete: "off", inputmode: "email" });
         emailInputs.set(p.id, input);
@@ -193,7 +183,7 @@ function renderApprove(ctx: VenueCtx, main: HTMLElement, plan: NightPlan, health
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const actions = ACTIONS.filter((a) => boxes.get(a.kind)?.checked && !boxes.get(a.kind)?.disabled).map((a) => a.kind);
+    const actions = offered.filter((a) => boxes.get(a.kind)?.checked).map((a) => a.kind);
     if (!actions.length) {
       replace(message, h("p", { class: "form-error", role: "alert" }, "Tick at least one thing to do, or go back to the plan."));
       return;
@@ -215,7 +205,7 @@ function renderApprove(ctx: VenueCtx, main: HTMLElement, plan: NightPlan, health
     if (copy) input.copy = copy;
     const button = form.querySelector<HTMLButtonElement>("button[type=submit]");
     if (button) button.disabled = true;
-    replace(message, loading("Publishing the night", ACTIONS.filter((a) => actions.includes(a.kind)).map((a) => a.title)));
+    replace(message, loading("Publishing the night", offered.filter((a) => actions.includes(a.kind)).map((a) => a.title)));
     try {
       const night = await api.approve(ctx.id, ctx.token, plan.id, input);
       sessionSet(`taped.${night.id}`, true);

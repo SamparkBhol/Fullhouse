@@ -6,18 +6,17 @@ import { failure, loading } from "./ui/states.ts";
 import { rememberPlanResponse } from "./venue-context.ts";
 
 export const READ_LINES = [
-  "What the street around you likes",
-  "Your venue's own taste profile on Qloo",
-  "Places nearby that your audience loves, and what they offer that you do not",
-  "Where on the map that taste is strongest",
-  "Artists, books, films, shows and podcasts your audience loves",
+  "Places nearby that your crowd also loves",
+  "The books, shows, artists, podcasts and films they love",
+  "Where on the street your crowd gathers",
 ];
 
 // One press from a new venue to its first flyer: read the street, plan the quiet night, open the plan.
-export async function readThenPlan(id: string, token: string, weekday: number, slot: HTMLElement, needsRead: boolean, onFail: () => void): Promise<void> {
+// A caller that is still showing something the owner needs, such as the owner link, opens the plan itself.
+export async function readThenPlan(id: string, token: string, weekday: number, slot: HTMLElement, needsRead: boolean, onFail: () => void, onReady?: (href: string) => void): Promise<void> {
   try {
     if (needsRead) {
-      replace(slot, loading("Reading the street, 12 Qloo calls", READ_LINES));
+      replace(slot, loading("Reading your street", READ_LINES));
       await api.read(id, token);
     }
     replace(
@@ -30,9 +29,11 @@ export async function readThenPlan(id: string, token: string, weekday: number, s
     );
     const response = await api.plan(id, token, {});
     rememberPlanResponse(response);
-    navigate(`/v/${encodeURIComponent(id)}/night/${encodeURIComponent(response.plan.id)}`);
+    const href = `/v/${encodeURIComponent(id)}/night/${encodeURIComponent(response.plan.id)}`;
+    if (onReady) onReady(href);
+    else navigate(href);
   } catch (err) {
     onFail();
-    replace(slot, failure(err, () => void readThenPlan(id, token, weekday, slot, needsRead, onFail)));
+    replace(slot, failure(err, () => void readThenPlan(id, token, weekday, slot, needsRead, onFail, onReady)));
   }
 }

@@ -10,7 +10,7 @@ import { startPolling, type PollState } from "./live-poll.ts";
 export interface BoardTools {
   range: StatsRange;
   tz: string;
-  counter(key: string, say: Say, tone?: "chalk" | "lit"): Counter;
+  counter(key: string, say: Say, tone?: "chalk" | "lit", digits?: number): Counter;
 }
 
 export interface BoardSpec<T> {
@@ -22,6 +22,7 @@ export interface BoardSpec<T> {
   token?: string;
   withRange: boolean;
   defaultRefresh: RefreshChoice;
+  quiet?: boolean;
   extra?: Node | null;
   panes(body: T, tools: BoardTools): Node[];
 }
@@ -58,19 +59,20 @@ function failed(detail: string): HTMLElement {
 }
 
 // The frame both dashboards share: title, pickers, the refresh line and the panes, kept fresh by one poller.
+// A quiet board keeps its own pace and shows no pickers.
 export function mountBoard<T>(main: HTMLElement, spec: BoardSpec<T>): void {
   let range: StatsRange = spec.withRange ? readChoice("range", RANGE_OPTIONS, "24h") : "24h";
-  let refresh = readChoice("refresh", REFRESH_OPTIONS, spec.defaultRefresh);
+  let refresh = spec.quiet ? spec.defaultRefresh : readChoice("refresh", REFRESH_OPTIONS, spec.defaultRefresh);
   let lastState: PollState = { kind: "checking" };
   let shown = false;
   const counters = new Map<string, Counter>();
   const tools = (): BoardTools => ({
     range,
     tz: spec.tz,
-    counter(key, say, tone = "chalk") {
+    counter(key, say, tone = "chalk", digits) {
       const held = counters.get(key);
       if (held) return held;
-      const made = doorCounter(say, tone);
+      const made = doorCounter(say, tone, digits);
       counters.set(key, made);
       return made;
     },
@@ -134,15 +136,17 @@ export function mountBoard<T>(main: HTMLElement, spec: BoardSpec<T>): void {
         h(
           "div",
           { class: "board-head" },
-          h("div", { class: "board-titles" }, h("h1", null, spec.heading), intro, status.el),
-          h(
-            "div",
-            { class: "board-controls" },
-            rangePicker,
-            refreshPicker,
-            h("button", { class: "button button-quiet board-check", type: "button", onclick: () => poller.checkNow() }, "Check now"),
-            spec.extra ?? null,
-          ),
+          h("div", { class: "board-titles" }, h("h1", null, spec.heading), intro, spec.quiet ? null : status.el),
+          spec.quiet
+            ? null
+            : h(
+                "div",
+                { class: "board-controls" },
+                rangePicker,
+                refreshPicker,
+                h("button", { class: "button button-quiet board-check", type: "button", onclick: () => poller.checkNow() }, "Check now"),
+                spec.extra ?? null,
+              ),
         ),
         body,
       ),

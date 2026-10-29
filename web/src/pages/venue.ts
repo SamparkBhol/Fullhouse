@@ -11,6 +11,7 @@ import { lastLogged, mondayLine } from "../ui/turnout.ts";
 import { windowSection } from "../ui/window-display.ts";
 import { picksPart } from "../ui/street-receipts.ts";
 import { liveNight, withVenue, type VenueCtx } from "../venue-context.ts";
+import { inviteLine } from "../first-run/invite-line.ts";
 import { numbersStrip } from "./dashboard-strip.ts";
 
 export function venuePage(id: string): Promise<void> {
@@ -54,6 +55,7 @@ function renderHome(ctx: VenueCtx, main: HTMLElement): void {
       "div",
       { class: "wrap wrap-wide home-page" },
       h("h1", { class: "sr-only" }, "Your nights"),
+      inviteLine(ctx),
       h("div", { class: "home-front" }, main1, mondayNote(ctx)),
       h("div", { class: "home-row" }, numbers, next),
       state.read ? windowSection(ctx.id, venue, state.read) : null,

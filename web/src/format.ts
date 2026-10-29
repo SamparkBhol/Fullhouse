@@ -1,4 +1,4 @@
-import type { NightFormat, QlooType, QuietSlot, Trend, VerifyStatus } from "../../src/shared/contract.ts";
+import type { NightFormat, QlooType, QuietSlot, Trend } from "../../src/shared/contract.ts";
 import { weekdayName } from "../../src/shared/words.ts";
 
 // QuietSlot.weekday follows Date.getDay(): 0 is Sunday.
@@ -124,11 +124,6 @@ export const TREND_WORDS: Record<Trend, string> = {
   unknown: "No trend data",
 };
 
-export const VERIFY_WORDS: Record<VerifyStatus, string> = {
-  found_nearby: "Found near you",
-  found_far: "Found, but not nearby",
-  not_found: "Not found in Qloo",
-};
 
 export function prettyTag(name: string): string {
   const spaced = name.replace(/_/g, " ").replace(/^[^\p{L}\p{N}]+/u, "").trim();

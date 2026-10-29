@@ -1,12 +1,14 @@
 import { api } from "../api.ts";
 import { h, replace, uid } from "../dom.ts";
+import { noteFrame } from "../ui/note-frame.ts";
 import { focusHeading, title } from "../ui/shell.ts";
 import { failure, loading } from "../ui/states.ts";
+import { tapedNote } from "../ui/taped.ts";
 import { refreshState, withVenue, type VenueCtx } from "../venue-context.ts";
 
-export function disconnectBlock(ctx: VenueCtx): HTMLElement {
+export function disconnectLine(ctx: VenueCtx): HTMLElement {
   const slot = h("div", { "aria-live": "polite" });
-  const button = h("button", { class: "button button-quiet", type: "button" }, "Disconnect Eventbrite");
+  const button = h("button", { class: "link-button", type: "button" }, "Disconnect Eventbrite");
   button.addEventListener("click", async () => {
     button.disabled = true;
     try {
@@ -19,7 +21,7 @@ export function disconnectBlock(ctx: VenueCtx): HTMLElement {
       replace(slot, failure(err, () => button.click()));
     }
   });
-  return h("div", { class: "block" }, h("p", { class: "actions" }, button), slot);
+  return h("div", { class: "note-quiet" }, button, slot);
 }
 
 export function eventbritePage(id: string): Promise<void> {
@@ -32,46 +34,37 @@ export function eventbritePage(id: string): Promise<void> {
       "form",
       { class: "form", novalidate: true },
       h("div", { class: "field" }, h("label", { for: input.id }, "Eventbrite private token"), input),
-      h("p", { class: "actions" }, h("button", { class: "button button-big", type: "submit" }, venue.eventbrite ? "Replace the token" : "Connect Eventbrite")),
+      h("p", { class: "actions" }, h("button", { class: "button button-big button-lamp", type: "submit" }, venue.eventbrite ? "Replace the token" : "Connect Eventbrite")),
       slot,
     );
-    replace(
-      main,
+    const task = tapedNote(
+      "Where to find the token",
+      venue.eventbrite
+        ? h("p", { class: "notice" }, `Connected to ${venue.eventbrite.organization}. Approved nights can be created there.`)
+        : "Optional. When it is connected, approving a night can also create it on your own Eventbrite account.",
       h(
-        "div",
-        { class: "wrap" },
-        h("h1", null, "Connect Eventbrite"),
-        venue.eventbrite
-          ? h("p", { class: "notice" }, `Connected to ${venue.eventbrite.organization}. Approved nights can be created there.`)
-          : h("p", { class: "lede" }, "Optional. When it is connected, approving a night can also create it on your own Eventbrite account."),
-        h("h2", null, "Where to find the token"),
+        "ol",
+        { class: "note-steps" },
+        h("li", null, "Sign in to Eventbrite on any device."),
         h(
-          "ol",
-          { class: "steps steps-small" },
-          h("li", null, "Sign in to Eventbrite on any device."),
-          h(
-            "li",
-            null,
-            "Open your API keys page at ",
-            h("a", { href: "https://www.eventbrite.com/platform/api-keys", target: "_blank", rel: "noopener noreferrer" }, "eventbrite.com/platform/api-keys"),
-            ". If there is no key yet, create one.",
-          ),
-          h("li", null, "Copy the private token and paste it below."),
-        ),
-        h(
-          "p",
+          "li",
           null,
-          "Full House checks the token with one call to Eventbrite and shows the organisation it belongs to. It is stored encrypted, used only for nights you approve, and never shown again, not even to you.",
+          "Open your API keys page at ",
+          h("a", { href: "https://www.eventbrite.com/platform/api-keys", target: "_blank", rel: "noopener noreferrer" }, "eventbrite.com/platform/api-keys"),
+          ". If there is no key yet, create one.",
         ),
-        h(
-          "p",
-          null,
-          "A private token can act on your whole Eventbrite account, and Full House only uses it to create nights you approve. Disconnect removes the token from Full House. To stop it working everywhere, also delete the key on Eventbrite.",
-        ),
-        form,
-        venue.eventbrite ? disconnectBlock(ctx) : null,
+        h("li", null, "Copy the private token and paste it below."),
       ),
+      form,
+      venue.eventbrite ? disconnectLine(ctx) : null,
     );
+    const about = tapedNote(
+      "What happens to the token",
+      "Full House checks the token with one call to Eventbrite and shows the organisation it belongs to. It is stored encrypted, used only for nights you approve, and never shown again, not even to you.",
+      "A private token can act on your whole Eventbrite account, and Full House only uses it to create nights you approve. Disconnect removes the token from Full House. To stop it working everywhere, also delete the key on Eventbrite.",
+    );
+    about.classList.add("taped-note-small");
+    replace(main, h("div", { class: "wrap wrap-wide notes-page" }, h("h1", null, "Connect Eventbrite"), noteFrame("Eventbrite", task, about)));
     focusHeading();
     form.addEventListener("submit", async (event) => {
       event.preventDefault();

@@ -45,16 +45,19 @@ function eventLink(night: Night): HTMLElement | null {
   return href ? h("p", { class: "actions" }, h("a", { class: "button button-big button-lamp", href }, "Open the event page")) : null;
 }
 
+// A night just put out has no yes yet, and a big zero would be the loudest thing on the page, so it waits for the first one.
 function rsvpRoom(night: Night, live: boolean): HTMLElement {
   return h(
     "div",
     { class: "rsvp-room" },
-    h(
-      "p",
-      { class: "rsvp-line" },
-      h("span", { class: live ? "rsvp-big lit-text" : "rsvp-big" }, String(night.rsvps)),
-      h("span", { class: "rsvp-words" }, ` ${night.rsvps === 1 ? "person has" : "people have"} said they are coming.`),
-    ),
+    night.rsvps > 0
+      ? h(
+          "p",
+          { class: "rsvp-line" },
+          h("span", { class: live ? "rsvp-big lit-text" : "rsvp-big" }, String(night.rsvps)),
+          h("span", { class: "rsvp-words" }, ` ${night.rsvps === 1 ? "person has" : "people have"} said they are coming.`),
+        )
+      : h("p", { class: "rsvp-line rsvp-none" }, live ? "Nobody has pressed I am going yet. The count shows here when they do." : "Nobody pressed I am going on the event page."),
     h("p", { class: "meta" }, "A count of people who pressed I am going on the event page, not tickets. It keeps no names and no emails."),
     live ? eventLink(night) : null,
   );

@@ -17,14 +17,13 @@ interface StatDef {
   title: string;
   say: Say;
   line: string;
-  tone: "chalk" | "lit";
 }
 
 const STATS: StatDef[] = [
-  { key: "venues", title: "Venues", say: saying("venue set up", "venues set up"), line: "Venues set up on this server.", tone: "chalk" },
-  { key: "streetReads", title: "Street reads", say: saying("street read", "street reads"), line: "Reads of the street around a venue, up to 30 Qloo calls each.", tone: "chalk" },
-  { key: "nightsPublished", title: "Nights published", say: saying("night published", "nights published"), line: "Nights an owner approved and put out.", tone: "chalk" },
-  { key: "rsvps", title: "RSVPs", say: saying("RSVP", "RSVPs"), line: "Yes taps on public event pages, one per browser.", tone: "lit" },
+  { key: "venues", title: "Venues", say: saying("venue set up", "venues set up"), line: "Venues set up on this server." },
+  { key: "streetReads", title: "Street reads", say: saying("street read", "street reads"), line: "Reads of the street around a venue, up to 30 Qloo calls each." },
+  { key: "nightsPublished", title: "Nights published", say: saying("night published", "nights published"), line: "Nights an owner approved and put out." },
+  { key: "rsvps", title: "RSVPs", say: saying("RSVP", "RSVPs"), line: "Yes taps on public event pages, one per browser." },
 ];
 
 const BUCKET_WORDS: Record<number, string> = { 1: "one hour", 6: "six hours", 24: "one day" };
@@ -53,12 +52,12 @@ function utcNote(body: StatsBody): string {
 }
 
 function statPane(def: StatDef, body: StatsBody, tools: BoardTools): HTMLElement {
-  const counter = tools.counter(def.key, def.say, def.tone);
+  const counter = tools.counter(def.key, def.say);
   counter.set(body.totals[def.key]);
   const values = body.series[def.key];
   const host = h("div", { class: "spark-host" });
   fitChart(host, (w) =>
-    sparkline({ name: def.title, values, tone: def.tone, describe: (i) => ({ title: span(body, tools.tz, i), value: count(values[i] ?? 0) }) }, w),
+    sparkline({ name: def.title, values, tone: "chalk", describe: (i) => ({ title: span(body, tools.tz, i), value: count(values[i] ?? 0) }) }, w),
   );
   return h(
     "section",

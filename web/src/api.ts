@@ -3,6 +3,9 @@ import type {
   ApproveInput,
   Baseline,
   CreateVenueInput,
+  Invite,
+  JointExample,
+  Match,
   Night,
   PlanInput,
   PlanResponse,
@@ -11,6 +14,7 @@ import type {
   VenueCandidate,
   VenueState,
 } from "../../src/shared/contract.ts";
+import { parseExample, type Example } from "./joint.ts";
 
 export class ApiFailure extends Error {
   constructor(
@@ -67,6 +71,15 @@ export interface Health {
 }
 
 let health: Promise<Health> | null = null;
+
+// The invite link goes into another person's mail or messages, so it always carries the full address.
+function absolute(invite: Invite): Invite {
+  try {
+    return { ...invite, url: new URL(invite.url || `/i/${encodeURIComponent(invite.slug)}`, location.origin).href };
+  } catch {
+    return invite;
+  }
+}
 
 const venuePath = (id: string, rest = "") => `/api/venues/${encodeURIComponent(id)}${rest}`;
 
@@ -126,5 +139,21 @@ export const api = {
   },
   baseline(id: string, token: string): Promise<Baseline> {
     return call<Baseline>(venuePath(id, "/baseline"), { method: "POST", token, body: {} });
+  },
+  match(id: string, token: string, partnerId?: string): Promise<Match> {
+    return call<Match>(venuePath(id, "/match"), { method: "POST", token, body: partnerId ? { partnerId } : {} });
+  },
+  async invite(id: string, token: string, planId: string, partnerId: string): Promise<Invite> {
+    return absolute(await call<Invite>(venuePath(id, `/nights/${encodeURIComponent(planId)}/invite`), { method: "POST", token, body: { partnerId } }));
+  },
+  async invites(id: string, token: string): Promise<Invite[]> {
+    return (await call<Invite[]>(venuePath(id, "/invites"), { token })).map(absolute);
+  },
+  async example(): Promise<Example | null> {
+    try {
+      return parseExample(await call<JointExample>("/api/example"));
+    } catch {
+      return null;
+    }
   },
 };

@@ -1,8 +1,8 @@
 import type { VenueDashboard } from "../../../src/shared/stats.ts";
-import { zoneName } from "../charts/time.ts";
+import { zoneTime } from "../charts/time.ts";
 import { focusHeading, title } from "../ui/shell.ts";
 import { withVenue } from "../venue-context.ts";
-import { nextPane, mondaysPane, nightsPane, readsPane, roomsPane } from "./dashboard-panels.ts";
+import { tallyBoard } from "./dashboard-panels.ts";
 import { mountBoard } from "./live-board.ts";
 
 export function dashboardPath(id: string): string {
@@ -16,13 +16,14 @@ export function dashboardPage(id: string): Promise<void> {
     mountBoard<VenueDashboard>(main, {
       name: "venue",
       heading: "Your numbers",
-      intro: () => `From your own nights, street reads and Monday runs. Times are in ${zoneName(tz)}, your venue's time zone.`,
+      intro: () => `From your own nights and Monday runs. Times are ${zoneTime(tz)}, where your venue is.`,
       tz,
       url: () => dashboardPath(id),
       token: ctx.token,
       withRange: false,
-      defaultRefresh: "30s",
-      panes: (d, tools) => [nextPane(d, tools), nightsPane(d), roomsPane(d), readsPane(d), mondaysPane(d)],
+      defaultRefresh: "10s",
+      quiet: true,
+      panes: (d, tools) => [tallyBoard(d, tools)],
     });
     focusHeading();
   });

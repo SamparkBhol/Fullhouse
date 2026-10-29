@@ -15,6 +15,8 @@ const KIND_WORDS: Record<StatEventKind, string> = {
   monday_run: "Monday",
   mcp_call: "MCP",
   qloo_error: "Error",
+  invite_sent: "Invite",
+  invite_answered: "Answer",
 };
 
 function ms(v: number | null): string {

@@ -1,87 +1,74 @@
-import type { Baseline, BaselineName } from "../../../src/shared/contract.ts";
+import type { Baseline } from "../../../src/shared/contract.ts";
 import { api } from "../api.ts";
 import { h, replace } from "../dom.ts";
-import { plural } from "../../../src/shared/words.ts";
-import { VERIFY_WORDS, moment } from "../format.ts";
+import { moment } from "../format.ts";
 import { sessionGet, sessionSet } from "../store.ts";
+import { receiptPart } from "../ui/fold.ts";
+import { receiptsDrawer } from "../ui/receipts.ts";
 import { focusHeading, title } from "../ui/shell.ts";
+import { modelName, printout } from "../ui/printout.ts";
+import { OWN_PICKS_NOTE, countLine, failLine, heroLine, stampList } from "../ui/stamps.ts";
 import { failure, loading } from "../ui/states.ts";
+import { shopWindow } from "../ui/window.ts";
 import { withVenue, type VenueCtx } from "../venue-context.ts";
 
 export function proofPage(id: string): Promise<void> {
   return withVenue(id, "proof", (ctx, main) => renderProof(ctx, main));
 }
 
-// Distance only means something for places; a found artist, book or film is simply in Qloo's catalog.
-function statusWord(n: BaselineName): string {
-  if (n.kind === "place" || n.status !== "found_nearby") return VERIFY_WORDS[n.status] ?? n.status;
-  return "In Qloo's catalog";
+function pinned(className: string, heading: string, ...body: (Node | null)[]): HTMLElement {
+  return h("section", { class: `pinned ${className}` }, h("span", { class: "pin", "aria-hidden": "true" }), h("h3", { class: "pinned-title" }, heading), ...body);
 }
 
-function countLine(names: BaselineName[]): string {
-  if (!names.length) return "No names to check";
-  const places = names.filter((n) => n.kind === "place");
-  const others = names.filter((n) => n.kind !== "place");
-  const parts: string[] = [];
-  if (places.length) parts.push(`${places.filter((n) => n.status === "found_nearby").length} of ${plural(places.length, "place", "places")} found near you`);
-  if (others.length) parts.push(`${others.filter((n) => n.status !== "not_found").length} of ${plural(others.length, "other name", "other names")} in Qloo's catalog`);
-  return `${parts.join(". ")}.`;
-}
-
-// Whether a name exists is the easy part; the line that matters is whether Qloo ties it to this venue's audience.
-function tiedCount(names: BaselineName[]): string {
-  const checked = names.filter((n) => n.tied !== undefined);
-  return `${checked.filter((n) => n.tied).length} of ${names.length}`;
-}
-
-function tiedLine(b: Baseline): HTMLElement {
-  return h("p", { class: "proof-tied" }, `Tied to your audience by Qloo: plain model ${tiedCount(b.plainNames)}, Full House ${tiedCount(b.fullHouseNames)}.`);
-}
-
-function nameList(names: BaselineName[], label: string, id: string, sub?: string): HTMLElement {
-  return h(
-    "section",
-    { class: "proof-col", "aria-labelledby": id },
-    h("h3", { id }, label),
-    sub ? h("p", { class: "proof-model" }, sub) : null,
-    h("p", { class: "proof-count" }, countLine(names)),
-    names.length
-      ? h(
-          "ul",
-          { class: "verify-list" },
-          names.map((n) =>
-            h(
-              "li",
-              { class: `verify verify-${n.status}` },
-              h("span", { class: "verify-mark", "aria-hidden": "true" }),
-              h("span", { class: "verify-name" }, n.name),
-              h("span", { class: "verify-status" }, statusWord(n)),
-              n.note ? h("span", { class: "verify-note" }, n.note) : null,
-              n.tieNote ? h("span", { class: n.tied ? "verify-note verify-tied" : "verify-note" }, n.tieNote) : null,
-            ),
-          ),
-        )
-      : null,
+// Two notes pinned to the frame: what the chatbot printed, and the same names with Qloo's stamp on each.
+function notes(ctx: VenueCtx, b: Baseline): HTMLElement {
+  const venue = ctx.state.venue.entity.name;
+  return shopWindow(
+    { size: "big", dark: true, lettering: `Checked on Qloo ${moment(b.at, ctx.state.venue.tz)}`, className: "proof-frame" },
+    h(
+      "div",
+      { class: "proof-notes" },
+      pinned(
+        "printout",
+        "What a plain chatbot said",
+        h("p", { class: "printout-model" }, `${b.modelLabel ?? `${modelName(b.model)}, a small open model`}, asked with no Qloo data`),
+        printout(b.plainText),
+      ),
+      pinned("checked", "The same names, checked on Qloo", h("p", { class: "checked-count" }, countLine(b.plainNames, venue)), b.plainNames.length ? stampList(b.plainNames, venue) : null),
+    ),
   );
 }
 
-function renderResult(ctx: VenueCtx, b: Baseline): HTMLElement {
+// The method reads one sentence at a time; the sentence on what a miss does not prove is the page's limit.
+function methodParts(method: string): { plain: string[]; limits: string[] } {
+  const sentences = method.split(/(?<=\.)\s+(?=[A-Z])/).filter(Boolean);
+  const limit = (t: string) => /not proof|does not know it|could not have grounded/i.test(t);
+  return { plain: sentences.filter((t) => !limit(t)), limits: sentences.filter(limit) };
+}
+
+function drawer(b: Baseline, venue: string): HTMLElement {
+  const method = methodParts(b.method);
+  return receiptsDrawer({
+    calls: [],
+    limits: method.limits,
+    parts: [
+      receiptPart({ heading: "Full House's own picks", plain: [OWN_PICKS_NOTE], calls: [] }, b.fullHouseNames.length ? stampList(b.fullHouseNames, venue) : null),
+      receiptPart({ heading: "The question", plain: [b.ask], calls: [] }),
+      receiptPart({ heading: "How it was checked", plain: method.plain, calls: [] }),
+    ],
+  });
+}
+
+function renderResult(ctx: VenueCtx, b: Baseline, again: HTMLElement): HTMLElement {
+  const venue = ctx.state.venue.entity.name;
   return h(
     "div",
     { class: "proof-result" },
-    h("p", { class: "meta" }, `Checked ${moment(b.at, ctx.state.venue.tz)}.`),
-    h("h2", null, "The question"),
-    h("p", { class: "quote" }, b.ask),
-    tiedLine(b),
-    h(
-      "div",
-      { class: "proof-cols" },
-      nameList(b.plainNames, "A plain model", "plain-title", `Model ${b.model}, asked with no Qloo data`),
-      nameList(b.fullHouseNames, "Full House", "fh-title"),
-    ),
-    h("h2", null, "How it was checked"),
-    h("p", null, b.method),
-    h("details", { class: "pitch" }, h("summary", null, "The plain model's full answer"), h("p", { class: "quote pre" }, b.plainText)),
+    h("p", { class: "proof-hero" }, heroLine(b, venue)),
+    failLine(b, venue) ? h("p", { class: "proof-tied" }, failLine(b, venue)) : null,
+    notes(ctx, b),
+    h("p", { class: "actions proof-again" }, again),
+    drawer(b, venue),
   );
 }
 
@@ -89,39 +76,42 @@ function renderProof(ctx: VenueCtx, main: HTMLElement): void {
   title("Proof");
   const key = `baseline.${ctx.id}`;
   const slot = h("div", { "aria-live": "polite" });
-  const saved = sessionGet<Baseline>(key);
-  const button = h("button", { class: "button button-big", type: "button" }, saved ? "Run the check again" : "Run the check");
+  const saved = sessionGet<Baseline>(key) ?? ctx.state.baseline ?? null;
+  const first = h("button", { class: "button button-big button-lamp", type: "button" }, "Run the check");
+  const again = h("button", { class: "button button-quiet", type: "button" }, "Run the check again");
+  const intro = h(
+    "div",
+    { class: "proof-intro" },
+    h(
+      "p",
+      { class: "lede" },
+      "Full House asks a plain chatbot what an owner would ask it, then looks up every place and artist it names on Qloo near you and checks whether your crowd loves it.",
+    ),
+    h("p", { class: "meta" }, "The check uses a few Qloo calls and one model call."),
+    h("p", { class: "actions" }, first),
+  );
   const run = async (): Promise<void> => {
-    button.disabled = true;
-    replace(slot, loading("Asking a plain model the same question", ["Taking every place and artist name from its answer", "Looking each name up on Qloo near your venue", "Doing the same for Full House's own picks"]));
+    first.disabled = true;
+    again.disabled = true;
+    replace(slot, loading("Asking a plain chatbot the same question", ["Taking every place and artist name from its answer", "Looking each name up on Qloo near your venue", "Checking each one against what your crowd loves"]));
     try {
       const b = await api.baseline(ctx.id, ctx.token);
       sessionSet(key, b);
-      button.disabled = false;
-      button.textContent = "Run the check again";
-      replace(slot, renderResult(ctx, b));
+      intro.hidden = true;
+      again.disabled = false;
+      replace(slot, renderResult(ctx, b, again));
     } catch (err) {
-      button.disabled = false;
+      first.disabled = false;
+      again.disabled = false;
       replace(slot, failure(err, () => void run()));
     }
   };
-  button.addEventListener("click", () => void run());
-  replace(
-    main,
-    h(
-      "div",
-      { class: "wrap wrap-mid" },
-      h("h1", null, "Proof"),
-      h(
-        "p",
-        { class: "lede" },
-        "Full House asks a plain language model the question an owner would type into a chatbot, then looks up every place and artist it names on Qloo near you, and whether Qloo ties each one to the people who like your venue. It checks its own plan the same way.",
-      ),
-      h("p", { class: "meta" }, "Running the check uses a few Qloo calls and one model call."),
-      h("p", { class: "actions" }, button),
-      slot,
-    ),
-  );
-  if (saved) replace(slot, renderResult(ctx, saved));
+  first.addEventListener("click", () => void run());
+  again.addEventListener("click", () => void run());
+  replace(main, h("div", { class: "wrap wrap-wide proof" }, h("h1", { class: "proof-title" }, "Proof"), intro, slot));
+  if (saved) {
+    intro.hidden = true;
+    replace(slot, renderResult(ctx, saved, again));
+  }
   focusHeading();
 }

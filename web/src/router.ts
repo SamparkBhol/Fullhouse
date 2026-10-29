@@ -61,7 +61,7 @@ export function navigate(path: string, opts: { replace?: boolean } = {}): void {
 }
 
 function handledByWorker(path: string): boolean {
-  return path.startsWith("/api/") || path.startsWith("/e/") || path.startsWith("/mcp") || path === "/live.txt";
+  return path.startsWith("/api/") || path.startsWith("/e/") || path.startsWith("/i/") || path.startsWith("/mcp") || path === "/live.txt";
 }
 
 export function startRouter(): void {
