@@ -1,4 +1,4 @@
-import type { CrowdSplit, ExamplePlace, FitCheck, JointExample, NightPlan, PlanMatch } from "../../src/shared/contract.ts";
+import type { Considered, CrowdSplit, ExamplePlace, FitCheck, JointExample, NightPlan, PlanMatch } from "../../src/shared/contract.ts";
 
 export type { CrowdSplit, Invite, InviteStatus, Match, MatchPartner, PlanMatch } from "../../src/shared/contract.ts";
 
@@ -25,6 +25,8 @@ export interface Example {
   city: string | null;
   stops: NonNullable<JointExample["stops"]>;
   agreed: boolean;
+  considered: Considered[];
+  consideredOf: number | null;
 }
 
 function place(p: ExamplePlace | undefined): ExamplePlace | null {
@@ -55,5 +57,7 @@ export function parseExample(raw: JointExample | null): Example | null {
     city: text(raw.city),
     stops: Array.isArray(raw.stops) ? raw.stops : [],
     agreed: raw.agreed === true,
+    considered: Array.isArray(raw.considered) ? raw.considered.filter((c) => c && typeof c.name === "string" && Number.isFinite(c.rank) && typeof c.reason === "string") : [],
+    consideredOf: typeof raw.consideredOf === "number" && raw.consideredOf > 0 ? raw.consideredOf : null,
   };
 }

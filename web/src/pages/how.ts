@@ -1,5 +1,5 @@
 import type { FitKey } from "../../../src/shared/contract.ts";
-import { BACK_CHECKS, FIT_LABELS, FIT_MAX, LOVED_RADIUS_M, LOVED_TAKE, PAIR_CANDIDATES, READ_CAP } from "../../../src/shared/engine.ts";
+import { BACK_CHECKS, BOARD_TOP, FIT_LABELS, FIT_MAX, LOVED_RADIUS_M, LOVED_TAKE, NEAR_TIE, PAIR_CANDIDATES, READ_CAP } from "../../../src/shared/engine.ts";
 import { h, replace } from "../dom.ts";
 import { credit, focusHeading, page, publicHeader, title } from "../ui/shell.ts";
 
@@ -26,7 +26,8 @@ const STEPS: [string, string[]][] = [
     "Score the neighbours",
     [
       `Up to ${PAIR_CANDIDATES} places your crowd loves that can host a night and do not sell what you sell. Each gets a fit score out of 100 from six checks: ${fitParts}.`,
-      "A bookshop and a cinema send each other people; two cafes compete for them. The place with the highest score is your match, the next two are the runners up, and every point is shown with the sentence behind it.",
+      `A bookshop and a cinema send each other people; two cafes compete for them. The place with the highest score is your match, unless the next is within ${NEAR_TIE} points and a shorter walk. The next two are the runners up, and every point is shown with the sentence behind it.`,
+      `The partner screen shows the list in its own order, the first ${BOARD_TOP} places and every place scored, with what Full House decided about each: chosen, runner up, scored lower and the check that cost it most, a rival after the same customers, not a room for a night, or no website and so no owner to ask.`,
     ],
   ],
   [

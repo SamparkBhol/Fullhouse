@@ -1,6 +1,6 @@
 import { BACK_CHECKS, FIT_MAX, LOVED_TAKE } from "../../../src/shared/engine.ts";
 import { h, replace } from "../dom.ts";
-import { loadExample } from "../first-run/example.ts";
+import { decisionBand, loadExample } from "../first-run/example.ts";
 import { findForm } from "../first-run/find.ts";
 import { savedVenues, sessionGet, sessionSet } from "../store.ts";
 import { focusHeading, page, publicHeader, title } from "../ui/shell.ts";
@@ -10,7 +10,7 @@ const STEPS: [string, string, string][] = [
   ["Check it goes both ways", "The same question from each neighbour's side. A pair only works if their crowd loves you too.", `${BACK_CHECKS} reverse reads per match`],
   ["Rule out rivals", "Two cafes compete for the same people. A bookshop and a cinema send each other people.", `Up to ${FIT_MAX.partners} points for a good pair of kinds`],
   ["Find evenings you are both open", "Opening hours on both sides, so the night never lands on a day one of you is closed.", "The next seven evenings"],
-  ["Plan the night both crowds want", "Two stops, one at each place, built on the pick both crowds share most evenly.", "Nearest half and half wins"],
+  ["Plan the night both crowds want", "Two stops, one at each place, built on a pick both crowds put in their top ten and share about evenly.", "The better known pick wins"],
 ];
 
 function mine(): HTMLElement | null {
@@ -31,7 +31,7 @@ function mine(): HTMLElement | null {
 function steps(): HTMLElement {
   return h(
     "section",
-    { class: "band band-white", id: "how", "aria-labelledby": "how-title" },
+    { class: "band", id: "how", "aria-labelledby": "how-title" },
     h(
       "div",
       { class: "wrap" },
@@ -47,7 +47,7 @@ function twoLinks(): HTMLElement {
     h("div", { class: `link-row link-${side}` }, h("i", { "aria-hidden": "true" }), h("div", null, h("b", null, name), h("span", { class: "link-url" }, line)), h("span", { class: "link-count" }, "counted"));
   return h(
     "section",
-    { class: "band", "aria-labelledby": "links-title" },
+    { class: "band band-white", "aria-labelledby": "links-title" },
     h(
       "div",
       { class: "wrap" },
@@ -67,27 +67,11 @@ function twoLinks(): HTMLElement {
   );
 }
 
-function price(): HTMLElement {
+function closing(): HTMLElement {
   return h(
     "section",
-    { class: "band band-white", "aria-labelledby": "price-title" },
-    h(
-      "div",
-      { class: "wrap price" },
-      h(
-        "div",
-        null,
-        h("h2", { id: "price-title" }, "One plan for your venue"),
-        h(
-          "ul",
-          { class: "bullets" },
-          h("li", null, "A fresh read and a new pair every Monday"),
-          h("li", null, "Invite, event page and calendar file for every night"),
-          h("li", null, "The swap ledger with every partner"),
-        ),
-      ),
-      h("div", null, h("p", { class: "price-figure" }, "$79", h("small", null, "a month")), h("p", { class: "price-note" }, "No card needed for the first night with each partner."), h("p", { class: "actions" }, h("a", { class: "btn", href: "#find" }, "Find your neighbour"))),
-    ),
+    { class: "band band-close", "aria-labelledby": "close-title" },
+    h("div", { class: "wrap close" }, h("h2", { id: "close-title" }, "See which neighbour your crowd already loves."), h("p", { class: "actions" }, h("a", { class: "btn", href: "#find" }, "Find your neighbour"))),
   );
 }
 
@@ -115,7 +99,8 @@ export function landingPage(): void {
       example,
     ),
   );
-  replace(page(), hero, steps(), twoLinks(), price());
-  loadExample(example, hero);
+  const decides = decisionBand();
+  replace(page(), hero, decides.el, steps(), twoLinks(), closing());
+  loadExample(example, hero, decides.fill);
   focusHeading();
 }

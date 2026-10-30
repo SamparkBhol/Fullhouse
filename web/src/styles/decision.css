@@ -1,0 +1,60 @@
+/* The board: Qloo's list in its order, Full House's verdict on each place. Plum marks the one place chosen. */
+.decision-lead { margin-top: 8px; font-size: 1rem; line-height: 1.5; color: var(--ink); max-width: 40em; }
+.choices { margin-top: 16px; display: grid; }
+.choice { display: grid; grid-template-columns: 2rem minmax(0, 1fr) auto; gap: 0 12px; align-items: start; padding: 11px 12px 11px 0; border-top: 1px solid var(--rule); }
+.choices > .choice:first-child { border-top-color: transparent; }
+.choice-rank { padding-top: 1px; text-align: right; font-weight: 750; font-size: 0.9375rem; line-height: 1.4; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.choice-body { min-width: 0; }
+.choice-name { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; font-weight: 650; line-height: 1.4; color: var(--ink-3); overflow-wrap: anywhere; }
+.choice-meta { font-weight: 500; font-size: 0.8125rem; color: var(--ink-3); white-space: nowrap; }
+.choice-why { margin-top: 1px; font-size: 0.875rem; line-height: 1.45; color: var(--ink-3); }
+.choice-why b { font-weight: 700; }
+.choice-scored .choice-name { color: var(--ink-2); }
+
+.choice-partner, .choice-runner-up { margin: 3px 0; border-top-color: transparent; border-radius: var(--r-control); }
+.choice-partner + .choice, .choice-runner-up + .choice { border-top-color: transparent; }
+.choice-partner { background: var(--them-tint); }
+.choice-partner .choice-rank, .choice-partner .choice-name, .choice-partner .choice-why b { color: var(--them); }
+.choice-partner .choice-name { font-weight: 750; }
+.choice-partner .choice-meta { color: var(--ink-2); }
+.choice-partner .choice-why { color: var(--ink-2); }
+.choice-runner-up { box-shadow: inset 0 0 0 1px var(--rule-strong); }
+.choice-runner-up .choice-name { color: var(--ink); }
+.choice-runner-up .choice-why { color: var(--ink-2); }
+.choice-runner-up .choice-why b { color: var(--ink); }
+.choice-swap { align-self: center; }
+
+.choices-more > summary { font-size: 0.9375rem; color: var(--ink-2); }
+.choices-more .choices { margin-top: 4px; }
+.decision-foot { margin-top: 12px; font-size: 0.8125rem; color: var(--ink-3); }
+
+/* What the crowd loves beyond the street, under the pair. */
+.evidence h2 { font-size: 1rem; font-weight: 700; line-height: 1.35; }
+.evidence-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 12px; }
+.evidence-item { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 12px; align-items: start; }
+.evidence-item .cover { width: 48px; border-radius: var(--r-photo); }
+.evidence-name { font-weight: 650; font-size: 0.9375rem; line-height: 1.3; overflow-wrap: anywhere; }
+.evidence-sub { display: block; margin-top: 2px; font-weight: 450; font-size: 0.8125rem; color: var(--ink-3); }
+
+/* On a phone the board sits straight under the pair, then the crowd's picks, the actions and the checks. */
+@media (max-width: 960px) {
+  .partner-grid > .stack { display: contents; }
+  .partner-grid > .stack > * { order: 6; }
+  .partner-grid .part-pair { order: 1; }
+  .partner-grid .part-board { order: 2; }
+  .partner-grid .part-evidence { order: 3; }
+  .partner-grid .part-actions { order: 4; }
+  .partner-grid .part-fit { order: 5; }
+  .partner-grid .part-actions { margin: 0; }
+}
+@media (max-width: 560px) {
+  .choice { grid-template-columns: 1.75rem minmax(0, 1fr) auto; gap: 0 10px; padding-right: 10px; }
+  .choice-meta { flex-basis: 100%; white-space: normal; }
+  .evidence-list { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+}
+
+/* Pins come in one after another as the list arrives, once. Leaflet moves the marker by transform, so the face scales. */
+.pin.pin-arrive { background: transparent; box-shadow: none; }
+.pin-arrive > span { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 2px #fff, 0 2px 6px rgba(20, 32, 26, 0.3); animation: pin-in 0.42s cubic-bezier(0.2, 0.8, 0.3, 1.2) both; }
+.pin-them.pin-arrive > span { background: var(--them); }
+@keyframes pin-in { from { opacity: 0; transform: scale(0.4); } }

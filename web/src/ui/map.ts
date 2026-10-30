@@ -1,6 +1,6 @@
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import type { HeatLayer, LovedPlace, Venue } from "../../../src/shared/contract.ts";
+import type { HeatLayer, ProgressPlace, Venue } from "../../../src/shared/contract.ts";
 import { plainName } from "../../../src/shared/words.ts";
 import { h } from "../dom.ts";
 import { geohashBounds, squareAround } from "../geo.ts";
@@ -23,6 +23,8 @@ function cellSide(hash: string, lat: number): number {
 
 export interface StreetMap {
   showLayer(index: number): void;
+  // Puts the list's pins on the map, or replaces them, with the partner in plum once it is known.
+  setPlaces(places: ProgressPlace[], partnerId: string | null, arrive?: string[]): void;
   destroy(): void;
 }
 
@@ -59,7 +61,7 @@ export function drawStreetMap(
     center: { lat: number; lng: number };
     radiusM: number;
     heat: HeatLayer[];
-    loved: LovedPlace[];
+    loved: ProgressPlace[];
     partnerId?: string | null;
     onTiles?: (shown: boolean) => void;
   },
@@ -75,7 +77,12 @@ export function drawStreetMap(
   L.circle([opts.center.lat, opts.center.lng], { radius: opts.radiusM, color: INK, opacity: 0.45, weight: 1, dashArray: "2 6", fill: false, interactive: false }).addTo(map);
 
   const venueAt = L.latLng(opts.center.lat, opts.center.lng);
-  lovedPlacesLayer(map, venueAt, opts.loved, opts.partnerId ?? null).addTo(map);
+  let pins: L.LayerGroup | null = null;
+  const setPlaces = (places: ProgressPlace[], partnerId: string | null, arrive: string[] = []): void => {
+    if (pins) map.removeLayer(pins);
+    pins = places.length ? lovedPlacesLayer(map, venueAt, places, partnerId, { arrive }).addTo(map) : null;
+  };
+  setPlaces(opts.loved, opts.partnerId ?? null);
   const venueIcon = L.divIcon({ className: "pin pin-you", html: h("span", null, "You"), iconSize: [VENUE_PIN.w, VENUE_PIN.h], iconAnchor: [VENUE_PIN.w / 2, VENUE_PIN.h / 2] });
   L.marker(venueAt, { icon: venueIcon, keyboard: false, title: plainName(opts.venue.entity.name), zIndexOffset: 1000 }).addTo(map);
 
@@ -86,6 +93,7 @@ export function drawStreetMap(
       shown = heatGroups[index] ?? null;
       if (shown) shown.addTo(map);
     },
+    setPlaces,
     destroy() {
       map.remove();
     },

@@ -11,8 +11,8 @@ let foot: HTMLElement;
 export type Tab = "nights" | "street" | "numbers" | "proof" | "venue";
 export type Step = "crowd" | "match" | "night" | "ask";
 
+// Reading the crowd is the start of finding the partner, so it shows as the first step.
 const STEPS: [Step, string, string][] = [
-  ["crowd", "Your crowd", ""],
   ["match", "Your partner", "match"],
   ["night", "The night", "night"],
   ["ask", "Ask them", "ask"],
@@ -70,12 +70,12 @@ export function publicHeader(opts: { find?: boolean } = {}): void {
   credit(PUBLIC_CREDIT);
 }
 
-// The first run keeps the venue's name in view and the four steps, but no tabs, so the only way on is the next step.
+// The first run keeps the venue's name in view and the three steps, but no tabs, so the only way on is the next step.
 export function runHeader(venue: Venue, step: Step): void {
   strip.hidden = true;
   top.className = "top top-app";
   const base = `/v/${encodeURIComponent(venue.id)}/first`;
-  const at = STEPS.findIndex(([key]) => key === step);
+  const at = STEPS.findIndex(([key]) => key === (step === "crowd" ? "match" : step));
   const items = STEPS.map(([key, label, path], i) => {
     const state = i < at ? "done" : i === at ? "now" : "";
     const body = [h("span", { class: "step-no" }, String(i + 1)), h("span", { class: "step-label" }, label)];

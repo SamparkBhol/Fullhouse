@@ -5,17 +5,10 @@ import { PLACES_ON_MAP, displayTitle, walk } from "../format.ts";
 import { byLine } from "../joint.ts";
 import { describingTags, tagWord } from "../tags.ts";
 import { cover } from "../ui/cover.ts";
-import type { ServerStep } from "../ui/progress.ts";
 
 const ORDER: QlooType[] = ["book", "movie", "tv_show", "artist", "podcast"];
 const PER_KIND = 3;
 
-export const READ_STEPS: ServerStep[] = [
-  { label: "Finding the places near you that your crowd also loves", call: /^loved_places$/ },
-  { label: "Seeing where on the street your crowd gathers", call: /^heat_venue$/ },
-  { label: "Reading the books, shows, artists, podcasts and films they love", call: /^insights_/ },
-  { label: "Asking the best of those places whether their crowd loves you back", call: /^(compare|loves_back)$/ },
-];
 
 // Some genre tags name the format, not the taste ("Audiobook", "Podcasts"), which says nothing here.
 const FORMAT_WORDS = /^(audiobooks?|e ?books?|podcasts?|books?|films?|movies?|tv|television|music|series)$/i;

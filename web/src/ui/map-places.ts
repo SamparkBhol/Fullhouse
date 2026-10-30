@@ -1,5 +1,5 @@
 import * as L from "leaflet";
-import type { LovedPlace } from "../../../src/shared/contract.ts";
+import type { ProgressPlace } from "../../../src/shared/contract.ts";
 import { shortName } from "../../../src/shared/words.ts";
 import { h } from "../dom.ts";
 import { walkShort } from "../format.ts";
@@ -14,31 +14,38 @@ export const PLACE_PIN = 26;
 const MOVED_PX = 3;
 
 interface Spot {
-  place: LovedPlace;
+  place: ProgressPlace;
   number: number;
   at: L.LatLng;
 }
 
-function tip(p: LovedPlace): HTMLElement {
+function tip(p: ProgressPlace): HTMLElement {
   return h("span", null, h("strong", null, shortName(p.name)), h("span", null, walkShort(p.distanceM)));
 }
 
-function placeMarker(s: Spot, at: L.LatLng, partner: boolean): L.Marker {
+function placeMarker(s: Spot, at: L.LatLng, partner: boolean, delayMs: number | null): L.Marker {
   const half = PLACE_PIN / 2;
   const face = h("span", null, String(s.number));
-  const icon = L.divIcon({ className: partner ? "pin pin-them" : "pin", html: face, iconSize: [PLACE_PIN, PLACE_PIN], iconAnchor: [half, half] });
+  const arriving = delayMs === null ? "" : " pin-arrive";
+  if (delayMs !== null) face.style.animationDelay = `${delayMs}ms`;
+  const icon = L.divIcon({ className: `${partner ? "pin pin-them" : "pin"}${arriving}`, html: face, iconSize: [PLACE_PIN, PLACE_PIN], iconAnchor: [half, half] });
   const marker = L.marker(at, { icon, keyboard: true, alt: shortName(s.place.name), zIndexOffset: partner ? 800 : 500 });
   marker.bindTooltip(tip(s.place), { direction: "top", offset: [0, -half - 2], className: "pin-tip" });
   marker.on("add", () => marker.getElement()?.setAttribute("aria-label", `${s.number}. ${shortName(s.place.name)}, ${walkShort(s.place.distanceM)}${partner ? ", your partner" : ""}`));
   return marker;
 }
 
+// Pins coming in on the reading screen arrive one after another in rank order, once; a redraw on zoom does not replay it.
+const ARRIVE_STEP_MS = 70;
+
 // Numbered pins for the loved places, laid out again on every zoom so close places never cover each other or the venue.
-export function lovedPlacesLayer(map: L.Map, venueAt: L.LatLng, loved: LovedPlace[], partnerId: string | null): L.LayerGroup {
+// Each pin carries the place's rank on the whole list.
+export function lovedPlacesLayer(map: L.Map, venueAt: L.LatLng, loved: ProgressPlace[], partnerId: string | null, opts: { arrive?: string[] } = {}): L.LayerGroup {
   const spots: Spot[] = [];
-  loved.forEach((place, i) => {
-    if (Number.isFinite(place.lat) && Number.isFinite(place.lng)) spots.push({ place, number: i + 1, at: L.latLng(place.lat, place.lng) });
+  loved.forEach((place) => {
+    if (Number.isFinite(place.lat) && Number.isFinite(place.lng)) spots.push({ place, number: place.rank, at: L.latLng(place.lat, place.lng) });
   });
+  let arrive = opts.arrive ?? [];
   const group = L.layerGroup();
   if (!map.getPane(LEADER_PANE)) map.createPane(LEADER_PANE).style.zIndex = "450";
   const line = { pane: LEADER_PANE, interactive: false };
@@ -57,11 +64,14 @@ export function lovedPlacesLayer(map: L.Map, venueAt: L.LatLng, loved: LovedPlac
         group.addLayer(L.polyline([s.at, drawnAt], { ...line, color: INK, weight: 1.25, opacity: 0.7 }));
         group.addLayer(L.circleMarker(s.at, { ...line, radius: 2.5, color: INK, weight: 1, fillColor: INK, fillOpacity: 1 }));
       }
-      group.addLayer(placeMarker(s, drawnAt, s.place.id === partnerId));
+      const at = arrive.indexOf(s.place.id);
+      group.addLayer(placeMarker(s, drawnAt, s.place.id === partnerId, at < 0 ? null : at * ARRIVE_STEP_MS));
     });
+    arrive = [];
   };
 
   map.on("zoomend", draw);
+  group.on("remove", () => map.off("zoomend", draw));
   draw();
   return group;
 }

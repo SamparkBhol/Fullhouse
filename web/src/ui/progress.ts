@@ -11,7 +11,7 @@ export interface ServerStep {
 const POLL_MS = 700;
 
 // Each line ticks only when the server says its call finished; nothing here moves on a timer.
-export function serverProgress(heading: string, steps: ServerStep[], poll: () => Promise<RunProgress>): { el: HTMLElement; finish: () => void } {
+export function serverProgress(heading: string, steps: ServerStep[], poll: () => Promise<RunProgress>, seen?: (p: RunProgress) => void): { el: HTMLElement; finish: () => void } {
   const el = loading(heading);
   const items = steps.map((s) => h("li", { class: "state-step" }, h("span", { class: "sr-only state-mark" }, "Waiting: "), s.label));
   const list = h("ul", { class: "state-lines" }, items);
@@ -28,6 +28,8 @@ export function serverProgress(heading: string, steps: ServerStep[], poll: () =>
     if (stopped || !el.isConnected) return;
     try {
       const p = await poll();
+      if (stopped) return;
+      seen?.(p);
       steps.forEach((s, i) => {
         if (s.call && p.done.some((c) => s.call!.test(c))) tick(i);
       });

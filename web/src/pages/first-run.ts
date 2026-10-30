@@ -1,8 +1,8 @@
 import { h, replace } from "../dom.ts";
 import { askScreen } from "../first-run/ask.ts";
-import { crowdScreen } from "../first-run/crowd-screen.ts";
 import { matchScreen } from "../first-run/match-screen.ts";
 import { nightScreen } from "../first-run/night-screen.ts";
+import { readingScreen } from "../first-run/reading.ts";
 import { firstPath, rememberedInvite, runFor } from "../first-run/run.ts";
 import { api } from "../api.ts";
 import { navigate } from "../router.ts";
@@ -44,7 +44,7 @@ export function firstRunPage(id: string, step: Step): Promise<void> {
       if (step === "ask") return openAsk(ctx, main);
       if (step === "match") return matchScreen(run, main);
       if (step === "night") return nightScreen(run, main);
-      return crowdScreen(run, main);
+      return readingScreen(run, main);
     },
     { fresh: step === "ask" },
   );
