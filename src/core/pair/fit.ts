@@ -14,7 +14,7 @@ export { FIT_LABELS, FIT_MAX } from "../../shared/engine.ts";
 const WALK_FULL_M = 300;
 const WALK_NONE_M = 1500;
 const BOTH_WAYS_TOP = 10;
-const EVENINGS = 7;
+export const EVENINGS = 7;
 
 export interface FitInput {
   venue: Pick<Venue, "entity" | "quietSlot">;
@@ -77,17 +77,27 @@ function on(n: number): string {
 // Each place is checked at the time of its own stop, the way the night would run: the main activity first, an hour
 // earlier if that keeps a shop inside its hours, the serving place first if it shuts early. The venue opening late
 // for its own part counts for half.
-function open(i: FitInput): FitCheck {
-  const v = shortName(i.venue.entity.name);
-  const p = shortName(i.partner.name);
+export interface Evenings {
+  opened: number;
+  late: number;
+  unknown: number;
+  venueListed: boolean;
+  partnerListed: boolean;
+}
+
+export function evenings(i: Pick<FitInput, "venue" | "partner">): Evenings {
   const venue = { at: "venue" as const, place: i.venue.entity, group: groupOf(i.venue.entity) };
   const partner = { at: "partner" as const, place: i.partner, group: groupOf(i.partner) };
   const setup = { def: pairFormat(venue.group, partner.group), venue, partner, slot: i.venue.quietSlot, distanceM: i.partner.distanceM };
   const days = Array.from({ length: EVENINGS }, (_, d) => dayFit(setup, d as QuietSlot["weekday"]));
   const count = (x: DayFit) => days.filter((d) => d === x).length;
-  const [opened, late, unknown] = [count("open"), count("late"), count("unknown")];
-  const venueListed = listedHours(i.venue.entity) !== null;
-  const partnerListed = listedHours(i.partner) !== null;
+  return { opened: count("open"), late: count("late"), unknown: count("unknown"), venueListed: listedHours(i.venue.entity) !== null, partnerListed: listedHours(i.partner) !== null };
+}
+
+function open(i: FitInput): FitCheck {
+  const v = shortName(i.venue.entity.name);
+  const p = shortName(i.partner.name);
+  const { opened, late, unknown, venueListed, partnerListed } = evenings(i);
   let sentence: string;
   if (!partnerListed && !venueListed) sentence = "Neither place lists its opening hours, so check both before the night.";
   else if (!partnerListed) sentence = `${p} lists no opening hours, so check them before you ask.${unknown ? ` ${v} is open for its part ${on(unknown)}.` : late ? ` ${v} would open late for its part.` : ""}`;

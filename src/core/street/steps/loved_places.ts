@@ -1,4 +1,4 @@
-import type { LovedPlace } from "../../../shared/contract.ts";
+import type { LovedPlace, ProgressPlace } from "../../../shared/contract.ts";
 import { parseEntities, type QEntity } from "../../qloo/entities.ts";
 import { locationFilter } from "../../qloo/location.ts";
 import { TYPE_URN } from "../../qloo/urns.ts";
@@ -9,6 +9,7 @@ import { haversineM } from "../../../shared/geo.ts";
 import { rankBy } from "../rank.ts";
 import { hostsPeople } from "../hosts.ts";
 import { kindOf } from "../../pair/groups.ts";
+import type { SetAside } from "../../pair/board.ts";
 import type { Runner } from "../runner.ts";
 import { plural, possessive } from "../../../shared/words.ts";
 import type { ReadContext } from "./resolve.ts";
@@ -19,6 +20,8 @@ const WITHIN = `within ${LOVED_RADIUS_M / 1000} km`;
 
 export interface LovedRead {
   places: LovedPlace[];
+  // The venue itself and places marked closed, kept with their rank so the board can say why they are not on offer.
+  aside: SetAside[];
   ref: number;
 }
 
@@ -64,6 +67,14 @@ function placeLimits(found: number, unmapped: number, tied: boolean, ctx: ReadCo
   return out;
 }
 
+// The list as pins, in the same order and with the same ranks the read gives it, for the screen that waits on the read.
+export function listedPoints(body: unknown, venueId: string): ProgressPlace[] {
+  const mapped = rankBy(parseEntities(body), (e) => e.affinity).filter((e) => e.lat !== null && e.lng !== null);
+  return mapped.flatMap((e, i) =>
+    sameId(e.id, venueId) || e.closed ? [] : [{ id: e.id, name: e.name, lat: e.lat as number, lng: e.lng as number, rank: i + 1, distanceM: Math.round(e.distanceM ?? 0) }],
+  );
+}
+
 export async function lovedPlaces(run: Runner, ctx: ReadContext): Promise<{ loved: LovedRead | null; limits: string[] }> {
   const got = await run.call(
     "loved_places",
@@ -79,13 +90,16 @@ export async function lovedPlaces(run: Runner, ctx: ReadContext): Promise<{ love
     "Nearby places",
   );
   if (!got) return { loved: null, limits: [] };
-  const all = rankBy(
-    parseEntities(got.body).filter((e) => !sameId(e.id, ctx.entityId) && !e.closed),
-    (e) => e.affinity,
-  );
-  const mapped = all.filter((e) => e.lat !== null && e.lng !== null);
+  // Ranks follow Qloo's whole list, so a place keeps its number whether or not it can be offered.
+  const listed = rankBy(parseEntities(got.body), (e) => e.affinity);
+  const offered = (e: QEntity) => !sameId(e.id, ctx.entityId) && !e.closed;
+  const mapped = listed.filter((e) => e.lat !== null && e.lng !== null);
+  const unmapped = listed.filter((e) => offered(e) && (e.lat === null || e.lng === null)).length;
   const venueDropped = parseWarnings(got.body).notFound.some((id) => sameId(id, ctx.entityId));
-  const tied = !venueDropped && mapped.some((e) => tiedToVenue(e, ctx));
-  const places = mapped.map((e, i) => toPlace(e, i + 1, mapped.length, tied, ctx, got.ref));
-  return { loved: { places, ref: got.ref }, limits: placeLimits(mapped.length, all.length - mapped.length, tied, ctx) };
+  const kept = mapped.filter(offered);
+  const tied = !venueDropped && kept.some((e) => tiedToVenue(e, ctx));
+  const ranked = mapped.map((e, i) => ({ e, place: toPlace(e, i + 1, kept.length, tied, ctx, got.ref) }));
+  const places = ranked.filter((r) => offered(r.e)).map((r) => r.place);
+  const aside: SetAside[] = ranked.filter((r) => !offered(r.e)).map((r) => ({ place: r.place, why: sameId(r.e.id, ctx.entityId) ? "you" : "closed" }));
+  return { loved: { places, aside, ref: got.ref }, limits: placeLimits(places.length, unmapped, tied, ctx) };
 }

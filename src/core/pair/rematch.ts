@@ -8,6 +8,7 @@ import { createRunner } from "../street/runner.ts";
 import { resolveVenue } from "../street/steps/resolve.ts";
 import { byFit, compareWith, matchOf, richer, scored, type Scoring } from "./engine.ts";
 import { notChecked, type Back } from "./reverse.ts";
+import { relabel, withBoard } from "./board.ts";
 
 export const MATCH_CAP = 1;
 
@@ -43,5 +44,9 @@ export async function matchFor(q: Qloo, venue: Venue, read: StreetRead, partnerI
   const runnersUp = pool.filter((p) => !sameId(p.id, chosen.id)).sort(byFit);
   const provenance = [lovedRow, cmpRow ?? -1, ...m.provenance].filter((i, n, all) => i >= 0 && all.indexOf(i) === n);
   const limits = cmp ? [] : [`The comparison with ${plainName(chosen.name)} did not come back, so what both share comes from the two places' own tags.`];
-  return { match: matchOf(s, partner, runnersUp, read.at, provenance), read: appended.read, limits };
+  const match = matchOf(s, partner, runnersUp, read.at, provenance);
+  const boarded = m.considered
+    ? { ...match, considered: relabel(m.considered, venue, read.lovedPlaces.length, partner, runnersUp, m.partner), ...(m.consideredOf ? { consideredOf: m.consideredOf } : {}) }
+    : withBoard(match, venue, read.lovedPlaces, m.partner);
+  return { match: boarded, read: appended.read, limits };
 }

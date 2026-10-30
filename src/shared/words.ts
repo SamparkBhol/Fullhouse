@@ -45,6 +45,11 @@ export function listWords(items: string[]): string {
   return `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`;
 }
 
+// "a university", "an Episcopal church": the sound decides, and a few vowels sound like a y.
+export function article(word: string): string {
+  return /^[aeiou]/i.test(word) && !/^(uni|use|usu|eu|one\b)/i.test(word) ? `an ${word}` : `a ${word}`;
+}
+
 export function capFirst(s: string): string {
   return s ? s[0]!.toUpperCase() + s.slice(1) : s;
 }

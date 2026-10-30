@@ -6,6 +6,10 @@ export const BACK_CHECKS = 8;
 export const PAIR_CANDIDATES = 8;
 export const LOVED_TAKE = 50;
 export const LOVED_RADIUS_M = 1200;
+// Within this many points the top two are as good as level, and the shorter walk wins.
+export const NEAR_TIE = 5;
+// The board lists at least this many places from the top of the list, plus every place scored further down.
+export const BOARD_TOP = 15;
 export const FIT_MAX: Record<FitKey, number> = { crowd: 25, back: 25, partners: 15, open: 15, walk: 10, taste: 10 };
 export const FIT_LABELS: Record<FitKey, string> = {
   crowd: "Crowd pull",

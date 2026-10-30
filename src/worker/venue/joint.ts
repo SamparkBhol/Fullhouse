@@ -4,6 +4,7 @@ import { QLOO_KEY_MISSING, isQlooError } from "../qloo/errors.ts";
 import { fail, failure, noVenue, ok, type Out, type VenueDeps } from "./api.ts";
 import { kindOf, walkMinutes } from "./invites.ts";
 import { publicStops } from "../pages/stops.ts";
+import { boardRows } from "../../shared/board.ts";
 import { qlooFor, recentFeatures } from "./planning.ts";
 import type { VenueRecords } from "./records.ts";
 
@@ -69,6 +70,9 @@ export async function planWithMatch(
   return { response, read: current };
 }
 
+// The landing shows the top of the board: enough rows to see the list being judged.
+const EXAMPLE_ROWS = 6;
+
 function exampleRank(p: NightPlan, accepted: boolean, published: boolean): number {
   return (p.match?.split ? 0 : 4) + (accepted ? 0 : published ? 1 : 2);
 }
@@ -115,5 +119,10 @@ export async function jointExample(records: VenueRecords): Promise<Out<JointExam
   // The stops name the partner, so they go on the landing only once the partner said yes.
   const stops = accepted.has(best.id) ? publicStops(best.pair?.stops) : undefined;
   if (stops) ex.stops = stops;
+  const board = await records.match();
+  if (board?.considered && board.partner.id.toUpperCase() === m.partner.id.toUpperCase()) {
+    ex.considered = boardRows(board.considered, EXAMPLE_ROWS, ["partner"]).shown;
+    ex.consideredOf = board.consideredOf ?? board.considered.length;
+  }
   return ok(ex);
 }

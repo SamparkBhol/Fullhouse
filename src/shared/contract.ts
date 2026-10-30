@@ -245,6 +245,22 @@ export interface CrowdSplit {
   partner: number;
 }
 
+// What Full House decided about one place on the venue's list.
+export type Verdict = "partner" | "runner_up" | "scored" | "rival" | "not_a_room" | "no_owner" | "closed" | "you";
+
+// One place on the list of places the venue's crowd loves, with Qloo's rank and Full House's verdict on it.
+export interface Considered {
+  id: string;
+  name: string;
+  image?: string;
+  kind: string;
+  rank: number;
+  walkMin: number;
+  verdict: Verdict;
+  score?: number;
+  reason: string;
+}
+
 export interface Match {
   partner: MatchPartner;
   runnersUp: MatchPartner[];
@@ -255,6 +271,10 @@ export interface Match {
   reverseRank?: ReverseRank;
   venueGroup?: KindGroup;
   venueKind?: string;
+  // The board: the first places on the list and every place scored, in Qloo's order, each with its verdict.
+  considered?: Considered[];
+  // How many places the list held.
+  consideredOf?: number;
 }
 
 export type NightHost = "venue" | "partner" | "both";
@@ -526,6 +546,9 @@ export interface JointExample {
   stops?: Array<{ name: string; start: string; end: string; what: string; walkMin?: number }>;
   // True only when the partner said yes on its invite; otherwise the pair is proposed, not agreed.
   agreed?: boolean;
+  // The first rows of the board, with the partner's row when it is further down.
+  considered?: Considered[];
+  consideredOf?: number;
 }
 
 export interface VenueState {
@@ -561,10 +584,17 @@ export interface Baseline {
   modelLabel?: string;
 }
 
+// A place on the venue's list, sent while the read runs so the reading screen can pin it.
+export type ProgressPlace = Pick<LovedPlace, "id" | "name" | "lat" | "lng" | "rank" | "distanceM">;
+
 // Which Qloo calls have finished in the read or plan now running.
 export interface RunProgress {
   since: string | null;
   done: string[];
+  // The list the venue's crowd loves, once that call is back.
+  places?: ProgressPlace[];
+  // The place Full House chose, once it asks Qloo to compare it with the venue.
+  partnerId?: string;
 }
 
 export interface ApiError {

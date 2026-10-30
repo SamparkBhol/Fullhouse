@@ -44,12 +44,26 @@ describe("lovedPlaces", () => {
     expect(limits).toEqual([]);
   });
 
-  it("drops the venue if Qloo returns it anyway and measures distance when Qloo gives none", async () => {
+  it("keeps the venue off the list if Qloo returns it anyway, with every place keeping its rank on Qloo's list", async () => {
     const body = placesWith((e, i) => (i === 0 ? { ...e, entity_id: VENUE_ID.toLowerCase() } : i === 1 ? { ...e, query: { ...e.query, distance: undefined } } : e));
     const { run, ctx } = stepSetup([answer(isPlace, body)]);
     const { loved } = await lovedPlaces(run, ctx);
     expect(loved?.places.map((p) => p.name)).not.toContain("Blue Hour Wine Bar");
-    expect(loved?.places[0]).toMatchObject({ name: "Kettle Books", distanceM: 241, rank: 1 });
+    expect(loved?.places[0]).toMatchObject({ name: "Kettle Books", distanceM: 241, rank: 2 });
+    expect(loved?.aside.map((a) => [a.place.name, a.place.rank, a.why])).toEqual([["Blue Hour Wine Bar", 1, "you"]]);
+  });
+
+  it("sets a place marked closed aside with its rank, so the board can say why it is not on offer", async () => {
+    const body = placesWith((e, i) => (i === 2 ? { ...e, properties: { ...e.properties, is_closed: true } } : e));
+    const { run, ctx } = stepSetup([answer(isPlace, body)]);
+    const { loved } = await lovedPlaces(run, ctx);
+    expect(loved?.places.map((p) => [p.name, p.rank])).toEqual([
+      ["Blue Hour Wine Bar", 1],
+      ["Kettle Books", 2],
+      ["Daybreak Cafe", 4],
+      ["Grand Street Cinema", 5],
+    ]);
+    expect(loved?.aside.map((a) => [a.place.name, a.place.rank, a.why])).toEqual([["Sora Ramen", 3, "closed"]]);
   });
 
   it("does not present an unexplained list as a ranking of taste", async () => {

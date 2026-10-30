@@ -49,7 +49,7 @@ export async function readStreet(q: Qloo, venue: Venue, opts: ReadOptions = {}):
   const concepts = venueTags.filter((t) => t.namespace === "urn:tag:genre:place").slice(0, CONCEPT_TAGS);
   const readAt = ctx.now.toISOString();
   const [matched, conceptMap, cross] = await Promise.all([
-    pairStep(run, ctx, venue, places, loved.loved?.ref ?? null, readAt),
+    pairStep(run, ctx, venue, places, loved.loved?.ref ?? null, readAt, loved.loved?.aside ?? []),
     conceptHeat(run, ctx, concepts),
     crossDomain(run, ctx, { exclude: opts.exclude ?? [], anchors: [] }),
   ]);

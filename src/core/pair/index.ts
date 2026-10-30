@@ -1,3 +1,4 @@
+export * from "./board.ts";
 export * from "./candidates.ts";
 export * from "./engine.ts";
 export * from "./fit.ts";
@@ -6,3 +7,5 @@ export * from "./rematch.ts";
 export * from "./reverse.ts";
 export * from "./settle.ts";
 export * from "./taste.ts";
+export * from "./verdicts.ts";
+export * from "./place_word.ts";

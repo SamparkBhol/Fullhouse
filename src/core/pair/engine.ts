@@ -10,6 +10,8 @@ import { fitOf } from "./fit.ts";
 import { kindOf } from "./groups.ts";
 import { lovesBack, notChecked, type Back } from "./reverse.ts";
 import { sharedTaste, shownTags } from "./taste.ts";
+import { boardOf, type SetAside } from "./board.ts";
+import { partnerWhy } from "./verdicts.ts";
 
 export const RUNNERS_UP = 2;
 
@@ -54,8 +56,8 @@ export function byFit(a: MatchPartner, b: MatchPartner): number {
   return Number(canOpen(b)) - Number(canOpen(a)) || (b.fit?.score ?? 0) - (a.fit?.score ?? 0) || a.rank - b.rank;
 }
 
-// Within this many points the top two are as good as level, and the shorter walk wins on a cold Tuesday.
-export const NEAR_TIE = 5;
+export { NEAR_TIE } from "../../shared/engine.ts";
+import { NEAR_TIE } from "../../shared/engine.ts";
 
 export function nearerFirst(ranked: MatchPartner[]): MatchPartner[] {
   const [a, b] = ranked;
@@ -90,7 +92,7 @@ function noPartner(ctx: ReadContext): PairStep {
 
 // Up to eight candidates, each asked whether its crowd loves the venue back.
 // The match is the highest fit, compared with the venue once so the shared tags and the gap use its own answer.
-export async function pairStep(run: Runner, ctx: ReadContext, venue: Venue, places: LovedPlace[], lovedRef: number | null, readAt: string): Promise<PairStep> {
+export async function pairStep(run: Runner, ctx: ReadContext, venue: Venue, places: LovedPlace[], lovedRef: number | null, readAt: string, aside: SetAside[] = []): Promise<PairStep> {
   const candidates = pairCandidates(places, venue);
   if (!candidates.length) return noPartner(ctx);
   const backs = await Promise.all(candidates.slice(0, BACK_CHECKS).map((c) => lovesBack(run, ctx, c)));
@@ -107,8 +109,11 @@ export async function pairStep(run: Runner, ctx: ReadContext, venue: Venue, plac
     limits.push(`${ctx.name} and ${p} share no tags that say what their crowds go for, so the match rests on ${possessive(ctx.name)} crowd loving ${p}.`);
   }
   if (backs.every((b) => !b.rank.checked)) limits.push("Full House could not ask whether the places nearby love you back, so no place earned those points.");
+  const runnersUp = ranked.slice(1, 1 + RUNNERS_UP);
+  const all = [partner, ...ranked.slice(1)];
+  const board = boardOf({ venue, places, aside, scored: all, partner, runnersUp, partnerWhy: partnerWhy(partner, all) });
   return {
-    match: matchOf(s, partner, ranked.slice(1, 1 + RUNNERS_UP), readAt, refs),
+    match: { ...matchOf(s, partner, runnersUp, readAt, refs), considered: board.considered, consideredOf: board.of },
     gaps: cmp ? partnerGaps(cmp.read, [partner], ctx, cmp.ref) : [],
     limits,
   };

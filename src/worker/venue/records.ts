@@ -3,6 +3,7 @@ import type { Published } from "../actions/run.ts";
 import type { Sealed } from "../crypto.ts";
 import type { Counted } from "../stats/makers.ts";
 import type { Store } from "../store.ts";
+import { withBoard } from "../../core/pair/board.ts";
 
 export interface ProposalRecord {
   plan: NightPlan;
@@ -53,8 +54,12 @@ export class VenueRecords {
     return this.store.get<Venue>("venue");
   }
 
-  read(): Promise<StreetRead | undefined> {
-    return this.store.get<StreetRead>("read");
+  // A read stored before the board existed gets one built from its own list, with no call to Qloo.
+  async read(): Promise<StreetRead | undefined> {
+    const read = await this.store.get<StreetRead>("read");
+    if (!read?.match || read.match.considered) return read;
+    const venue = await this.venue();
+    return venue ? { ...read, match: withBoard(read.match, venue, read.lovedPlaces) } : read;
   }
 
   async authNonce(): Promise<string> {
@@ -95,7 +100,10 @@ export class VenueRecords {
   async match(): Promise<Match | undefined> {
     const [read, chosen] = await Promise.all([this.read(), this.store.get<Match>("match")]);
     if (!read) return undefined;
-    return chosen && chosen.readAt === read.at ? chosen : read.match;
+    if (!chosen || chosen.readAt !== read.at) return read.match;
+    if (chosen.considered || !read.match) return chosen;
+    const venue = await this.venue();
+    return venue ? withBoard(chosen, venue, read.lovedPlaces, read.match.partner) : chosen;
   }
 
   async joint(readAt: string, partnerId: string): Promise<JointRecord | undefined> {

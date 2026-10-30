@@ -133,9 +133,7 @@ export function rivals(a: Pick<LovedPlace, "tags">, b: Pick<LovedPlace, "tags">)
   return (defining(kb) && has(a, kb.part)) || (defining(ka) && has(b, ka.part));
 }
 
-export function article(word: string): string {
-  return /^[aeiou]/i.test(word) ? `an ${word}` : `a ${word}`;
-}
+export { article } from "../../shared/words.ts";
 
 export function pluralWord(word: string): string {
   if (word.endsWith("y") && !/[aeiou]y$/.test(word)) return `${word.slice(0, -1)}ies`;
