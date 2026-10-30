@@ -5,7 +5,7 @@ import { esc } from "../pages/html.ts";
 import { recordEvent } from "../stats/events.ts";
 import { forgetVenue, mondayEvent, planEvent } from "../stats/makers.ts";
 import { FORMATS, describeDate } from "../../core/index.ts";
-import { plainName, spanWords } from "../../shared/words.ts";
+import { shortName, spanWords } from "../../shared/words.ts";
 import { utcDay } from "../zones.ts";
 import { fail, failure, noVenue, ok, type MondayRun, type Out, type VenueDeps } from "./api.ts";
 import { armAlarm } from "./alarm.ts";
@@ -147,7 +147,7 @@ export async function runMonday(records: VenueRecords, deps: VenueDeps, by: Agen
         const joint = await planWithMatch(records, counted, read, venue, input, "monday");
         const made = await withCopy(counted, joint.response.plan, venue, joint.read);
         const when = `${describeDate(made.date)}, ${made.start} to ${made.end}`;
-        return { plan: made, alternatives: joint.response.alternatives, did: match ? `Drafted a night with ${plainName(match.partner.name)}` : "Drafted a night for the quiet slot", outcome: `"${made.copy.eventTitle}" on ${when}.` };
+        return { plan: made, alternatives: joint.response.alternatives, did: match ? `Drafted a night with ${shortName(match.partner.name)}` : "Drafted a night for the quiet slot", outcome: `"${made.copy.eventTitle}" on ${when}.` };
       });
       const plan = draft.plan;
       current = "hold";

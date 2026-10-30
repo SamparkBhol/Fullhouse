@@ -1,6 +1,6 @@
 import { FORMATS } from "../../core/index.ts";
 import type { Match, Night, NightFormat } from "../../shared/contract.ts";
-import { listWords, plainName } from "../../shared/words.ts";
+import { listWords, shortName } from "../../shared/words.ts";
 import type { StepResult } from "./agent_trace.ts";
 
 const kind = (f: NightFormat): string => FORMATS[f]?.label.toLowerCase() ?? f;
@@ -17,15 +17,15 @@ export function partnerStep(before: Match | undefined, after: Match | undefined,
   const prior = aWeek ? "last week's partner" : "the partner from the last read";
   if (!after) {
     return {
-      did: before ? `Checked ${prior}, ${plainName(before.partner.name)}, against the new read` : "Looked for a partner on the new read",
-      outcome: before ? `${plainName(before.partner.name)} no longer fits and nothing else on the list does, so this night is the venue's own.` : "No place on the list can host and fits, so this night is the venue's own.",
+      did: before ? `Checked ${prior}, ${shortName(before.partner.name)}, against the new read` : "Looked for a partner on the new read",
+      outcome: before ? `${shortName(before.partner.name)} no longer fits and nothing else on the list does, so this night is the venue's own.` : "No place on the list can host and fits, so this night is the venue's own.",
     };
   }
-  const now = plainName(after.partner.name);
+  const now = shortName(after.partner.name);
   const score = after.partner.fit?.score;
   const of = score === undefined ? "" : `, ${score} of 100`;
   if (!before) return { did: "Looked for a partner on the new read", outcome: `Picked ${now}${of}.` };
-  const was = plainName(before.partner.name);
+  const was = shortName(before.partner.name);
   if (before.partner.id.toUpperCase() === after.partner.id.toUpperCase()) {
     const was0 = before.partner.fit?.score;
     const move = was0 === undefined || score === undefined ? "" : was0 === score ? `, still ${score} of 100` : `, ${score} of 100 against ${was0} before`;
@@ -38,7 +38,7 @@ export function partnerStep(before: Match | undefined, after: Match | undefined,
 }
 
 export function formatsStep(partnerName: string | undefined, run: NightFormat[], avoid: NightFormat[] | undefined, prefer: NightFormat[] | undefined): StepResult {
-  const who = partnerName ? plainName(partnerName) : "this venue";
+  const who = partnerName ? shortName(partnerName) : "this venue";
   const parts: string[] = [];
   if (run.length) parts.push(`${listWords(run.map(kind))} already ran with ${who}`);
   const turnout = (avoid ?? []).filter((f) => !run.includes(f));
