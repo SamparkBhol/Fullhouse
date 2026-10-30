@@ -14,7 +14,7 @@ Every small venue has a dead night. The bookshop is packed on Saturday and empty
 
 What you can't see from behind your own counter is which neighbour really shares your crowd. It also has to work both ways. You might love the bar next door, but if its regulars don't care about you, the night flops.
 
-There are a lot of these rooms and most are short of money. Around 800 grassroots music venues trade in the UK and more than half made no profit last year. About two thirds of US independent music venues lost money in 2024. At the same time hundreds of new bookshops opened in the US, and nine in ten English independent bookshops already run events. A night with the right neighbour is one of the few levers a small room has.
+There are thousands of these rooms, and a lot of them are barely breaking even. Most already run events. What they can't afford is to guess wrong about who to run them with.
 
 We ran the engine on about forty well known independent venues in New York and London. Every one got a partner and just over half got a two way match within ten minutes' walk. So the pairs are there. Nobody was looking at the street from both sides.
 
@@ -175,13 +175,6 @@ Taste data is thinner away from big US and European cities, so pairs there come 
 No real night has run yet. The ledger counts sign ups by the link they came through, not people through the door.
 
 In the demo video the neighbour's phone is played by us.
-
-## Sources
-
-- https://www.musicweek.com/public_html/index.php/live/read/music-venue-trust-175-towns-cities-with-grassroots-venues-no-longer-receive-regular-touring-shows/093415
-- https://www.vip-booking.com/news/ReadNews/General/8832/study-64-of-us-independent-venues-lost-money-in-2024
-- https://shelf-awareness.com/theshelf/2026-05-29/the_aba_annual_meeting_community_forum:_celebrating_a_challenging_banner_year.html
-- https://www.booksellers.org.uk/industryinfo/industryinfo/latestnews/Independent-bookshops-are-a-vital-part-of-England%E2%80%99
 
 ## Licence
 
