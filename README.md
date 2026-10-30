@@ -2,43 +2,58 @@
 
 Full House finds the place down the street your crowd already loves, checks that its crowd loves you back, and sets up one night both owners say yes to.
 
+![Full House, the pair card on the landing](media/landing-full.png)
+
 Live site: https://fullhouse.sampark-bhol.workers.dev
 
-## Why it exists
+## Why this exists
 
-A bookshop's Tuesday or a bar's Wednesday fills when people who already care about the place hear about a night that runs with a neighbour they already visit. The hard part is knowing which neighbour shares your customers, whether its crowd likes you back, and what night both would come out for.
+Every small venue has a dead night. The bookshop is packed on Saturday and empty on Tuesday. The jazz club fills for the late set and nobody comes to the early one. Owners fix this with a neighbour, a reading and then the film down the road, drinks and then the set. Bookshops even run crawls with passport stamps. People already do this by hand.
 
-The rooms are many and under strain. The UK had 801 grassroots music venues trading in 2025, 30 closed for good and 53 percent made no profit (Music Venue Trust, via Music Week, 21 January 2026). 64 percent of US independent music venues were unprofitable in 2024 (NIVA, via VIP Booking, 24 June 2025). Meanwhile the American Booksellers Association counted 3,783 bookstore locations after 605 new stores in 2025 (Shelf Awareness, 29 May 2026), and 92 percent of English independent bookshops already run events (Booksellers Association and Arts Council England, 13 September 2024). Arts audiences in the US spend 38.46 dollars per person beyond the ticket (Americans for the Arts, 2022 data).
+What you can't see from behind your own counter is which neighbour really shares your crowd. It also has to work both ways. You might love the bar next door, but if its regulars don't care about you, the night flops.
 
-- https://www.musicweek.com/public_html/index.php/live/read/music-venue-trust-175-towns-cities-with-grassroots-venues-no-longer-receive-regular-touring-shows/093415
-- https://www.vip-booking.com/news/ReadNews/General/8832/study-64-of-us-independent-venues-lost-money-in-2024
-- https://shelf-awareness.com/theshelf/2026-05-29/the_aba_annual_meeting_community_forum:_celebrating_a_challenging_banner_year.html
-- https://www.booksellers.org.uk/industryinfo/industryinfo/latestnews/Independent-bookshops-are-a-vital-part-of-England%E2%80%99
-- https://aep6.americansforthearts.org/
+The rooms are many and short of money. The UK had 801 grassroots music venues trading last year, 30 closed for good and over half made no profit. About two thirds of US independent music venues lost money in 2024. At the same time the US added 605 bookstores in 2025 and nine in ten English independent bookshops already run events. A night with the right neighbour is one of the few levers a small room has.
 
-To check that pairs exist, the engine ran on 42 independent rooms that run evenings, 21 in Lower Manhattan and Brooklyn and 21 in central and east London, each found by name with Full House's own search. As read from `/api/scan` on 30 October 2026 (record dated 10:50 UTC), all 42 got a partner and 23 got a two way partner within 10 minutes on foot, meaning each place is in the top half of the other's list. The median fit was 78.5 of 100 and the median walk 6.5 minutes. The rooms were picked by name from well known venues, so this shows pairs exist, not that owners want them.
+We ran the engine on about forty well known independent venues in New York and London. Every one got a partner and just over half got a two way match within ten minutes' walk. The median fit was in the high seventies and the median walk a little over six minutes. So the pairs are there. Nobody was looking at the street from both sides.
+
+Qloo knows what millions of people like, so we asked it the question from each side. Qloo's top pick for Daunt Books in London was a tennis shop. Great taste, wrong room. Full House is the part that judges the list.
 
 ## What it does
 
-1. Pick your city and type your venue's name. Search looks round the city centre or within a mile of you.
-2. Full House reads the street while a map fills with the places your crowd loves.
-3. The partner screen names the neighbour it chose, scores the pair on six checks, and gives a verdict on each of Qloo's places.
-4. The night screen plans two stops, one at each place, on a day both are open.
-5. You send the invite link from your own phone. The neighbour sets its own part of the night and answers yes or no.
-6. Your screen flips on the yes. You check the exact words, then publish the event page, a poster and a calendar file.
-7. Each place gets its own sign up link, and every RSVP counts against the link it came through.
-8. Every Monday the venue reads its street again, drafts a fresh night and waits for the owner. It never publishes on its own.
+1. You pick your city and type your venue. Full House reads the street.
+2. It names one partner and says why, with a verdict on every place Qloo listed.
+3. It plans a night with two stops, one at each place, on a day you are both open.
+4. You send the invite link from your phone. The neighbour sets its own part and answers yes or no.
+5. Your screen flips on the yes. You check the words and publish an event page, a poster and a calendar file.
+6. Each place gets its own sign up link, and every RSVP counts against the link it came through.
+7. Every Monday the venue reads its street again and drafts the next night. It waits for you and never publishes on its own.
 
-Any MCP client can run the same flow at `/mcp`, and `/live` shows what the server has done.
+Any MCP client can run the same flow at `/mcp`. It exposes five tools: find a venue, read the street, propose a night, prepare a night for approval and log turnout.
 
-These shots are from the live site on 30 October 2026, for Housing Works Bookstore in New York. The venue was deleted afterwards.
+## How it works
+
+```mermaid
+flowchart LR
+  A[Venue] --> B[Read the street]
+  B --> C[Reverse read for each candidate]
+  C --> D[Decision board]
+  D --> E[Night, two stops]
+  E --> F[Invite link]
+  F --> G{Partner says yes}
+  G --> H[Publish]
+  H --> I[Ledger of who sent whom]
+  I --> J[Monday agent]
+  J --> B
+```
+
+Nothing is typed in. Every number on screen comes from the API at the moment of the request.
 
 | Screen | What it shows |
 | --- | --- |
-| ![Landing](media/landing.png) | The landing's board of verdicts on Qloo's first six places. |
+| ![Landing](media/landing.png) | The landing's board. Qloo's first six places, each judged. |
 | ![Search](media/search.png) | Searching New York by name. |
 | ![Your crowd](media/crowd.png) | The Street tab, the crowd's map and its 50 places. |
-| ![Partner](media/partner.png) | Angelika chosen at 83 of 100, with the board and the checks. |
+| ![Partner](media/partner.png) | Angelika chosen at 83 of 100, with the board and the six checks. |
 | ![Partner on a phone](media/partner-phone.png) | The same board on a phone. |
 | ![The night](media/night.png) | Book then film, two stops 2 minutes apart. |
 | ![Invite](media/invite.png) | The invite as Angelika sees it. |
@@ -48,31 +63,33 @@ These shots are from the live site on 30 October 2026, for Housing Works Booksto
 
 ## How a pair is chosen
 
-Qloo returns up to 50 places within 1.2 km that people who like your venue also love. Full House keeps Qloo's order as the rank and sets aside closed places, places that cannot host a night (shops, libraries, parks, churches, hotels) and rivals of your own kind. The best 8 of the rest go on.
+Qloo returns up to 50 places within 1.2 km that people who like your venue also love. Full House keeps Qloo's order as the rank and sets aside closed places, places that can't host a night (shops, libraries, parks, churches, hotels) and rivals of your own kind. The best 8 of the rest go on.
 
-For each of those 8 it asks Qloo the same question from the other side, with that place as the signal, and looks for your venue in the answer. That is the loves you back read. For Housing Works, Angelika is 1st on its list and Housing Works is 6th on Angelika's.
+For each of those 8 it asks Qloo the same question from the other side, with that place as the signal, and looks for your venue in the answer. That is the loves you back read. For Housing Works Bookstore, Angelika is 1st on its list and Housing Works is 6th on Angelika's.
 
-The fit score has six checks. Crowd pull (25 points) is how high the place sits on your crowd's list and loves you back (25) is where you sit on theirs. Good partners (15) comes from a complement matrix over nine kinds of place, where a bookshop and a cinema score 1, a cinema and a theatre 0.8, a cafe and a restaurant 0.5 and two of a kind 0. Open together (15) counts the next seven evenings on which both are open at their own stop's time, with half credit for a late opening or unlisted hours. Close enough to walk (10) is full within 300 m and empty at 1.5 km. Shared taste (10) scores the tags both places carry by how rare they are on the street, so a tag most of the street carries earns nothing. For Housing Works and Angelika that is "classic", carried by 8 of 49 other places nearby, worth 2 of 10.
+The fit score has six checks and adds to 100. Crowd pull (25) is how high the place sits on your crowd's list. Loves you back (25) is where you sit on theirs. Good partners (15) comes from a complement matrix over nine kinds of place, where a bookshop and a cinema score 1, a cinema and a theatre 0.8, a cafe and a restaurant 0.5 and two of a kind 0. Open together (15) counts the next seven evenings on which both are open, with half credit for a late opening or unlisted hours. Close enough to walk (10) is full within 300 m and empty at 1.5 km. Shared taste (10) scores the tags both places carry by how rare they are on the street, so a tag the whole street carries earns nothing. The highest score wins, unless the next one is within 5 points and a shorter walk.
 
-The highest score wins, unless the next is within 5 points and a shorter walk. Angelika scored 83, Village East 76 and Film Forum 75.
+The partner screen shows the decision board. It lists Qloo's first 15 places plus every place scored, each with a verdict and a reason. For Housing Works the 2nd place is a community garden, the 4th a university library and the 6th a toy shop. Angelika scored 83, Village East 76 and Film Forum 75. The two runners up each have a Swap button.
 
-The partner screen shows Qloo's first 15 places plus every place scored, each with a verdict and a reason. For Housing Works the 2nd place is a community garden, the 4th a university library and the 6th a toy shop. For Daunt Books Marylebone in London, Qloo's 1st is a tennis shop and the partner is its 11th.
+![The decision board](media/board-full.png)
 
 ## The night
 
-The two kinds of place pick the format, from book then film, screening then drinks and book club then drinks to a listening party at a record shop, coffee before a live room's own set, a late view at a gallery and a quiz crawl. A film is screened only at a cinema, and the playlist plays only in a bar, a record shop or a cafe after 17:00.
+The two kinds of place pick the format. Book then film, screening then drinks, book club then drinks, a listening party at a record shop, coffee before a live room's own set, a late view at a gallery, a quiz crawl. A film is screened only at a cinema.
 
-The picks come from one Qloo call per kind of pick with both places as the signal and explainability on, so each pick carries each crowd's share. Full House takes picks from the top ten split between 35 and 65, better known first,. For a book then film night it finds the book the film was made from.
+The picks come from one Qloo call per kind with both places as the signal and explainability on, so each pick carries each crowd's share. For book then film, Full House finds the book the film was made from. The day is your quiet slot when both places are open, and a stop counts as open only if it stays open 45 minutes after people arrive. Housing Works closes at 19:00 on Tuesdays, so the night starts at 18:00 with a book club on Beautiful Boy, then the screening at Angelika at 19:15.
 
-The day is the owner's quiet slot when both stops are open at their own times, and a stop counts as open only if it stays open 45 minutes after people arrive. Otherwise the scheduler tries the nearest weekday, an hour earlier, the other place first, and last the venue opening late, and says which. Housing Works closes at 19:00 on Tuesdays, so the night starts at 18:00 with a book club on Beautiful Boy by David Sheff, then the screening at Angelika from 19:15. The crowds' shares of the pick are 51 and 49.
+A small Mistral model on Workers AI writes the event copy from a brief of what Qloo returned. A checker throws out anything that names a place or title that isn't in the brief, and templates step in.
 
-Mistral Small 3.1 24B on Workers AI writes the description and poster lines from a brief of what Qloo returned. A checker rejects copy naming anything not in the brief, and templates step in.
+## The agent
 
-The owner's night page counts RSVPs per link, and public pages show a count only from 3.
+Every Monday at 09:00 in the venue's own time zone, a Durable Object alarm wakes the venue. It reads the street again, checks whether last week's partner is still the best fit, leaves out formats already run with that partner, drafts a night and holds it for you. The owner screen shows the run as a timeline with the time, the step, the outcome and the Qloo calls each step made. "Run it now" starts the same routine once an hour.
+
+![The Monday run](media/agent-monday.png)
 
 ## What Qloo provides
 
-Only the Worker holds the key. The limits are in `src/shared/engine.ts`.
+Only the Worker holds the key. The limits are in `src/shared/engine.ts`. Qloo supplies the lists and the shares. The verdicts, the six checks, the matrix, the format grammar, the scheduler and the ledger are Full House's own.
 
 | Step | Request | Calls |
 | --- | --- | --- |
@@ -86,11 +103,11 @@ Only the Worker holds the key. The limits are in `src/shared/engine.ts`.
 | The night's picks | `/v2/insights`, both places | 1 to 3 per night |
 | The book behind the film | `/search` | up to 3 per night |
 
-A read makes at most 19 calls under a cap of 30, and a night stays under a cap of 8. The Housing Works read made 19 and its night 5. Images come through the Worker, so visitors never talk to Qloo. Qloo supplies the lists and the shares. The verdicts, checks, matrix, grammar, scheduler and ledger are Full House's own.
+A read makes at most 19 calls under a cap of 30, and a night stays under a cap of 8. At most three go out at once and answers are kept for a day.
 
 ## One read, request by request
 
-This is the read for Housing Works Bookstore, from answers Qloo's hackathon API gave on 27 and 29 October 2026 and replayed from a cache on 30 October. Every call is a GET to `https://hackathon.api.qloo.com` with the key in the `X-Api-Key` header, which never appears in the app, the call list or here. `<venue>` is Qloo's own id for Housing Works Bookstore, `<candidate>` the id of a place under test and `<point>` the venue's map point in WKT. Nothing about any customer is sent.
+This is the read for Housing Works Bookstore in New York, from answers Qloo's hackathon API gave on a real run. Every call is a GET to `https://hackathon.api.qloo.com` with the key in the `X-Api-Key` header, which never appears in the app, the call list or here. `<venue>` is Qloo's own id for Housing Works, `<candidate>` the id of a place under test and `<point>` the venue's map point.
 
 | # | Request | What Full House used | Decision |
 | --- | --- | --- | --- |
@@ -133,17 +150,24 @@ npm run check
 npm run e2e
 ```
 
-`check` runs the typecheck and the unit tests, whose fixtures include trimmed real Qloo answers. `e2e` runs Playwright against the fake Qloo server. On 30 October 2026, `npx vitest run --maxWorkers=2` passed 639 tests in 87 files, and `npm run e2e` passed 40 tests in the app project and 1 in the no key project.
+`check` runs the typecheck and the unit tests, whose fixtures include trimmed real Qloo answers. `e2e` runs Playwright against the fake Qloo server. A run today of `npx vitest run --maxWorkers=2` passed 648 tests in 88 files, and `npm run e2e` passed 42 tests in the app project and 1 in the no key project.
 
 ## Privacy
 
 Qloo receives your venue as a public place, ids it returned itself, names typed into search, and on the Proof tab the places a plain language model suggested, only to check they exist. Nothing about customers is sent. A position from "use my location" is never stored.
 
-A partner is never named on a night's event page, poster or calendar file before it says yes on its own invite page. The partner sets its own part first, what runs there, when, and whether it is open. The event page says how the yes was given, for example "Angelika Film Center answered through an invite link and accepted the proposed screening of Beautiful Boy from 19:15." The owner approves every night, and the Monday run never publishes.
+A partner is never named on a night's event page, poster or calendar file before it says yes on its own invite page. The partner sets its own part first, what runs there, when, and whether it is open. The public page says how the yes was given, for example "Angelika Film Center answered through an invite link and accepted the proposed screening of Beautiful Boy from 19:15." You approve every night, and the Monday run never publishes.
 
 On the hosted demo email is off, so venues show as unconfirmed.
 
 A venue nobody opens for 8 weeks stops its Monday runs and is deleted after 6 months.
+
+## Sources
+
+- https://www.musicweek.com/public_html/index.php/live/read/music-venue-trust-175-towns-cities-with-grassroots-venues-no-longer-receive-regular-touring-shows/093415
+- https://www.vip-booking.com/news/ReadNews/General/8832/study-64-of-us-independent-venues-lost-money-in-2024
+- https://shelf-awareness.com/theshelf/2026-05-29/the_aba_annual_meeting_community_forum:_celebrating_a_challenging_banner_year.html
+- https://www.booksellers.org.uk/industryinfo/industryinfo/latestnews/Independent-bookshops-are-a-vital-part-of-England%E2%80%99
 
 ## Licence
 
