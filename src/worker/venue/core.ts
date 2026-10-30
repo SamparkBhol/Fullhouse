@@ -11,6 +11,7 @@ import type {
   PlanInput,
   PlanResponse,
   RunProgress,
+  AgentRun,
   StreetRead,
   Venue,
   VenueCandidate,
@@ -27,10 +28,11 @@ import { recordEvent } from "../stats/events.ts";
 import { forgetVenue, planEvent } from "../stats/makers.ts";
 import type { Store } from "../store.ts";
 import { utcDay } from "../zones.ts";
+import { runsOf } from "./agent_trace.ts";
 import { armAlarm } from "./alarm.ts";
 import { fail, failure, noVenue, ok, type MondayRun, type Out, type VenueApi, type VenueDeps } from "./api.ts";
 import { connectEventbrite, disconnectEventbrite } from "./eventbrite.ts";
-import { runMonday } from "./monday.ts";
+import { runMonday, runNow } from "./monday.ts";
 import { checkOwner, confirmEmail, initVenue, requestEmail, rotateOwnerLink, updateSettings } from "./owner.ts";
 import { FRESH_READS_PER_DAY, freshRead, qlooFor, takeReadSlot, withCopy } from "./planning.ts";
 import { answerInvite, createInvite, publicInvite } from "./invites.ts";
@@ -103,6 +105,8 @@ export class VenueCore implements VenueApi {
         .sort((a, b) => `${a.date}${a.start}`.localeCompare(`${b.date}${b.start}`)),
       nextAlarm: new Date(next).toISOString(),
     };
+    const runs = await runsOf(this.records);
+    if (runs.length) state.runs = runs;
     if (read) state.read = read;
     if (baseline) state.baseline = baseline;
     const ledgers = pairLedgers(state.nights);
@@ -229,8 +233,8 @@ export class VenueCore implements VenueApi {
     return rsvp(this.records, this.deps, slug, browser, via);
   }
 
-  monday(): Promise<Out<MondayRun>> {
-    return runMonday(this.records, this.deps);
+  monday(by: AgentRun["by"] = "alarm"): Promise<Out<MondayRun>> {
+    return by === "owner" ? runNow(this.records, this.deps) : runMonday(this.records, this.deps, by);
   }
 
   match(partnerId?: string): Promise<Out<Match>> {

@@ -22,6 +22,7 @@ import type {
   VenueSettingsInput,
   VenueState,
   RunProgress,
+  AgentRun,
 } from "../../shared/contract.ts";
 import type { VenueDashboard } from "../../shared/stats.ts";
 import type { RefineCore } from "../ai.ts";
@@ -85,7 +86,7 @@ export interface VenueApi {
   publicNight(slug: string, browser: string | null, via?: string): Promise<Out<PublicNight>>;
   rsvp(slug: string, browser: string, via?: string): Promise<Out<{ count: number; already: boolean }>>;
   progress(): Promise<Out<RunProgress>>;
-  monday(): Promise<Out<MondayRun>>;
+  monday(by?: AgentRun["by"]): Promise<Out<MondayRun>>;
   dashboard(): Promise<Out<VenueDashboard>>;
   match(partnerId?: string): Promise<Out<Match>>;
   invite(planId: string, partnerId: string, origin: string): Promise<Out<Invite>>;
@@ -102,6 +103,7 @@ export interface MondayRun {
   emailed: boolean;
   nextAlarm: string | null;
   idle?: "paused" | "deleted";
+  run?: AgentRun;
 }
 
 export const ok = <T>(value: T): Out<T> => ({ ok: true, value });

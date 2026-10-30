@@ -201,6 +201,8 @@ export function ownerRoutes(app: Hono<AppEnv>, deps: AppDeps): void {
     return send(await c.var.venue.match(p.value.partnerId));
   });
 
+  app.post("/api/venues/:id/monday/run", async (c) => send(await c.var.venue.monday("owner")));
+
   app.get("/api/venues/:id/invites", async (c) => send(await c.var.venue.invites()));
   app.get("/api/venues/:id/progress", async (c) => send(await c.var.venue.progress()));
 

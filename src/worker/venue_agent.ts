@@ -31,6 +31,7 @@ import type {
   VenueSettingsInput,
   VenueState,
   RunProgress,
+  AgentRun,
 } from "../shared/contract.ts";
 import type { VenueDashboard } from "../shared/stats.ts";
 import { makeGenerate } from "./ai.ts";
@@ -195,8 +196,9 @@ export class VenueAgent extends DurableObject<Env> implements VenueApi {
   progress(): Promise<Out<RunProgress>> {
     return this.core().progress();
   }
-  monday(): Promise<Out<MondayRun>> {
-    return this.run((c) => c.monday());
+  // The hourly stamp is written before the first await that leaves storage, so a second press meets the limit while this one runs.
+  monday(by: AgentRun["by"] = "alarm"): Promise<Out<MondayRun>> {
+    return this.run((c) => c.monday(by));
   }
 
   dashboard(): Promise<Out<VenueDashboard>> {

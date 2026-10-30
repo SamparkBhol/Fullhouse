@@ -1,0 +1,33 @@
+#!/usr/bin/env node
+// Runs the Monday agent once for one venue through the owner route and prints the run record it wrote.
+// Usage: scripts/agent/run_demo <owner links file> <line number>
+// The line holds the owner link, https://host/v/<id>#t=<token>. The token is sent as the bearer and never printed.
+import { readFileSync } from "node:fs";
+
+const [file, lineNo] = process.argv.slice(2);
+if (!file || !lineNo) {
+  console.error("Usage: scripts/agent/run_demo <owner links file> <line number>");
+  process.exit(2);
+}
+const line = readFileSync(file, "utf8").split("\n")[Number(lineNo) - 1] ?? "";
+const m = /(https?:\/\/[^\s/]+)\/v\/([a-z0-9]+)#t=([A-Za-z0-9_-]+)/.exec(line);
+if (!m) {
+  console.error(`Line ${lineNo} of ${file} has no owner link.`);
+  process.exit(2);
+}
+const [, origin, id, token] = m;
+
+const res = await fetch(`${origin}/api/venues/${id}/monday/run`, {
+  method: "POST",
+  headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+  body: "{}",
+});
+const body = await res.json().catch(() => ({}));
+if (!res.ok) {
+  console.error(`${res.status} ${body.error ?? ""} ${body.detail ?? ""}`.trim());
+  process.exit(1);
+}
+const run = body.run;
+console.log(`Venue ${id} at ${origin}, run ${run.id} started by ${run.by}`);
+for (const s of run.steps) console.log(`${s.at}  ${s.key.padEnd(8)} ${s.status.padEnd(7)} ${String(s.calls).padStart(3)} calls  ${s.did}. ${s.outcome}`);
+console.log(`${run.calls} Qloo calls, ${run.cached} from cache. Drafted ${run.title ?? "nothing"}. Emailed ${body.emailed}. Next run ${body.nextAlarm}`);

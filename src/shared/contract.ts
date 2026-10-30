@@ -579,8 +579,36 @@ export interface JointExample {
   back?: ReverseRank;
 }
 
+export type AgentStepKey = "read" | "partner" | "formats" | "draft" | "hold" | "email" | "pause";
+
+// One thing the Monday agent did, as it happened: when, what, how it came out and the Qloo calls it made.
+export interface AgentStep {
+  key: AgentStepKey;
+  at: string;
+  ms: number;
+  did: string;
+  outcome: string;
+  status: "done" | "skipped" | "failed";
+  calls: number;
+  cached: number;
+}
+
+// The record of one Monday run, written by the run itself. The owner home shows nothing but these.
+export interface AgentRun {
+  id: string;
+  by: "alarm" | "owner";
+  startedAt: string;
+  finishedAt: string;
+  steps: AgentStep[];
+  calls: number;
+  cached: number;
+  planId?: string;
+  title?: string;
+}
+
 export interface VenueState {
   venue: Venue;
+  runs?: AgentRun[];
   read?: StreetRead;
   proposals: NightPlan[];
   nights: Night[];
@@ -628,4 +656,19 @@ export interface RunProgress {
 export interface ApiError {
   error: string;
   detail?: string;
+}
+
+export interface McpToolRow {
+  name: string;
+  title: string;
+  description: string;
+  readOnly: boolean;
+  args: Array<{ name: string; required: boolean; note?: string }>;
+}
+
+export interface McpTools {
+  endpoint: string;
+  name: string;
+  version: string;
+  tools: McpToolRow[];
 }
