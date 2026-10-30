@@ -4,6 +4,7 @@ import { h, replace } from "../dom.ts";
 import { decisionBand, loadExample } from "../first-run/example.ts";
 import { findForm, prefillFrom } from "../first-run/find.ts";
 import { savedVenues, sessionGet, sessionSet } from "../store.ts";
+import { scanBand } from "./landing-scan.ts";
 import { focusHeading, page, publicHeader, title } from "../ui/shell.ts";
 
 const STEPS: [string, string, string][] = [
@@ -101,7 +102,7 @@ export function landingPage(): void {
     ),
   );
   const decides = decisionBand();
-  replace(page(), hero, decides.el, steps(), twoLinks(), closing());
+  replace(page(), hero, decides.el, scanBand(), steps(), twoLinks(), closing());
   loadExample(example, hero, decides.fill);
   focusHeading();
 }

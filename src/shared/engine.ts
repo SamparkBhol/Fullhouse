@@ -19,6 +19,8 @@ export const THEIR_TOP = 5;
 export const COUNT_SHOWN_FROM = 3;
 export const FIT_MAX: Record<FitKey, number> = { crowd: 25, back: 25, partners: 15, open: 15, walk: 10, taste: 10 };
 export const FIT_CHECKS = Object.keys(FIT_MAX).length;
+// The quiet night a new venue starts with until its owner sets the real one.
+export const DEFAULT_SLOT = { weekday: 2, start: "19:00", durationMin: 180 } as const;
 // The open together check looks this many evenings ahead.
 export const EVENINGS = 7;
 // A venue nobody opens for this long stops its Monday runs, and after the second it is deleted with everything in it.

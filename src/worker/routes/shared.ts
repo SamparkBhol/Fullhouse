@@ -9,6 +9,7 @@ import { pageHashes } from "../pages/style.ts";
 import { buildQloo, type CreateQloo } from "../qloo/build.ts";
 import { cacheApiCache } from "../qloo/caches.ts";
 import { isQlooError, qlooFailure, QLOO_KEY_MISSING } from "../qloo/errors.ts";
+import type { ScanApi } from "../scan/store.ts";
 import type { StatsApi } from "../stats/buffer.ts";
 import type { StatsSink } from "../stats/events.ts";
 import type { Out, VenueApi } from "../venue/api.ts";
@@ -19,6 +20,7 @@ export interface AppDeps {
   venue(env: Env, id: string): VenueApi;
   meter(env: Env): MeterApi;
   stats?(env: Env): StatsApi;
+  scans?(env: Env): ScanApi;
   font?: ArrayBuffer;
 }
 

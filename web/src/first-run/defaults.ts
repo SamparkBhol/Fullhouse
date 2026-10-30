@@ -1,9 +1,10 @@
 import type { CreateVenueInput, VenueCandidate } from "../../../src/shared/contract.ts";
 import { CITIES, MILE_M, NEAR_ME, cityNamed, type City } from "../../../src/shared/cities.ts";
 import { haversineM } from "../../../src/shared/geo.ts";
+import { DEFAULT_SLOT } from "../../../src/shared/engine.ts";
 import { guessZone } from "../zone-guess.ts";
 
-export const DEFAULT_SLOT = { weekday: 2, start: "19:00", durationMin: 180 } as const;
+export { DEFAULT_SLOT };
 export const DEFAULT_ROOM = 40;
 
 export function deviceZone(): string {

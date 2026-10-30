@@ -41,6 +41,7 @@ import type { PublicNight } from "./pages/event.ts";
 import type { PublicInvite } from "./pages/invite.ts";
 import { buildQloo } from "./qloo/build.ts";
 import { cacheApiCache, sqlCache, tieredCache, type SqlLike } from "./qloo/caches.ts";
+import type { ScanApi } from "./scan/store.ts";
 import { StatsBuffer, type StatsApi } from "./stats/buffer.ts";
 import { settleVenueStats } from "./stats/venue_history.ts";
 import { doStore } from "./store.ts";
@@ -56,6 +57,10 @@ export function meterStub(env: Env): MeterApi {
 
 export function statsStub(env: Env): StatsApi {
   return meterStub(env) as unknown as StatsApi;
+}
+
+export function scanStub(env: Env): ScanApi {
+  return meterStub(env) as unknown as ScanApi;
 }
 
 export class VenueAgent extends DurableObject<Env> implements VenueApi {

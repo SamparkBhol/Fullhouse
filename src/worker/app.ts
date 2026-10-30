@@ -10,6 +10,7 @@ import { mcpRoutes } from "./routes/mcp.ts";
 import { ownerRoutes } from "./routes/owner.ts";
 import { publicRoutes } from "./routes/public.ts";
 import { HttpError, isBodyLimit, json, pageResponse, type AppDeps, type AppEnv } from "./routes/shared.ts";
+import { scanRoutes } from "./routes/scan.ts";
 import { statsRoutes } from "./routes/stats.ts";
 import { collectStats } from "./stats/collect.ts";
 
@@ -70,6 +71,7 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
   exampleRoutes(app, deps);
   ownerRoutes(app, deps);
   statsRoutes(app, deps);
+  scanRoutes(app, deps);
   app.all("/api/*", () => apiError(404, "not_found", "No such API route."));
   mcpRoutes(app, deps);
   publicRoutes(app, deps);

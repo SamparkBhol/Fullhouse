@@ -3,6 +3,8 @@ import type { StatsBody, StatsRange } from "../shared/stats.ts";
 import { dailyBudgetOf, type Env } from "./env.ts";
 import { MeterCore, type HitResult, type LimitKind, type MeterApi, type MeterUsage } from "./meter_core.ts";
 import type { SqlLike } from "./qloo/caches.ts";
+import type { ScanRecord } from "../shared/scan.ts";
+import { ScanStore, type ScanApi } from "./scan/store.ts";
 import type { StatsApi } from "./stats/buffer.ts";
 import { StatsCore } from "./stats/core.ts";
 import type { StampedEvent } from "./stats/events.ts";
@@ -20,14 +22,16 @@ function keysOnly(storage: DurableObjectStorage): Store {
   };
 }
 
-export class Meter extends DurableObject<Env> implements MeterApi, StatsApi {
+export class Meter extends DurableObject<Env> implements MeterApi, StatsApi, ScanApi {
   private readonly core: MeterCore;
   private readonly statsCore: StatsCore;
+  private readonly scans: ScanStore;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     this.core = new MeterCore(keysOnly(ctx.storage), dailyBudgetOf(env));
     this.statsCore = new StatsCore(ctx.storage.sql as unknown as SqlLike, () => this.core.usage());
+    this.scans = new ScanStore(ctx.storage.sql as unknown as SqlLike);
   }
 
   async spend(calls: number, established?: boolean): Promise<boolean> {
@@ -52,5 +56,13 @@ export class Meter extends DurableObject<Env> implements MeterApi, StatsApi {
 
   stats(range: StatsRange): Promise<StatsBody> {
     return this.statsCore.stats(range);
+  }
+
+  putScan(record: ScanRecord): Promise<void> {
+    return this.scans.putScan(record);
+  }
+
+  latestScan(): Promise<ScanRecord | null> {
+    return this.scans.latestScan();
   }
 }

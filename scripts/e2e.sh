@@ -32,10 +32,12 @@ start_fake "$key" "$RUN_DIR/fake.log"
 no_ai_config
 write_env "$RUN_DIR/app.env" "QLOO_API_KEY=$key" "QLOO_BASE_URL=$FAKE_URL" "QLOO_IMAGE_BASE=$FAKE_URL" "TOKEN_SECRET=$secret"
 write_env "$RUN_DIR/nokey.env" "QLOO_BASE_URL=$FAKE_URL" "TOKEN_SECRET=$secret"
+# The scan spec posts a test record to the admin route of this run's own Worker, so it needs this run's secret.
+run_secret="$secret"
 unset key secret
 
 playwright() {
-  (cd "$ROOT" && E2E_BASE_URL="$WORKER_URL" FAKE_QLOO_URL="$FAKE_URL" nice -n 15 "$BIN/playwright" test --config e2e/playwright.config.ts "$@")
+  (cd "$ROOT" && E2E_BASE_URL="$WORKER_URL" FAKE_QLOO_URL="$FAKE_URL" E2E_TOKEN_SECRET="$run_secret" nice -n 15 "$BIN/playwright" test --config e2e/playwright.config.ts "$@")
 }
 
 status=0

@@ -24,6 +24,8 @@ export interface BoardSpec<T> {
   defaultRefresh: RefreshChoice;
   quiet?: boolean;
   extra?: Node | null;
+  // Shown under the panels and never redrawn by a poll.
+  after?: Node | null;
   panes(body: T, tools: BoardTools): Node[];
 }
 
@@ -145,7 +147,7 @@ export function mountBoard<T>(main: HTMLElement, spec: BoardSpec<T>): void {
     h(
       "div",
       { class: `screen board board-${spec.name}` },
-      h("div", { class: "wrap" }, h("div", { class: "screen-head board-head" }, h("h1", null, spec.heading), intro), bar, body),
+      h("div", { class: "wrap" }, h("div", { class: "screen-head board-head" }, h("h1", null, spec.heading), intro), bar, body, spec.after ?? null),
     ),
   );
 }

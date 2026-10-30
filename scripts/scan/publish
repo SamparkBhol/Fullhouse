@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Posts a stored scan record to a Full House site's admin route. The secret is read from a file and never printed.
+# Usage: scripts/scan/publish <record.json> <token secret file> [site origin]
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+record="${1:?give the path of record.json}"
+secret_file="${2:?give the path of the file holding TOKEN_SECRET}"
+site="${3:-https://fullhouse.sampark-bhol.workers.dev}"
+node --no-warnings "$ROOT/scripts/scan/publish.ts" "$record" "$secret_file" "$site"

@@ -3,6 +3,7 @@ import type { Night, PlanResponse, Venue, VenueCandidate } from "../../src/share
 import { createApp, type AppDeps } from "../../src/worker/app.ts";
 import type { AiLike, Env } from "../../src/worker/env.ts";
 import { MeterCore } from "../../src/worker/meter_core.ts";
+import type { ScanApi } from "../../src/worker/scan/store.ts";
 import type { StatsApi } from "../../src/worker/stats/buffer.ts";
 import { MemoryStore } from "../../src/worker/store.ts";
 import type { VenueDeps } from "../../src/worker/venue/api.ts";
@@ -20,7 +21,7 @@ export interface TestApp {
   qlooOptions: QlooOptions[];
 }
 
-export function testApp(opts: { env?: Partial<Env>; deps?: Partial<VenueDeps>; candidates?: VenueCandidate[]; budget?: number; ai?: AiLike; stats?: StatsApi } = {}): TestApp {
+export function testApp(opts: { env?: Partial<Env>; deps?: Partial<VenueDeps>; candidates?: VenueCandidate[]; budget?: number; ai?: AiLike; stats?: StatsApi; scans?: ScanApi } = {}): TestApp {
   const venues = new Map<string, VenueCore>();
   const stores = new Map<string, MemoryStore>();
   const meterStore = new MemoryStore();
@@ -51,6 +52,8 @@ export function testApp(opts: { env?: Partial<Env>; deps?: Partial<VenueDeps>; c
   };
   const stats = opts.stats;
   if (stats) appDeps.stats = () => stats;
+  const scans = opts.scans;
+  if (scans) appDeps.scans = () => scans;
   const env = {
     VENUE: {} as DurableObjectNamespace,
     METER: {} as DurableObjectNamespace,

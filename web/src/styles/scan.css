@@ -1,0 +1,48 @@
+/* The street scan: one door per venue read, in two streets, beside the sentence that says what they show. */
+.band-scan { padding: clamp(48px, 7vw, 88px) 0; background: var(--surface); }
+.scan { display: grid; gap: 28px 56px; grid-template-columns: minmax(0, 1fr); }
+.scan-title { font-size: var(--t-h2); font-weight: 800; letter-spacing: -0.025em; line-height: 1.1; max-width: 22ch; }
+h3.scan-title { font-size: var(--t-h3); }
+.scan-lead { margin-top: 14px; max-width: 34em; font-size: var(--t-lead); line-height: 1.45; color: var(--ink-2); }
+.scan-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr)); gap: 0; margin-top: 24px; border-top: 1px solid var(--rule); }
+.scan-facts > div { padding: 14px 16px 14px 0; border-bottom: 1px solid var(--rule); }
+.scan-facts dt { font-size: var(--t-small); font-weight: 650; color: var(--ink-2); }
+.scan-facts dd { display: grid; gap: 2px; margin-top: 4px; }
+.scan-facts strong { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+.scan-facts dd span { font-size: var(--t-small); color: var(--ink-3); line-height: 1.35; }
+.scan-formats { margin-top: 18px; max-width: 40em; font-size: 0.9375rem; color: var(--ink-2); }
+.scan-streets { display: grid; gap: 22px; align-content: start; }
+.street { display: grid; gap: 10px; }
+.street-doors { display: grid; grid-template-columns: repeat(var(--cols, 21), minmax(0, 18px)); gap: 7px 5px; padding-bottom: 10px; border-bottom: 2px solid var(--ink); }
+.street-name { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; font-size: 0.9375rem; }
+.street-name b { font-weight: 750; }
+.street-name span { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.door-mark { display: inline-block; flex: none; width: 15px; height: 24px; border-radius: 8px 8px 2px 2px; box-sizing: border-box; }
+.street-doors .door-mark { width: 100%; height: auto; aspect-ratio: 3 / 5; border-radius: 999px 999px 2px 2px; }
+.door-both { background: linear-gradient(90deg, var(--you) 0 50%, var(--them) 50% 100%); }
+.door-one { border: 2px solid var(--ink-3); }
+.door-none { border: 2px dashed var(--rule-strong); }
+.street-key { display: grid; gap: 8px; font-size: var(--t-small); color: var(--ink-2); }
+.street-key li { display: flex; align-items: center; gap: 10px; }
+.street-key .door-mark { width: 11px; height: 18px; border-radius: 6px 6px 2px 2px; }
+.scan-method { font-size: var(--t-small); color: var(--ink-3); max-width: 60em; line-height: 1.5; }
+@media (min-width: 900px) {
+  .scan { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+  .scan-method { grid-column: 1 / -1; }
+}
+.board-scan { margin-top: 24px; }
+.board-scan .scan-title { font-size: var(--t-h3); }
+.board-scan .scan-lead { font-size: 1.0625rem; }
+.answer-bars { display: grid; gap: 10px; margin-top: 14px; }
+.answer-bar { display: grid; grid-template-columns: minmax(0, 10rem) minmax(0, 1fr) 2.5rem; gap: 12px; align-items: center; font-size: 0.9375rem; }
+.answer-label { color: var(--ink-2); }
+.answer-track { height: 8px; border-radius: 4px; background: var(--page); overflow: hidden; }
+.answer-track i { display: block; height: 100%; border-radius: 4px; background: var(--ink-3); }
+.answer-yes .answer-track i { background: var(--them); }
+.answer-bar .num { text-align: right; font-variant-numeric: tabular-nums; }
+.decline-said { margin-top: 10px; font-weight: 650; }
+.decline-note { margin: 10px 0 0; padding: 10px 14px; border-left: 3px solid var(--rule-strong); color: var(--ink-2); }
+@media (forced-colors: active) {
+  .door-both { background: CanvasText; }
+  .answer-track i { background: CanvasText; }
+}
