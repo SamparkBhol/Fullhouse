@@ -1,12 +1,13 @@
 import type { Night } from "../../../src/shared/contract.ts";
 import { plainName } from "../../../src/shared/words.ts";
 import { h, replace } from "../dom.ts";
-import { moment, readDate, slotLine } from "../format.ts";
+import { readDate, slotLine } from "../format.ts";
 import { inviteLine } from "../first-run/invite-line.ts";
 import { screenHead } from "../first-run/crowd-screen.ts";
 import { draftPanel, liveCount, livePanel, nightsPanel, partnerPanel, quietPanel } from "../ui/home-parts.ts";
 import { pairLedgerList } from "../ui/ledger.ts";
 import { credit, focusHeading, title } from "../ui/shell.ts";
+import { agentPanel } from "../ui/agent-run.ts";
 import { lastLogged, mondayLine } from "../ui/turnout.ts";
 import { liveNight, withVenue, type VenueCtx } from "../venue-context.ts";
 import { numbersStrip } from "./dashboard-strip.ts";
@@ -16,18 +17,11 @@ export function venuePage(id: string): Promise<void> {
 }
 
 function mondayPanel(ctx: VenueCtx): HTMLElement {
-  const { state } = ctx;
-  const venue = state.venue;
-  const last = lastLogged(state.nights);
-  const line = last ? mondayLine(last, venue) : null;
-  return h(
-    "section",
-    { class: "panel", "aria-labelledby": "monday-title" },
-    h("h2", { id: "monday-title" }, "Every Monday"),
-    h("p", null, "Full House reads the street again, checks your partner still fits, and drafts the next night. It never publishes on its own."),
-    h("p", { class: "meta" }, state.nextAlarm ? `Next run ${moment(state.nextAlarm, venue.tz)}.` : "No Monday run is scheduled yet."),
-    line ? h("p", { class: "meta" }, `Last logged night: ${line}`) : null,
-  );
+  const panel = agentPanel(ctx.id, ctx.token, ctx.state, () => void venuePage(ctx.id));
+  const last = lastLogged(ctx.state.nights);
+  const line = last ? mondayLine(last, ctx.state.venue) : null;
+  if (line) panel.append(h("p", { class: "meta" }, `Last logged night: ${line}`));
+  return panel;
 }
 
 function renderHome(ctx: VenueCtx, main: HTMLElement): void {

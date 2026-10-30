@@ -1,12 +1,14 @@
 import type {
   ApiError,
   ApproveInput,
+  AgentRun,
   Baseline,
   CreateVenueInput,
   EditableCopy,
   Invite,
   JointExample,
   Match,
+  McpTools,
   Night,
   PlanInput,
   PlanResponse,
@@ -155,11 +157,17 @@ export const api = {
   async invite(id: string, token: string, planId: string, partnerId: string): Promise<Invite> {
     return absolute(await call<Invite>(venuePath(id, `/nights/${encodeURIComponent(planId)}/invite`), { method: "POST", token, body: { partnerId } }));
   },
+  runMonday(id: string, token: string): Promise<{ run: AgentRun; planned: boolean; emailed: boolean; nextAlarm: string | null }> {
+    return call(venuePath(id, "/monday/run"), { method: "POST", token, body: {} });
+  },
   progress(id: string, token: string): Promise<RunProgress> {
     return call<RunProgress>(venuePath(id, "/progress"), { token });
   },
   async invites(id: string, token: string): Promise<Invite[]> {
     return (await call<Invite[]>(venuePath(id, "/invites"), { token })).map(absolute);
+  },
+  mcpTools(): Promise<McpTools> {
+    return call<McpTools>("/api/mcp/tools");
   },
   async example(): Promise<Example | null> {
     try {

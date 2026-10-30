@@ -80,6 +80,12 @@ function safeZone(tz: string | undefined): string | undefined {
   }
 }
 
+export function clock(iso: string, tz?: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23", timeZone: safeZone(tz) }).format(d);
+}
+
 export function moment(iso: string, tz?: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;

@@ -50,3 +50,31 @@ a.result-label { color: var(--you); }
   .home-grid .panel-pair { order: 2; }
   .home-grid .panel-pair + * { order: 3; }
 }
+
+.agent-control { margin-top: 16px; display: grid; gap: 8px; justify-items: start; }
+.agent-control .actions { margin: 0; }
+.agent-status:empty { display: none; }
+.agent-run { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--rule); }
+.agent-run .panel-head h3 { font-size: 1.0625rem; }
+.agent-steps { list-style: none; margin: 16px 0 0; padding: 0; position: relative; }
+.agent-step { display: grid; grid-template-columns: 4.75rem 1fr; gap: 0 14px; padding-bottom: 18px; position: relative; }
+.agent-step:last-child { padding-bottom: 0; }
+.agent-time { font-size: 0.8125rem; color: var(--ink-3); font-variant-numeric: tabular-nums; padding-top: 3px; }
+.agent-body { position: relative; padding-left: 22px; min-width: 0; }
+.agent-body::before { content: ""; position: absolute; left: 0; top: 7px; width: 10px; height: 10px; border-radius: 50%; background: var(--you); }
+.agent-body::after { content: ""; position: absolute; left: 4px; top: 22px; bottom: -18px; border-left: 2px solid var(--rule-strong); }
+.agent-step:last-child .agent-body::after { display: none; }
+.agent-step-skipped .agent-body::before, .agent-step-failed .agent-body::before { background: var(--surface); box-shadow: inset 0 0 0 2px var(--ink-3); }
+.agent-did { font-weight: 700; line-height: 1.3; }
+.agent-outcome { margin-top: 3px; color: var(--ink-2); font-size: 0.9375rem; overflow-wrap: anywhere; }
+.agent-mark { font-weight: 700; color: var(--ink); }
+.agent-calls { margin-top: 3px; font-size: 0.8125rem; color: var(--ink-3); }
+.agent-total { margin-top: 18px; }
+.agent-none { margin-top: 20px; }
+.agent-earlier { margin-top: 18px; font-size: 0.9375rem; }
+.agent-earlier summary { cursor: pointer; font-weight: 650; min-height: 44px; display: flex; align-items: center; }
+.agent-earlier-list { margin: 4px 0 0; padding-left: 18px; color: var(--ink-2); display: grid; gap: 6px; }
+@media (max-width: 480px) {
+  .agent-step { grid-template-columns: 1fr; gap: 2px; }
+  .agent-time { padding-left: 22px; }
+}
