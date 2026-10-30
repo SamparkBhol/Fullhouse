@@ -3,6 +3,7 @@ import type { ApproveInput } from "../../shared/contract.ts";
 import { apiError, bearer } from "../http.ts";
 import { newVenueId, NIGHT_ID_RE, VENUE_ID_RE } from "../ids.ts";
 import { ownerUrl } from "../owner_token.ts";
+import { venueIdFromInviteSlug } from "../slug.ts";
 import {
   ApproveSchema,
   cleanPlanInput,
@@ -27,6 +28,17 @@ function originOf(c: Ctx): string {
   return new URL(c.req.url).origin;
 }
 
+// The venue whose invite led here hears that its partner set up its own. A bad or stale link never stops the setup.
+async function noteJoined(c: Ctx, deps: AppDeps, via: string, newId: string, entityId: string): Promise<void> {
+  const from = venueIdFromInviteSlug(via);
+  if (!from || from === newId) return;
+  try {
+    await deps.venue(c.env, from).joined(via, entityId);
+  } catch (err) {
+    console.error("joined note failed", err instanceof Error ? err.message : String(err));
+  }
+}
+
 function venueRoutes(app: Hono<AppEnv>, deps: AppDeps): void {
   app.post("/api/venues/search", async (c) => {
     const p = parse(SearchSchema, await readBody(c));
@@ -49,9 +61,10 @@ function venueRoutes(app: Hono<AppEnv>, deps: AppDeps): void {
     }
     const id = newVenueId();
     const origin = originOf(c);
-    const { near: _near, ...input } = p.value;
+    const { near: _near, via, ...input } = p.value;
     const out = await deps.venue(c.env, id).init(id, { ...input, candidate }, candidate, origin);
     if (!out.ok) return send(out);
+    if (via) await noteJoined(c, deps, via, id, candidate.id);
     return json({ venue: out.value.venue, ownerToken: out.value.ownerToken, ownerUrl: ownerUrl(origin, id, out.value.ownerToken) }, 201);
   });
 }

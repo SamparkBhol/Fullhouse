@@ -34,7 +34,7 @@ input[readonly] { background: var(--page); color: var(--ink-2); font-size: 0.937
 .field input, .field select { min-height: 54px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 .field input:focus, .field select:focus { box-shadow: none; }
 .field input { flex: 1; min-width: 0; padding: 0 16px; }
-.field select { width: 9.5em; flex: none; border-left: 1px solid var(--rule); padding: 0 30px 0 14px; font-weight: 600; border-radius: 0 var(--r-control) var(--r-control) 0; text-overflow: ellipsis; }
+.field select { width: calc(var(--longest, 7.5em) + 44px); flex: none; border-left: 1px solid var(--rule); padding: 0 30px 0 14px; font-weight: 600; border-radius: 0 var(--r-control) var(--r-control) 0; text-overflow: ellipsis; }
 .search > .btn { min-height: 56px; white-space: nowrap; }
 .search-other { grid-column: 1 / -1; }
 .search-other input { max-width: 320px; }

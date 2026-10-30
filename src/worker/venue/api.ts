@@ -92,6 +92,7 @@ export interface VenueApi {
   invites(): Promise<Out<Invite[]>>;
   publicInvite(slug: string): Promise<Out<PublicInvite>>;
   answerInvite(slug: string, answer: InviteAnswer): Promise<Out<Invite>>;
+  joined(slug: string, entityId: string): Promise<Out<Invite>>;
   example(): Promise<Out<JointExample>>;
   precomputeProof(): Promise<Out<Baseline | null>>;
 }

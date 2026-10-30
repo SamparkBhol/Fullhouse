@@ -34,6 +34,7 @@ import { runMonday } from "./monday.ts";
 import { checkOwner, confirmEmail, initVenue, requestEmail, rotateOwnerLink, updateSettings } from "./owner.ts";
 import { FRESH_READS_PER_DAY, freshRead, qlooFor, takeReadSlot, withCopy } from "./planning.ts";
 import { answerInvite, createInvite, publicInvite } from "./invites.ts";
+import { markJoined } from "./joined.ts";
 import { jointExample, matchNow, planWithMatch } from "./joint.ts";
 import { precomputeProof, runProof } from "./proof.ts";
 import { publicNight, rsvp } from "./public.ts";
@@ -254,6 +255,10 @@ export class VenueCore implements VenueApi {
 
   answerInvite(slug: string, answer: InviteAnswer): Promise<Out<Invite>> {
     return answerInvite(this.records, this.deps, slug, answer);
+  }
+
+  joined(slug: string, entityId: string): Promise<Out<Invite>> {
+    return markJoined(this.records, this.deps, slug, entityId);
   }
 
   example(): Promise<Out<JointExample>> {

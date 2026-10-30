@@ -2,6 +2,8 @@ import type { Night, NightPlan, PairLedger } from "../../../src/shared/contract.
 import { plural, shortName } from "../../../src/shared/words.ts";
 import { h, safeHref, uid } from "../dom.ts";
 import { planMatch } from "../joint.ts";
+import { readDate } from "../format.ts";
+import { COUNT_SHOWN_FROM } from "../../../src/shared/engine.ts";
 
 function linkRow(side: "you" | "them", label: string, url: string | undefined, count: number | null, waiting: string): HTMLElement {
   const href = safeHref(url);
@@ -15,7 +17,7 @@ function linkRow(side: "you" | "them", label: string, url: string | undefined, c
 }
 
 // The two sign up links, one per place, and who came through which. Only Full House holds this count.
-export function linksPanel(plan: NightPlan | Night): HTMLElement | null {
+export function linksPanel(plan: NightPlan | Night, tz?: string): HTMLElement | null {
   const m = planMatch(plan);
   if (!m || !plan.pair) return null;
   const night = "actions" in plan ? plan : null;
@@ -24,11 +26,12 @@ export function linksPanel(plan: NightPlan | Night): HTMLElement | null {
   const l = night?.ledger;
   const links = night?.shareLinks;
   const waiting = night ? "Not made for this night" : "Made when you publish";
+  const joined = night?.invites?.find((i) => i.status === "accepted" && i.joinedAt);
   return h(
     "section",
     { class: "panel", "aria-labelledby": id },
     h("h2", { id }, "Who comes from where"),
-    h("p", null, `Two sign up links, one for each of you. Full House counts every guest by the link they used, and you both see the count.`),
+    h("p", null, `Two sign up links, one for each of you. Full House counts every guest by the link they used. You see both counts. ${them} sees the count for its own link once it reaches ${COUNT_SHOWN_FROM}.`),
     h(
       "div",
       { class: "links" },
@@ -36,6 +39,7 @@ export function linksPanel(plan: NightPlan | Night): HTMLElement | null {
       linkRow("them", `${them}'s link`, links?.partner, l ? l.fromPartner : null, night ? `${them} sees it after its yes` : waiting),
     ),
     l ? h("p", { class: "ledger-line" }, `From your link ${l.fromVenue}. From ${them}'s link ${l.fromPartner}.${l.direct ? ` ${plural(l.direct, "person", "people")} found the page another way.` : ""}`) : null,
+    joined?.joinedAt ? h("p", { class: "ledger-joined" }, `${shortName(joined.partner.name)} set up its own Full House from your invite on ${readDate(joined.joinedAt, tz)}.`) : null,
   );
 }
 

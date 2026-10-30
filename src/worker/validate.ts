@@ -35,6 +35,7 @@ export const CreateVenueSchema = z.object({
   ownerEmail: email.optional(),
   noLiveMusic: z.boolean().optional(),
   assumed: z.object({ slot: z.boolean().optional(), room: z.boolean().optional() }).optional(),
+  via: z.string().regex(/^[a-z0-9-]{1,120}$/).optional(),
 });
 
 const house = z.object({ music: z.boolean().optional(), stage: z.boolean().optional(), spoken: z.boolean().optional() });

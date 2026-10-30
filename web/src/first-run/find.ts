@@ -1,6 +1,7 @@
 import type { VenueCandidate } from "../../../src/shared/contract.ts";
 import { CITIES, cityNamed } from "../../../src/shared/cities.ts";
-import { capFirst, plainName } from "../../../src/shared/words.ts";
+import { NEAR_MILES } from "../../../src/shared/engine.ts";
+import { capFirst, milesWords, plainName } from "../../../src/shared/words.ts";
 import { api } from "../api.ts";
 import { h, replace, uid } from "../dom.ts";
 import { walk } from "../format.ts";
@@ -30,8 +31,25 @@ function pickRow(c: VenueCandidate, near: boolean, onPick: (button: HTMLButtonEl
   return h("li", null, button);
 }
 
-async function create(c: VenueCandidate, city: string, near?: Position): Promise<string> {
-  const created = await api.create(venueDefaults(c, city, near));
+// A link from an answered invite carries the partner's name and city, and the invite it came from.
+export interface FindPrefill {
+  name?: string;
+  city?: string;
+  via?: string;
+}
+
+const VIA = /^[a-z0-9-]{1,120}$/;
+
+export function prefillFrom(search: string): FindPrefill {
+  const q = new URLSearchParams(search);
+  const name = q.get("name")?.trim().slice(0, 120);
+  const city = q.get("city")?.trim().slice(0, 80);
+  const via = q.get("via")?.trim();
+  return { ...(name ? { name } : {}), ...(city ? { city } : {}), ...(via && VIA.test(via) ? { via } : {}) };
+}
+
+async function create(c: VenueCandidate, city: string, near?: Position, via?: string): Promise<string> {
+  const created = await api.create({ ...venueDefaults(c, city, near), ...(via ? { via } : {}) });
   let token = created.ownerToken;
   try {
     token = tokenFromFragment(new URL(created.ownerUrl, location.origin).hash) ?? token;
@@ -44,6 +62,21 @@ async function create(c: VenueCandidate, city: string, near?: Position): Promise
   return created.venue.id;
 }
 
+// The closed picker is as wide as its longest label in the page's own font, so no city is cut short.
+function fitLongest(select: HTMLSelectElement): void {
+  const fit = (): void => {
+    if (!select.isConnected) return;
+    const cs = getComputedStyle(select);
+    const pen = document.createElement("canvas").getContext("2d");
+    if (!pen) return;
+    pen.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const widest = Math.max(...[...select.options].map((o) => pen.measureText(o.text).width));
+    select.style.setProperty("--longest", `${Math.ceil(widest) + 8}px`);
+  };
+  requestAnimationFrame(fit);
+  void document.fonts?.ready.then(fit);
+}
+
 function position(): Promise<Position> {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) return reject(new Error("no geolocation"));
@@ -52,8 +85,8 @@ function position(): Promise<Position> {
 }
 
 // The venue's name with the city inside the same field. Matches come in as the owner types, and one tap sets the venue up.
-export function findForm(): HTMLElement {
-  const guess = cityFromZone();
+export function findForm(prefill: FindPrefill = {}): HTMLElement {
+  const guess = prefill.city ?? cityFromZone();
   const listed = cityNamed(guess);
   const name = h("input", { type: "text", name: "name", autocomplete: "organization", maxlength: "120", spellcheck: "false", "aria-label": "Your venue", placeholder: "Your venue's name" });
   const select = h(
@@ -62,6 +95,7 @@ export function findForm(): HTMLElement {
     CITIES.map((c) => h("option", { value: c.name, selected: listed?.name === c.name }, c.name)),
     h("option", { value: OTHER, selected: !listed }, "Another city"),
   ) as HTMLSelectElement;
+  fitLongest(select);
   const other = h("input", { type: "text", name: "other-city", "aria-label": "Your city", autocomplete: "address-level2", maxlength: "80", value: listed ? "" : guess, placeholder: "Type your city" });
   // The box is only in the page while Another city is chosen, so a listed city never shows an empty box.
   const otherLine = h("p", { class: "search-other" });
@@ -72,7 +106,7 @@ export function findForm(): HTMLElement {
   const altLine = h("p", { class: "search-alt" });
   const showAlt = (): void =>
     here
-      ? altLine.replaceChildren("Searching within a mile of you. Pick a city to search by name instead.")
+      ? altLine.replaceChildren(`Searching within ${milesWords(NEAR_MILES)} of you. Pick a city to search by name instead.`)
       : altLine.replaceChildren("Or ", nearMe, " to list places around you.");
   const results = h("div", { class: "finds-slot", "aria-live": "polite" });
   altLine.id = uid("alt");
@@ -90,7 +124,7 @@ export function findForm(): HTMLElement {
     button.classList.add("find-picked");
     button.append(h("span", { class: "find-going", role: "status" }, `Setting up ${plainName(c.name)} and reading its crowd`));
     try {
-      const id = await create(c, where, here ?? undefined);
+      const id = await create(c, where, here ?? undefined, prefill.via);
       navigate(`/v/${encodeURIComponent(id)}/first`);
     } catch (err) {
       busy = false;
@@ -99,13 +133,14 @@ export function findForm(): HTMLElement {
     }
   };
 
-  const search = async (): Promise<void> => {
+  // Until the owner presses Find my neighbour, a missing city says nothing: the owner may not have got to it yet.
+  const search = async (pressed = false): Promise<void> => {
     window.clearTimeout(timer);
     const n = name.value.trim();
     const where = here ? "" : cityValue();
     if (busy || n.length < 3) return;
     if (!where && !here) {
-      replace(results, h("p", { class: "form-error", role: "alert" }, "Pick your city, or use your location."));
+      if (pressed) replace(results, h("p", { class: "form-error", role: "alert" }, "Pick your city, or use your location."));
       return;
     }
     const mine = ++asked;
@@ -113,7 +148,7 @@ export function findForm(): HTMLElement {
     try {
       const found = await api.search(n, where, here ?? undefined);
       if (mine !== asked) return;
-      const place = here ? "within a mile of you" : `in ${where}`;
+      const place = here ? `within ${milesWords(NEAR_MILES)} of you` : `in ${where}`;
       if (!found.length) {
         replace(results, empty(`Nothing called ${n} came back ${place}. Try the name as it is written on maps.`));
         return;
@@ -168,7 +203,11 @@ export function findForm(): HTMLElement {
   );
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    void search();
+    void search(true);
   });
+  if (prefill.name) {
+    name.value = prefill.name;
+    void search();
+  }
   return form;
 }

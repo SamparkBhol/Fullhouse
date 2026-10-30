@@ -25,7 +25,9 @@ export function search(q: Query, places: PlaceRegistry): Answer {
   const { name, city } = splitQuery(text);
   const asked = name || text;
   const hits: FakePlace[] = [];
-  if (city && name) hits.push(venueFromQuery(name, city));
+  // A place the fake has already answered with keeps its id, the way the live search finds the same place again.
+  const seen = city && name ? places.known().find((p) => p.name.toLowerCase() === name.toLowerCase() && p.city.name === city.name) : undefined;
+  if (city && name) hits.push(seen ?? venueFromQuery(name, city));
   for (const other of CITIES) if (other !== city) hits.push(venueFromQuery(asked, other));
   const first = hits[0];
   if (first) hits.push(...placesAround(first.point).slice(0, 3));

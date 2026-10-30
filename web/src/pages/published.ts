@@ -137,7 +137,7 @@ function renderNight(ctx: VenueCtx, main: HTMLElement, night: Night, notice?: st
           h(
             "div",
             { class: "stack" },
-            linksPanel(night),
+            linksPanel(night, venue.tz),
             publicLinks(actions.filter((a) => PUBLIC.includes(a.kind)), past),
             forYouToSend(actions.filter((a) => !PUBLIC.includes(a.kind))),
             takeDown(ctx, night, redraw),

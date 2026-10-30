@@ -138,6 +138,9 @@ export class VenueAgent extends DurableObject<Env> implements VenueApi {
   answerInvite(slug: string, answer: InviteAnswer): Promise<Out<Invite>> {
     return this.ctx.blockConcurrencyWhile(() => this.run((c) => c.answerInvite(slug, answer)));
   }
+  joined(slug: string, entityId: string): Promise<Out<Invite>> {
+    return this.ctx.blockConcurrencyWhile(() => this.run((c) => c.joined(slug, entityId)));
+  }
   example(): Promise<Out<JointExample>> {
     return this.core().example();
   }

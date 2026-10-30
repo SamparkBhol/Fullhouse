@@ -1,5 +1,5 @@
 import type { CreateVenueInput, VenueCandidate } from "../../../src/shared/contract.ts";
-import { CITIES, MILE_M, cityNamed, type City } from "../../../src/shared/cities.ts";
+import { CITIES, MILE_M, NEAR_ME, cityNamed, type City } from "../../../src/shared/cities.ts";
 import { haversineM } from "../../../src/shared/geo.ts";
 import { guessZone } from "../zone-guess.ts";
 
@@ -40,7 +40,7 @@ export function venueDefaults(candidate: VenueCandidate, city: string, near?: { 
   const listed = zones();
   const known = cityNamed(city) ?? nearestCity(candidate);
   const tz = known?.tz ?? guessZone(candidate, city, listed.includes(here) ? listed : [here, ...listed]) ?? here;
-  const name = known?.name ?? (city || "Near me");
+  const name = known?.name ?? (city || NEAR_ME);
   return { candidate, city: name, tz, quietSlot: { ...DEFAULT_SLOT }, capacity: DEFAULT_ROOM, assumed: { slot: true, room: true }, ...(near ? { near } : {}) };
 }
 
