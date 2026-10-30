@@ -9,7 +9,11 @@ test("the landing page says what Full House finds and looks the venue up as the 
   await expect(page.getByRole("button", { name: "use my location" })).toBeVisible();
   await expect(page.locator(".example")).toHaveCount(0);
   await expect(page.locator(".steps > li")).toHaveCount(5);
-  await expect(page.locator("main")).not.toContainText(/^Qloo/m);
+  await expect(page.getByRole("heading", { level: 2, name: "Qloo ranks. Full House decides." })).toBeVisible();
+  await expect(page.getByText(/^What Qloo gives\./)).toBeVisible();
+  await expect(page.getByText(/^What Full House adds\./)).toBeVisible();
+  await expect(page.locator("main")).not.toContainText(/\$\d|a month|no card|price|free/i);
+  await expect(page.locator(".band-close").getByRole("link", { name: "Find your neighbour" })).toHaveAttribute("href", "#find");
 
   await pickCity(page, "Leeds");
   await page.getByRole("textbox", { name: "Your venue" }).fill("Larkspur Books");
