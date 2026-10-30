@@ -113,7 +113,7 @@ A partner is never named on a night's event page, poster or calendar file before
 
 On the hosted demo, email is off, so no venue can confirm an address on its own website and every venue shows as unconfirmed.
 
-A venue nobody opens for 8 weeks stops its Monday runs and is deleted after 6 months. Security reports go through `SECURITY.md`.
+A venue nobody opens for 8 weeks stops its Monday runs and is deleted after 6 months.
 
 ## Licence
 
