@@ -12,9 +12,9 @@ Every small venue has a dead night. The bookshop is packed on Saturday and empty
 
 What you can't see from behind your own counter is which neighbour really shares your crowd. It also has to work both ways. You might love the bar next door, but if its regulars don't care about you, the night flops.
 
-The rooms are many and short of money. The UK had 801 grassroots music venues trading last year, 30 closed for good and over half made no profit. About two thirds of US independent music venues lost money in 2024. At the same time the US added 605 bookstores in 2025 and nine in ten English independent bookshops already run events. A night with the right neighbour is one of the few levers a small room has.
+There are a lot of these rooms and most are short of money. Around 800 grassroots music venues trade in the UK and more than half made no profit last year. About two thirds of US independent music venues lost money in 2024. At the same time hundreds of new bookshops opened in the US, and nine in ten English independent bookshops already run events. A night with the right neighbour is one of the few levers a small room has.
 
-We ran the engine on about forty well known independent venues in New York and London. Every one got a partner and just over half got a two way match within ten minutes' walk. The median fit was in the high seventies and the median walk a little over six minutes. So the pairs are there. Nobody was looking at the street from both sides.
+We ran the engine on about forty well known independent venues in New York and London. Every one got a partner and just over half got a two way match within ten minutes' walk. So the pairs are there. Nobody was looking at the street from both sides.
 
 Qloo knows what millions of people like, so we asked it the question from each side. Qloo's top pick for Daunt Books in London was a tennis shop. Great taste, wrong room. Full House is the part that judges the list.
 
