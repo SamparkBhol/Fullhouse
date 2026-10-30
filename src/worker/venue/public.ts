@@ -31,6 +31,12 @@ function partnerView(n: Night, invite: Invite): { view: PublicPartner; place: Lo
     confirmed: Boolean(c && (c.start || c.what)),
     tellsRegulars: c?.tellsRegulars === true,
   };
+  if (c?.kept) view.kept = true;
+  const stop = n.pair?.stops.find((s) => s.at === "partner");
+  if (stop) {
+    view.what = stop.what;
+    view.start = stop.start;
+  }
   const image = proxiedImage(place?.image ?? invite.partner.image);
   if (image) view.image = image;
   return { view, place };

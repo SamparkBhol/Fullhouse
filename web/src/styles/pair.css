@@ -77,3 +77,8 @@
   .score { font-size: 2.75rem; }
   .check { grid-template-columns: minmax(0, 1fr) 44px auto; gap: 10px; }
 }
+
+.pair-ranks { display: grid; gap: 8px; margin-top: 18px; }
+.pair-rank { position: relative; padding-left: 16px; font-size: 0.9375rem; line-height: 1.45; color: var(--ink); }
+.pair-rank::before { content: ""; position: absolute; left: 0; top: 3px; bottom: 3px; width: 4px; border-radius: 2px; background: var(--you); }
+.pair-rank-them::before { background: var(--them); }

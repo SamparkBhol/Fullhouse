@@ -56,7 +56,39 @@ describe("a two stop night", () => {
     expect(html).toContain("Why your place");
     expect(html).toContain('name="what" maxlength="120" value="Quiz round two, on The Farewell"');
     expect(html).toContain('name="start" value="20:15"');
-    expect(html).toContain('name="tellsRegulars"');
+    expect(html).toContain('name="tellsRegulars" value="on">');
+    expect(html).not.toContain("checked");
+  });
+
+  it("says the partner accepted the proposed stop when the yes sends it back untouched, and makes no regulars claim unticked", async () => {
+    const { h, v, planId } = await setup();
+    const inv = (await (await req(h, `/api/venues/${v.id}/nights/${planId}/invite`, { method: "POST", token: v.token, body: { partnerId: "P-1" } })).json()) as Invite;
+    await req(h, `/i/${inv.slug}/answer`, {
+      method: "POST",
+      body: "answer=yes&what=Quiz+round+two%2C+on+The+Farewell&start=20%3A15",
+      headers: { "content-type": "application/x-www-form-urlencoded", origin: ORIGIN },
+    });
+    const polled = (await (await req(h, `/api/venues/${v.id}/invites`, { token: v.token })).json()) as Invite[];
+    expect(polled[0]?.confirmed).toMatchObject({ kept: true, tellsRegulars: false });
+    const night = (await (await publish(h, v, planId)).json()) as Night;
+    const page = await (await req(h, `/e/${night.eventSlug}`)).text();
+    expect(page).toContain("Kaffee Kanal answered through an invite link and accepted the proposed quiz round two, on The Farewell from 20:15.");
+    expect(page).not.toContain("set its own part");
+    expect(page).not.toContain("tells its regulars");
+  });
+
+  it("says the partner set its own part when only the start changed", async () => {
+    const { h, v, planId } = await setup();
+    const inv = (await (await req(h, `/api/venues/${v.id}/nights/${planId}/invite`, { method: "POST", token: v.token, body: { partnerId: "P-1" } })).json()) as Invite;
+    await req(h, `/i/${inv.slug}/answer`, {
+      method: "POST",
+      body: "answer=yes&what=Quiz+round+two%2C+on+The+Farewell&start=20%3A45&tellsRegulars=on",
+      headers: { "content-type": "application/x-www-form-urlencoded", origin: ORIGIN },
+    });
+    const night = (await (await publish(h, v, planId)).json()) as Night;
+    const page = await (await req(h, `/e/${night.eventSlug}`)).text();
+    expect(page).toContain("Kaffee Kanal answered through an invite link and set its own part, quiz round two, on The Farewell from 20:45. It tells its regulars too.");
+    expect(page).not.toContain("accepted the proposed");
   });
 
   it("takes the partner's own time and words with its yes, rewrites the stop, and the event page says so", async () => {
@@ -76,7 +108,8 @@ describe("a two stop night", () => {
     const night = (await (await publish(h, v, planId)).json()) as Night;
     const page = await (await req(h, `/e/${night.eventSlug}`)).text();
     expect(page).toContain("Our open mic, as every Tuesday");
-    expect(page).toContain("Kaffee Kanal answered through an invite link and set its own time and what runs there. It tells its regulars too.");
+    expect(page).toContain("Kaffee Kanal answered through an invite link and set its own part, our open mic, as every Tuesday from 20:30. It tells its regulars too.");
+    expect(polled[0]?.confirmed?.kept).toBe(false);
     expect(page).not.toContain("0151 000 0000");
     expect(page).not.toContain("Proposed, subject to");
     const poster = await (await req(h, `/e/${night.eventSlug}/poster`)).text();

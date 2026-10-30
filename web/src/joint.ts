@@ -27,11 +27,15 @@ export interface Example {
   agreed: boolean;
   considered: Considered[];
   consideredOf: number | null;
+  partnerRank: number | null;
+  back: { rank: number; of: number } | null;
 }
 
 function place(p: ExamplePlace | undefined): ExamplePlace | null {
   return p && typeof p.name === "string" && p.name.trim() ? p : null;
 }
+
+const count = (v: unknown): number | null => (typeof v === "number" && Number.isInteger(v) && v > 0 ? v : null);
 
 const text = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 
@@ -59,5 +63,7 @@ export function parseExample(raw: JointExample | null): Example | null {
     agreed: raw.agreed === true,
     considered: Array.isArray(raw.considered) ? raw.considered.filter((c) => c && typeof c.name === "string" && Number.isFinite(c.rank) && typeof c.reason === "string") : [],
     consideredOf: typeof raw.consideredOf === "number" && raw.consideredOf > 0 ? raw.consideredOf : null,
+    partnerRank: count(raw.partnerRank),
+    back: count(raw.back?.rank) && count(raw.back?.of) ? { rank: count(raw.back?.rank)!, of: count(raw.back?.of)! } : null,
   };
 }

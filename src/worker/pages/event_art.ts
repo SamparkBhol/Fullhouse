@@ -1,6 +1,6 @@
 import type { NightPlan } from "../../shared/contract.ts";
 import { proxiedImage } from "../../shared/images.ts";
-import { shortName } from "../../shared/words.ts";
+import { lowerFirst, shortName } from "../../shared/words.ts";
 import { panel } from "./chrome.ts";
 import type { PublicPartner } from "./event.ts";
 import { esc } from "./html.ts";
@@ -28,19 +28,24 @@ export function headWithArt(heading: string, art: PublicArt | undefined): string
   return `<div class="head">${heading}${artHtml(art)}</div>`;
 }
 
+function howTheYesCame(p: PublicPartner, name: string): string {
+  const part = p.what && p.start ? esc(`${lowerFirst(p.what)} from ${p.start}`) : null;
+  if (p.confirmed && part && p.kept) return `${name} answered through an invite link and accepted the proposed ${part}.`;
+  if (p.confirmed && part) return `${name} answered through an invite link and set its own part, ${part}.`;
+  if (p.confirmed) return `${name} answered through an invite link and set its own part.`;
+  if (p.answered) return `${name} answered through an invite link. Its stop is proposed, subject to its own programme.`;
+  return "";
+}
+
 // The partner appears only after it said yes, as the other half of the night. The page says how the yes came
-// (through an invite link), whether the partner confirmed its own stop, and whether it tells its regulars.
+// (through an invite link), whether the partner kept the proposed stop or set its own, and whether it tells its regulars.
 export function partnerSection(p: PublicPartner | undefined, venueName: string): string {
   if (!p) return "";
   const name = esc(shortName(p.name));
   const walk = `about ${p.walkMin} minute${p.walkMin === 1 ? "" : "s"} on foot`;
   const v = esc(shortName(venueName));
   const stop = p.hosts ? `It happens at ${name}, ${walk} from ${v}.` : `${name} is ${walk} from ${v}.`;
-  const how = p.confirmed
-    ? `${name} answered through an invite link and set its own time and what runs there.`
-    : p.answered
-      ? `${name} answered through an invite link. Its stop is proposed, subject to its own programme.`
-      : "";
+  const how = howTheYesCame(p, name);
   const regulars = p.tellsRegulars ? " It tells its regulars too." : "";
   const where = [stop, how].filter(Boolean).join(" ") + regulars;
   const photo = p.image ? `<img class="with-photo" src="${esc(p.image)}" alt="${esc(shortName(p.name))}, from the street" loading="lazy" decoding="async">` : "";

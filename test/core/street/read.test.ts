@@ -75,7 +75,7 @@ describe("readStreet", () => {
     expect(read.match?.partner.name).toBe("Blue Hour Wine Bar");
     expect(read.match?.runnersUp.map((p) => p.name)).toEqual(["Grand Street Cinema"]);
     expect(read.match?.readAt).toBe(read.at);
-    expect(read.match?.reverseRank).toEqual({ checked: true, rank: 2, of: 4 });
+    expect(read.match?.reverseRank).toMatchObject({ checked: true, rank: 2, of: 4 });
     expect(read.match?.fit?.checks.map((c) => [c.key, c.points])).toEqual([
       ["crowd", 25],
       ["back", 19],

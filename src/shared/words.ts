@@ -1,4 +1,5 @@
 import type { QlooType } from "./contract.ts";
+import { MONDAY_HOUR, PICKS_PER_TYPE } from "./engine.ts";
 
 export const TYPE_PLURAL: Record<QlooType, string> = {
   artist: "artists",
@@ -35,6 +36,35 @@ export function weekdayName(n: number): string {
   return WEEKDAY_NAMES[((n % 7) + 7) % 7] ?? "Sunday";
 }
 
+const SMALL = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
+
+export function numberWord(n: number): string {
+  return SMALL[n] ?? String(n);
+}
+
+// 56 days reads as 8 weeks and 180 as 6 months, the way an owner would say them.
+export function spanWords(days: number): string {
+  if (days >= 60 && days % 30 === 0) return plural(days / 30, "month", "months");
+  if (days % 7 === 0) return plural(days / 7, "week", "weeks");
+  return plural(days, "day", "days");
+}
+
+export function mondayAt(): string {
+  return `${String(MONDAY_HOUR).padStart(2, "0")}:00`;
+}
+
+// How long an answer is kept: "a day", "2 days", "6 hours".
+export function keptWords(seconds: number): string {
+  const days = seconds / 86400;
+  if (Number.isInteger(days)) return days === 1 ? "a day" : `${days} days`;
+  return plural(Math.round(seconds / 3600), "hour", "hours");
+}
+
+// "a mile", "2 miles": how far a search near the owner reaches.
+export function milesWords(miles: number): string {
+  return miles === 1 ? "a mile" : `${miles} miles`;
+}
+
 export function plural(n: number, one: string, many: string): string {
   return n === 1 ? `1 ${one}` : `${n} ${many}`;
 }
@@ -52,6 +82,11 @@ export function article(word: string): string {
 
 export function capFirst(s: string): string {
   return s ? s[0]!.toUpperCase() + s.slice(1) : s;
+}
+
+// "Screening of Beautiful Boy" inside a sentence, while "IFC Center" keeps its capitals.
+export function lowerFirst(s: string): string {
+  return /^\p{Lu}\p{Ll}/u.test(s) ? s[0]!.toLowerCase() + s.slice(1) : s;
 }
 
 export function ordinal(n: number): string {
@@ -88,6 +123,20 @@ export function shortName(name: string): string {
   const base = plainName(name).split(",")[0]?.trim() || name;
   const cut = base.replace(SIDE_LINE, "").trim();
   return cut.split(/\s+/).length >= 2 ? cut : base;
+}
+
+// "Walden: Or, Life in the Woods" reads as "Walden" on a title line; a name with no subtitle stays whole.
+// "Dune: Part Two" keeps its part, because "Dune" would name another film.
+export function shortTitle(name: string): string {
+  const [cut = name, rest = ""] = name.split(/: | \(| \[/);
+  if (/^(part|chapter|vol(ume)?|episode|book)\b|^\d/i.test(rest.trim())) return name;
+  return cut.trim().length >= 2 ? cut.trim() : name;
+}
+
+// Titles both crowds put in their top ten of one kind, said when the two places share few tags.
+export function sharedPicksLine(p: { type: QlooType; names: string[] } | undefined): string | null {
+  if (!p || p.names.length < 2) return null;
+  return `Both crowds put ${listWords(p.names.map(shortTitle))} in their top ${numberWord(PICKS_PER_TYPE)} ${p.type === "tv_show" ? "TV shows" : TYPE_PLURAL[p.type]}`;
 }
 
 // "the The Hate U Give" never: a title that already starts with an article keeps its own.

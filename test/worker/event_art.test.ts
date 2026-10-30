@@ -59,11 +59,11 @@ describe("art on the public pages", () => {
     const before = renderEventPage(night(), "https://x.example", NOW);
     expect(before).not.toContain("Put on with");
     expect(before).not.toContain("Close by");
-    const name = ["Angelika Film Center & Cafe", "New York"].join(" - ");
+    const name = ["Angelika Film Center & Cafe", "New York"].join(" \u002d ");
     const after = renderEventPage(night({ partner: { name, walkMin: 2, hosts: false } }), "https://x.example", NOW);
     expect(after).toContain("Put on with Angelika Film Center<");
     expect(after).toContain("about 2 minutes on foot");
-    expect(after).not.toContain(" - New York");
+    expect(after).not.toContain(" \u002d New York");
   });
 
   it("leaves the flyer as type alone when the night has no cover", () => {

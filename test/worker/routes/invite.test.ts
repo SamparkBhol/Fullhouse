@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Invite, JointExample, Match, Night, NightPlan, PlanResponse, VenueState } from "../../../src/shared/contract.ts";
 import type { StatEvent } from "../../../src/worker/stats/events.ts";
 import type { ProposalRecord } from "../../../src/worker/venue/records.ts";
-import { fakeCore } from "../helpers.ts";
+import { fakeCore, fakeMatch } from "../helpers.ts";
 import { ORIGIN, createVenue, req, testApp, type TestApp } from "../test_app.ts";
 
 function jointApp(env: Record<string, string> = {}) {
@@ -191,5 +191,19 @@ describe("the example route", () => {
     const inv = (await (await invite(h, p, p.plan.id)).json()) as Invite;
     await say(h, inv.slug, "yes");
     expect(((await (await req(h, "/api/example")).json()) as JointExample).agreed).toBe(true);
+  });
+  it("carries the partner's rank on the venue's list and the venue's rank on the partner's, without the partner's list", async () => {
+    const { h } = jointApp();
+    const p = await jointPlan(h);
+    h.env.EXAMPLE_VENUE = p.id;
+    const match = fakeMatch(p.plan.readAt);
+    const top = [{ id: "T-1", name: "Village East by Angelika", rank: 1 }];
+    const partner = { ...match.partner, rank: 2, reverseRank: { checked: true, rank: 6, of: 50, top } };
+    const considered = [{ id: partner.id, name: partner.name, kind: "cafe", rank: 2, walkMin: 3, verdict: "partner" as const, reason: "The best fit." }];
+    await h.stores.get(p.id)!.put("match", { ...match, partner, considered, consideredOf: 50 });
+    const ex = (await (await req(h, "/api/example")).json()) as JointExample;
+    expect(ex.partnerRank).toBe(2);
+    expect(ex.back).toEqual({ checked: true, rank: 6, of: 50 });
+    expect(ex.consideredOf).toBe(50);
   });
 });

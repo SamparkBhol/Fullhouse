@@ -1,4 +1,5 @@
 import type { LovedPlace, ReverseRank } from "../../shared/contract.ts";
+import { THEIR_TOP } from "../../shared/engine.ts";
 import { plainName } from "../../shared/words.ts";
 import { parseEntities } from "../qloo/entities.ts";
 import { locationFilter } from "../qloo/location.ts";
@@ -43,5 +44,6 @@ export async function lovesBack(run: Runner, ctx: ReadContext, partner: LovedPla
     (e) => e.affinity,
   );
   const at = list.findIndex((e) => sameId(e.id, ctx.entityId));
-  return { partnerId: partner.id, rank: { checked: true, rank: at < 0 ? null : at + 1, of: list.length }, ref: got.ref };
+  const top = list.slice(0, THEIR_TOP).map((e, i) => ({ id: e.id, name: e.name, rank: i + 1 }));
+  return { partnerId: partner.id, rank: { checked: true, rank: at < 0 ? null : at + 1, of: list.length, top }, ref: got.ref };
 }

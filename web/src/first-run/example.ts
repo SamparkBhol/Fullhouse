@@ -1,5 +1,6 @@
 import type { ExamplePlace } from "../../../src/shared/contract.ts";
-import { capFirst, shortName } from "../../../src/shared/words.ts";
+import { capFirst, numberWord, shortName } from "../../../src/shared/words.ts";
+import { both } from "./example-ranks.ts";
 import { api } from "../api.ts";
 import { h, replace } from "../dom.ts";
 import { longDate, readDate, streetPart } from "../format.ts";
@@ -8,19 +9,16 @@ import { checksList, verdict } from "../ui/fit.ts";
 import { pairCard, splitBar } from "../ui/pair.ts";
 import { choiceList } from "../ui/decision.ts";
 import { boardSentence } from "../../../src/shared/board.ts";
-import { LOVED_TAKE } from "../../../src/shared/engine.ts";
+import { FIT_CHECKS, LOVED_TAKE } from "../../../src/shared/engine.ts";
 
 function sub(p: ExamplePlace, city: string | null): string | null {
   const where = p.neighborhood?.trim() || streetPart(p.address, city ?? undefined);
   return [p.kind ? capFirst(p.kind) : null, where].filter(Boolean).join(", ") || null;
 }
 
-function both(ex: Example): string | null {
-  const crowd = ex.checks.find((c) => c.key === "crowd");
-  const back = ex.checks.find((c) => c.key === "back");
-  if (crowd?.pass && back?.pass) return "Each crowd counts the other place among the ones it loves nearby.";
-  if (crowd?.pass) return `Your crowd loves ${shortName(ex.partner.name)}.`;
-  return null;
+// Under the names: whose list each number comes from, in that place's colour.
+function rankLines(ranks: [string, string]): HTMLElement {
+  return h("div", { class: "pair-ranks" }, h("p", { class: "pair-rank pair-rank-you" }, ranks[0]), h("p", { class: "pair-rank pair-rank-them" }, ranks[1]));
 }
 
 function nightLine(ex: Example): HTMLElement | null {
@@ -40,6 +38,7 @@ function nightLine(ex: Example): HTMLElement | null {
 
 // A real pair from a stored read, with the checks behind its score.
 export function examplePair(ex: Example): HTMLElement {
+  const said = both(ex);
   return pairCard(
     {
       you: { name: ex.venue.name, ...(ex.venue.image ? { image: ex.venue.image } : {}), sub: sub(ex.venue, ex.city) },
@@ -47,7 +46,8 @@ export function examplePair(ex: Example): HTMLElement {
       walkMin: ex.minutes,
       className: "example",
     },
-    ex.fit !== null ? verdict(ex.fit, both(ex)) : null,
+    said && "ranks" in said ? rankLines(said.ranks) : null,
+    ex.fit !== null ? verdict(ex.fit, said && "line" in said ? said.line : null) : null,
     ex.checks.length ? checksList(ex.checks) : null,
     nightLine(ex),
     h("figcaption", { class: "source" }, `${ex.agreed ? "A real pair, agreed by both places" : "A pair Full House proposed, not yet agreed"}${ex.readAt ? `, read on ${readDate(ex.readAt)}` : ""}. Checks by Full House.`),
@@ -69,7 +69,7 @@ export function decisionBand(): { el: HTMLElement; fill: (ex: Example) => void }
         { class: "decides-text" },
         h("h2", { id: "decides-title" }, h("span", { class: "line" }, "Qloo ranks."), " ", h("span", { class: "line" }, "Full House decides.")),
         h("p", null, h("b", null, "What Qloo gives. "), "The ", of, " places a crowd loves nearby, each of those places' own crowd, and the books and films two crowds share."),
-        h("p", null, h("b", null, "What Full House adds. "), "Six checks on every place it scores, the reverse read, rivals and rooms ruled out, the night built from the two kinds of place, the day both are open, and the count of who sent whom."),
+        h("p", null, h("b", null, "What Full House adds. "), `${capFirst(numberWord(FIT_CHECKS))} checks on every place it scores, the reverse read, rivals and rooms ruled out, the night built from the two kinds of place, the day both are open, and the count of who sent whom.`),
       ),
       board,
     ),

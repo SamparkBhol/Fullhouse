@@ -8,13 +8,13 @@ import { headWithArt, partnerSection, type PublicArt } from "./event_art.ts";
 import { esc, safeHref } from "./html.ts";
 import { plainName, shortName } from "../../shared/words.ts";
 import { mapLink, stopsHtml, type PublicStop } from "./stops.ts";
+import { COUNT_SHOWN_FROM } from "../../shared/engine.ts";
 
 export { renderIcs, calendarDetails } from "./calendar.ts";
 export { renderPoster } from "./poster.ts";
 export { renderMissing, renderReported } from "./chrome.ts";
 
-// Below this the count says more about an empty room than about the night, so the page leaves it out.
-export const COUNT_SHOWN_FROM = 3;
+export { COUNT_SHOWN_FROM } from "../../shared/engine.ts";
 
 // Only set once the partner said yes on its invite page. The page says how that yes was given and what it covers.
 export interface PublicPartner {
@@ -25,6 +25,10 @@ export interface PublicPartner {
   answered?: "link";
   // The partner typed its own stop time and what runs there; until then its stop is proposed.
   confirmed?: boolean;
+  // The partner sent the proposed stop back unchanged; what and start are its stop as it stands.
+  kept?: boolean;
+  what?: string;
+  start?: string;
   tellsRegulars?: boolean;
 }
 

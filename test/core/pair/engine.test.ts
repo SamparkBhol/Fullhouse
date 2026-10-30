@@ -56,7 +56,7 @@ describe("the pairing engine", () => {
     expect(calls).toHaveLength(9);
     expect(out.match?.partner.name).toBe("Olive Tree Cafe");
     expect(out.match?.fit?.score).toBe(87);
-    expect(out.match?.reverseRank).toEqual({ checked: true, rank: 3, of: 50 });
+    expect(out.match?.reverseRank).toMatchObject({ checked: true, rank: 3, of: 50 });
     expect(out.match?.runnersUp.map((p) => [p.name, p.fit?.score])).toEqual([
       ["Mezzrow", 65],
       ["Strand Bookstore", 64],

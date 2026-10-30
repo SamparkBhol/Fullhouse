@@ -123,6 +123,9 @@ export async function jointExample(records: VenueRecords): Promise<Out<JointExam
   if (board?.considered && board.partner.id.toUpperCase() === m.partner.id.toUpperCase()) {
     ex.considered = boardRows(board.considered, EXAMPLE_ROWS, ["partner"]).shown;
     ex.consideredOf = board.consideredOf ?? board.considered.length;
+    ex.partnerRank = board.partner.rank;
+    const back = board.partner.reverseRank;
+    if (back) ex.back = { checked: back.checked, rank: back.rank, of: back.of };
   }
   return ok(ex);
 }

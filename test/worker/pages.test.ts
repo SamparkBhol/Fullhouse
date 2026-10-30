@@ -243,9 +243,12 @@ describe("the night as two stops", () => {
     const before = renderEventPage(night({ stops: proposed, partner: { name: "Kaffee Kanal", walkMin: 3, hosts: false, answered: "link", confirmed: false } }), "https://x.example", NOW);
     expect(before).toContain("Proposed, subject to Kaffee Kanal&#39;s programme");
     expect(before).toContain("Kaffee Kanal answered through an invite link. Its stop is proposed, subject to its own programme.");
-    const after = renderEventPage(night({ stops, partner: { name: "Kaffee Kanal", walkMin: 3, hosts: false, answered: "link", confirmed: true, tellsRegulars: true } }), "https://x.example", NOW);
-    expect(after).toContain("Kaffee Kanal answered through an invite link and set its own time and what runs there. It tells its regulars too.");
+    const after = renderEventPage(night({ stops, partner: { name: "Kaffee Kanal", walkMin: 3, hosts: false, answered: "link", confirmed: true, what: "Our open mic", start: "20:30", tellsRegulars: true } }), "https://x.example", NOW);
+    expect(after).toContain("Kaffee Kanal answered through an invite link and set its own part, our open mic from 20:30. It tells its regulars too.");
     expect(after).not.toContain("Proposed");
+    const kept = renderEventPage(night({ stops, partner: { name: "Kaffee Kanal", walkMin: 3, hosts: false, answered: "link", confirmed: true, kept: true, what: "Round two", start: "20:15", tellsRegulars: false } }), "https://x.example", NOW);
+    expect(kept).toContain("Kaffee Kanal answered through an invite link and accepted the proposed round two from 20:15.");
+    expect(kept).not.toContain("tells its regulars");
   });
 
   it("credits Qloo once, in the footer, and never starts a line with its name", () => {
@@ -283,5 +286,44 @@ describe("invite page pair", () => {
     expect(html).toContain('<button class="btn btn-them" type="submit" name="answer" value="yes">We\'re in</button>');
     expect(html).not.toMatch(/\sstyle=/);
     expect(html.match(/Qloo/g)).toHaveLength(1);
+  });
+  it("the invite shows the partner's list with the venue at its rank", async () => {
+    const { renderInvitePage } = await import("../../src/worker/pages/invite.ts");
+    const top = ["Village East by Angelika", "Roxy Cinema New York", "IFC Center", "Gene Frankel Theatre", "Anthology Film Archives"].map((name, i) => ({ id: `T-${i}`, name, rank: i + 1 }));
+    const base = {
+      slug: "x-abcdefghijkm-abcdefghijkm",
+      status: "waiting" as const,
+      venue: { name: "Housing Works Bookstore" },
+      partner: { name: "Angelika Film Center" },
+      walkMin: 2,
+      verified: false,
+      night: { date: "2026-11-05", start: "18:00", end: "21:00", tz: "America/New_York", kind: "Book then film", at: "Housing Works Bookstore" },
+      split: null,
+      shared: [],
+    };
+    const html = renderInvitePage({ ...base, theirList: { top, rank: 9, of: 50 } }, "https://x.example");
+    const list = /<ol class="their-rows">(.*?)<\/ol>/.exec(html)?.[1] ?? "";
+    expect(list.match(/class="their-row"/g)).toHaveLength(5);
+    expect(list).toContain('<li class="their-row"><span class="their-rank">1</span><span class="their-name">Village East by Angelika</span></li>');
+    expect(list).toMatch(/Anthology Film Archives<\/span><\/li><li class="their-gap" aria-hidden="true">.*<\/li><li class="their-row their-you"><span class="their-rank">9<\/span><span class="their-name">Housing Works Bookstore<\/span><\/li>$/);
+    expect(html).toContain(">Your crowd's list nearby</h2>");
+    expect(html).toContain("Housing Works Bookstore is 9th of the 50 places your crowd loves nearby.");
+    expect(html.indexOf('<ol class="their-rows">')).toBeGreaterThan(html.indexOf('<section class="pair"'));
+    expect(html.indexOf('<ol class="their-rows">')).toBeLessThan(html.indexOf('id="night-title"'));
+    const sixth = renderInvitePage({ ...base, theirList: { top, rank: 6, of: 50 } }, "https://x.example");
+    expect(sixth).not.toContain('<li class="their-gap"');
+    expect(sixth).toContain('<li class="their-row their-you"><span class="their-rank">6</span>');
+    const third = renderInvitePage({ ...base, theirList: { top, rank: 3, of: 50 } }, "https://x.example");
+    expect(third.match(/<li class="their-row/g)).toHaveLength(5);
+    expect(third).toContain('<span class="their-rank">3</span><span class="their-name">Housing Works Bookstore</span>');
+    expect(renderInvitePage(base, "https://x.example")).not.toContain('<ol class="their-rows">');
+  });
+
+  it("says the venue's rank once: in the list when it shows, in the reasons when it does not", async () => {
+    const { partnerReasons } = await import("../../src/worker/venue/invites.ts");
+    const venue = { id: "v", entity: { id: "HW", name: "Housing Works Bookstore", type: "place" as const, lat: 0, lng: 0, tags: [] }, city: "New York", tz: "America/New_York", quietSlot: { weekday: 2 as const, start: "19:00", durationMin: 180 }, createdAt: "2026-10-20T10:00:00.000Z" };
+    const m = { id: "A", name: "Angelika Film Center", type: "place" as const, lat: 0, lng: 0, distanceM: 150, rank: 1, tags: [], because: [], reverseRank: { checked: true, rank: 6, of: 50 } };
+    expect(partnerReasons(m, venue)[0]).toBe("Housing Works Bookstore is 6th of the 50 places your crowd loves nearby.");
+    expect(partnerReasons(m, venue, true).join(" ")).not.toContain("6th of the 50");
   });
 });

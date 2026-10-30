@@ -74,6 +74,8 @@ export interface CreateVenueInput {
   ownerEmail?: string;
   noLiveMusic?: boolean;
   assumed?: { slot?: boolean; room?: boolean };
+  // The invite slug of the venue whose invite led here, so that venue can see its partner set up its own.
+  via?: string;
 }
 
 // What the owner said about the room: recorded music, a stage with its own programme, a room for a spoken event.
@@ -229,6 +231,14 @@ export interface ReverseRank {
   checked: boolean;
   rank: number | null;
   of: number;
+  // The first places on the partner's own list, from the same answer, so the invite can show the partner its list.
+  top?: TheirPlace[];
+}
+
+export interface TheirPlace {
+  id: string;
+  name: string;
+  rank: number;
 }
 
 export interface MatchPartner extends LovedPlace {
@@ -489,6 +499,8 @@ export interface PartnerConfirmation {
   open?: boolean;
   // How the owner reaches the partner. Shown only to the owner, never on a public page.
   contact?: string;
+  // The partner sent back the proposed stop and start exactly as they were.
+  kept?: boolean;
   at: string;
 }
 
@@ -502,6 +514,8 @@ export interface Invite {
   createdAt: string;
   answeredAt?: string;
   confirmed?: PartnerConfirmation;
+  // When the partner set up its own Full House from the link on its answered invite.
+  joinedAt?: string;
 }
 
 export interface InviteInput {
@@ -549,6 +563,9 @@ export interface JointExample {
   // The first rows of the board, with the partner's row when it is further down.
   considered?: Considered[];
   consideredOf?: number;
+  // The partner's rank on the venue's own list, and where the venue sits on the partner's.
+  partnerRank?: number;
+  back?: ReverseRank;
 }
 
 export interface VenueState {

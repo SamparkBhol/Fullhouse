@@ -1,5 +1,5 @@
 import type { NightPlan } from "../../../src/shared/contract.ts";
-import { shortName } from "../../../src/shared/words.ts";
+import { lowerFirst, shortName } from "../../../src/shared/words.ts";
 import { api } from "../api.ts";
 import { h, prefersReducedMotion, replace, uid } from "../dom.ts";
 import { displayTitle, longDate, nightKind, walkMinutes } from "../format.ts";
@@ -69,7 +69,8 @@ function answeredPanel(ctx: VenueCtx, invite: Invite): HTMLElement {
     );
   }
   const c = invite.confirmed;
-  const said = c && (c.start || c.what) ? `${them} set its own part: ${c.what ?? "as planned"}${c.start ? ` from ${c.start}` : ""}.${c.tellsRegulars ? " It tells its regulars too." : ""}` : `${them} pressed yes without setting its part, so its stop goes up as proposed, subject to its programme.`;
+  const part = `${c?.what ? lowerFirst(c.what) : "as planned"}${c?.start ? ` from ${c.start}` : ""}`;
+  const said = c && (c.start || c.what) ? `${them} ${c.kept ? "accepted the proposed" : "set its own part,"} ${part}.${c.tellsRegulars ? " It tells its regulars too." : ""}` : `${them} pressed yes without setting its part, so its stop goes up as proposed, subject to its programme.`;
   return h(
     "section",
     { class: "panel panel-them", "aria-labelledby": "yes-title" },

@@ -1,6 +1,6 @@
 import type { CrowdSplit, InviteStatus } from "../../shared/contract.ts";
 import { describeDate } from "../../core/index.ts";
-import { possessive, shortName } from "../../shared/words.ts";
+import { lowerFirst, possessive, shortName } from "../../shared/words.ts";
 import { CREDIT, footer, head, topBar, unconfirmedWord } from "./chrome.ts";
 import { COUNT_SHOWN_FROM } from "./event.ts";
 import { artHtml, type PublicArt } from "./event_art.ts";
@@ -8,6 +8,7 @@ import { zoneCity } from "./guest.ts";
 import { esc, safeHref } from "./html.ts";
 import { pairCard, splitBar, type PairPlace } from "./pair.ts";
 import { stopsHtml, type PublicStop } from "./stops.ts";
+import { theirListPanel, type TheirList } from "./their_list.ts";
 
 export type InvitePlace = PairPlace;
 
@@ -30,11 +31,14 @@ export interface PublicInvite {
   why?: string;
   // The partner's own stop as proposed, for the partner to confirm or change before saying yes.
   partnerStop?: { start: string; end: string; what: string; hoursUnknown: boolean };
-  confirmed?: { start?: string; what?: string; tellsRegulars: boolean };
+  confirmed?: { start?: string; what?: string; tellsRegulars: boolean; kept?: boolean };
   // How to reach the venue, shown to the partner after its yes.
   venueContact?: string;
   yourLink?: string;
   yourCount?: number;
+  theirList?: TheirList;
+  // After the yes: the partner's own name and city, to set up its own Full House from this page.
+  spread?: { name: string; city?: string };
 }
 
 function nightPanel(n: PublicInvite): string {
@@ -60,32 +64,48 @@ function yourStop(n: PublicInvite): string {
   const s = n.partnerStop;
   if (!s) return "";
   const p = esc(shortName(n.partner.name));
-  const open = s.hoursUnknown ? `<label class="tick"><input type="checkbox" name="open" value="on" checked> We are open that evening</label>` : "";
+  const open = s.hoursUnknown ? `<label class="tick"><input type="checkbox" name="open" value="on"> We are open that evening</label>` : "";
   return (
     `<div class="yours"><h3>Your part of the night</h3>` +
     `<p class="planned">Proposed: ${esc(s.what)}, from ${esc(s.start)}. Change either to what ${p} will run.</p>` +
     `<label>What runs at ${p}<input type="text" name="what" maxlength="120" value="${esc(s.what)}"></label>` +
     `<label>Starts at<input type="time" name="start" value="${esc(s.start)}" step="900"></label>` +
     open +
-    `<label class="tick"><input type="checkbox" name="tellsRegulars" value="on" checked> We will tell our regulars too</label>` +
+    `<label class="tick"><input type="checkbox" name="tellsRegulars" value="on"> We will tell our regulars too</label>` +
     `<label>A way for ${esc(shortName(n.venue.name))} to reach you, optional<input type="text" name="contact" maxlength="120" autocomplete="off" placeholder="A phone number or an email"></label>` +
     `</div>`
   );
 }
 
+function spreadLink(n: PublicInvite): string {
+  const s = n.spread;
+  if (!s) return "";
+  const q = [`name=${encodeURIComponent(s.name)}`, ...(s.city ? [`city=${encodeURIComponent(s.city)}`] : []), `via=${encodeURIComponent(n.slug)}`].join("&");
+  return (
+    `<div class="spread"><p>Full House can read your own crowd the same way and find the neighbour that fits ${esc(shortName(s.name))} best.</p>` +
+    `<a class="btn btn-quiet" href="/start?${esc(q)}">${esc(`Find ${possessive(shortName(s.name))} own neighbour`)}</a></div>`
+  );
+}
+
 function answerBody(n: PublicInvite): string {
   const v = esc(shortName(n.venue.name));
-  if (n.status === "accepted") {
-    const yours = n.confirmed?.start || n.confirmed?.what ? `<p>Your part is down as ${esc(n.confirmed?.what ?? n.partnerStop?.what ?? "your own programme")} from ${esc(n.confirmed?.start ?? n.partnerStop?.start ?? n.night.start)}.</p>` : "";
-    const contact = n.venueContact ? `<p class="contact">Reach ${v} at ${esc(n.venueContact)}.</p>` : "";
-    if (!n.yourLink) return `<p class="going">You are in. ${v} can now put both names on the night.</p>${yours}${contact}<p class="small">Your own link for this night shows here once ${v} publishes it.</p>`;
-    const count = n.yourCount && n.yourCount >= COUNT_SHOWN_FROM ? `<p class="count">${n.yourCount} people said they are coming through your link</p>` : "";
-    return (
-      `<p class="going">You are in. ${v} can now put both names on the night.</p>${yours}${contact}` +
-      `<p>Your own link for this night. Share it with your regulars and every RSVP through it counts as yours.</p>` +
-      `<div class="link-row"><i aria-hidden="true"></i><a class="link-url" href="${safeHref(n.yourLink)}">${esc(n.yourLink)}</a></div>${count}`
-    );
-  }
+  if (n.status === "accepted") return acceptedBody(n, v) + spreadLink(n);
+  return openBody(n, v);
+}
+
+function acceptedBody(n: PublicInvite, v: string): string {
+  const yours = n.confirmed?.start || n.confirmed?.what ? `<p>Your part is down as ${esc(lowerFirst(n.confirmed?.what ?? n.partnerStop?.what ?? "your own programme"))} from ${esc(n.confirmed?.start ?? n.partnerStop?.start ?? n.night.start)}.</p>` : "";
+  const contact = n.venueContact ? `<p class="contact">Reach ${v} at ${esc(n.venueContact)}.</p>` : "";
+  if (!n.yourLink) return `<p class="going">You are in. ${v} can now put both names on the night.</p>${yours}${contact}<p class="small">Your own link for this night shows here once ${v} publishes it.</p>`;
+  const count = n.yourCount && n.yourCount >= COUNT_SHOWN_FROM ? `<p class="count">${n.yourCount} people said they are coming through your link</p>` : "";
+  return (
+    `<p class="going">You are in. ${v} can now put both names on the night.</p>${yours}${contact}` +
+    `<p>Your own link for this night. Share it with your regulars and every RSVP through it counts as yours.</p>` +
+    `<div class="link-row"><i aria-hidden="true"></i><a class="link-url" href="${safeHref(n.yourLink)}">${esc(n.yourLink)}</a></div>${count}`
+  );
+}
+
+function openBody(n: PublicInvite, v: string): string {
   if (n.status === "declined") return `<p class="going">You said not this time. Nothing goes up with your name on it.</p>`;
   return (
     `<h2 id="answer-title">Your answer</h2>` +
@@ -112,7 +132,7 @@ export function renderInvitePage(n: PublicInvite, origin: string): string {
     `<body>${topBar(`An invite from ${v}`, n.verified ? "" : unconfirmedWord(v))}<main class="screen"><div class="wrap">` +
     `<div class="screen-head"><h1>${esc(v)} would like to put on one night with ${esc(p)}</h1>` +
     `<p class="lead">The people who like ${esc(v)} also love ${esc(p)}. Full House planned one night for both crowds, and ${esc(possessive(p))} part is yours to set.${consent}</p></div>` +
-    `<div class="invite-grid"><div class="invite-main">${card}${nightPanel(n)}</div>` +
+    `<div class="invite-grid"><div class="invite-main">${card}${theirListPanel(n.theirList, n.venue.name)}${nightPanel(n)}</div>` +
     `<div class="invite-side"><section class="panel answer${n.status === "accepted" ? " answer-in" : ""}" id="answer" aria-label="Your answer">${answerBody(n)}</section></div></div>` +
     `</div></main>${footer([esc(CREDIT), sent], `<a href="/">Find your neighbour on Full House</a>`)}</body></html>`
   );

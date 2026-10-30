@@ -1,5 +1,5 @@
 import type { ActionKind, ApproveInput, EditableCopy, Invite, NightPlan, QuietSlot, Venue } from "../../../src/shared/contract.ts";
-import { shortName } from "../../../src/shared/words.ts";
+import { lowerFirst, shortName } from "../../../src/shared/words.ts";
 import { api, type Health } from "../api.ts";
 import { h, replace, uid } from "../dom.ts";
 import { longDate, nightKind } from "../format.ts";
@@ -80,7 +80,7 @@ function partnerSaid(plan: NightPlan, accepted: Invite | null): HTMLElement | nu
   const stop = plan.pair.stops.find((s) => s.at === "partner");
   const id = uid("said");
   const body = c && (c.start || c.what)
-    ? [h("p", null, `${them} said yes through its invite link and set its part itself: ${stop?.what ?? c.what} from ${stop?.start ?? c.start}.`), c.tellsRegulars ? h("p", null, `${them} tells its regulars too.`) : h("p", null, `${them} did not tick that it tells its regulars, so the page does not say it does.`), c.contact ? h("p", { class: "contact" }, `Reach ${them} at ${c.contact}. Only you see this.`) : null]
+    ? [h("p", null, `${them} said yes through its invite link and ${c.kept ? "accepted the proposed" : "set its part itself,"} ${lowerFirst(stop?.what ?? c.what ?? "")} from ${stop?.start ?? c.start}.`), c.tellsRegulars ? h("p", null, `${them} tells its regulars too.`) : h("p", null, `${them} did not tick that it tells its regulars, so the page does not say it does.`), c.contact ? h("p", { class: "contact" }, `Reach ${them} at ${c.contact}. Only you see this.`) : null]
     : accepted
       ? [h("p", null, `${them} said yes through its invite link without setting its part, so its stop goes up as proposed, subject to its programme, and stays off the poster.`)]
       : [h("p", null, `${them} has not said yes yet. The night cannot go up with its name until it does.`)];

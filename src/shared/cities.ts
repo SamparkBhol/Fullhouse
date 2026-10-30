@@ -42,3 +42,6 @@ export function cityNamed(text: string): City | null {
 }
 
 export const MILE_M = 1609.344;
+
+// The city a venue gets when the owner found it by position outside every listed city.
+export const NEAR_ME = "Near me";
