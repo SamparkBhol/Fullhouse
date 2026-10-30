@@ -1,185 +1,119 @@
 # Full House
 
-Full House finds the place down the street whose customers already love yours, and sets up the one night both crowds want, so you each send your regulars to the other.
+Full House finds the place down the street whose customers already love your venue, checks that its customers love you back, and plans one night that walks both crowds through both doors.
 
-- Live app: https://fullhouse.sampark-bhol.workers.dev
-- Live numbers: https://fullhouse.sampark-bhol.workers.dev/live
-- MCP endpoint: https://fullhouse.sampark-bhol.workers.dev/mcp
+Live site: https://fullhouse.sampark-bhol.workers.dev
 
-## Why I built it
+Small venues have nights that die, a Tuesday at the bookshop or a Wednesday at the bar on the corner. A night fills when people already care about it and it runs with a place they already go to. Owners who know each other do this all the time. The hard part is knowing which neighbour shares your customers, whether that crowd likes you back, and what night both would come out for.
 
-Every independent venue has a night that dies. Tuesday at the bookshop cafe, Wednesday at the bar on the corner. The usual fixes are a discount or another reel. What actually fills a room is a night that people already care about, put on with a place they already go to. Small venues do this all the time when the owners happen to know each other. The hard part is knowing which neighbour shares your customers, and what night both crowds would come out for.
-
-Qloo can see both. Asked with the venue itself as the signal, it returns the real places nearby that the venue's own crowd loves, with their hours, and it can split any pick between two venues' crowds with its explainability scores. A plain chatbot guesses from fame: asked for partners for Housing Works Bookstore, one named a hotel Qloo lists as permanently closed and two businesses Qloo has no record of.
+Qloo knows which places, books, films, shows and artists the same people love. Full House takes those answers and makes the calls an owner would make: which neighbour, what night, which day, and who sent whom.
 
 ## What it does
 
-1. **Type your venue.** One field. Qloo's matches show as you type, and you tap yours. Nothing else is asked first.
-2. **See your crowd.** The read lands while you watch: where the taste for your venue runs strongest on the street, then the artists, books, films, shows and podcasts your crowd is into.
-3. **Meet your match.** The place down the street your crowd loves most that can host people, minutes away on foot, with what both crowds share. Libraries, churches, parks and places Qloo lists as closed never come up.
-4. **The night both crowds want.** Full House asks Qloo with both places as the signal and picks the feature whose explainability split between the two crowds is nearest half and half. For Housing Works Bookstore and Angelika Film Center, 2 minutes apart, that was a watch night around The Other Two, with the split at 50 and 50. When no pick is near even, it says so and builds on your own crowd's pick instead.
-5. **Ask them.** One button opens your own share sheet or mail with an invite link. The neighbour's page shows the two places, the night, the split and what the two crowds share, with two buttons: We're in, and Not this time.
-6. **Their yes is the action.** Your screen flips to "Angelika Film Center is in" within seconds. Only then does the public event page, the poster and the calendar file carry both names. Before a yes, nothing public mentions them.
-7. **It comes back every Monday** with a fresh read and the next joint night, leaves out what you already ran, and waits for your yes.
+1. Pick your city and type your venue's name. Search looks round the city centre or within a mile of you and ranks by name, then distance.
+2. Full House reads the street while a map fills with the places your crowd loves.
+3. The partner screen names the neighbour it chose, scores the pair on six checks, and shows Qloo's list with Full House's verdict on each place.
+4. The night screen plans two stops, one at each place, on a day both are open.
+5. You send the invite link from your own phone. The neighbour sets its own part of the night and answers yes or no.
+6. Your screen flips on the yes. You check the exact words, then publish the event page, a poster and a calendar file.
+7. Each place gets its own sign up link, and every RSVP counts against the link it came through.
+8. Every Monday the venue reads its street again, drafts a fresh night and waits for the owner.
 
-## Who pays
+Any MCP client can run the same flow at `/mcp`, and `/live` shows what the server has done.
 
-The buyer is the owner of an independent cafe, bar, bookshop, record shop, cinema or gallery with a slow night and nobody to plan it. The price is about 79 dollars a month per venue. Every invite is distribution: the neighbour's first joint night is free, and it sees its own crowd read on the invite page, which is how it becomes the next customer. One plan costs 12 Qloo calls for the read, 5 more for the joint read and two small model calls for the words, on the Cloudflare Workers free plan. There are no paying venues or pilots yet.
+The shots are from the live site on 30 October 2026, for Daunt Books Marylebone in London. The venue was deleted afterwards.
 
-## How Qloo powers each step
+| Screen | What it shows |
+| --- | --- |
+| ![Landing](media/landing.png) | Qloo's list for Housing Works Bookstore, with Full House's verdicts. |
+| ![Search](media/search.png) | Search in London. |
+| ![Your crowd](media/crowd.png) | The places your crowd loves. |
+| ![Partner](media/partner.png) | EtnaCoffee, 11th on Qloo's list, chosen. |
+| ![Partner on a phone](media/partner-phone.png) | The same, on a phone. |
+| ![The night](media/night.png) | Two stops, five minutes apart. |
+| ![Invite](media/invite.png) | The invite as EtnaCoffee sees it. |
+| ![Flip](media/flip.png) | The owner's screen after the yes. |
+| ![Event page](media/event.png) | The public event page. |
+| ![Ledger](media/ledger.png) | One RSVP through EtnaCoffee's link. |
 
-Every request is a GET to `https://hackathon.api.qloo.com` with the key in the `X-Api-Key` header, which only the Worker holds. A probe of about 380 live calls across 15 real venues set these choices before any of the app was written.
+## How a pair is chosen
 
-1. **Find the venue.** `/search` with the name and the city together. Searching the city first sent "New York" to the middle of New York State.
-2. **The street and the venue.** `filter.type=urn:tag` twice: once with `signal.location` for the blocks around the venue, once with `signal.interests.entities` set to the venue.
-3. **The places its crowd loves.** `urn:entity:place` with the venue as the signal inside a 1.2 km `filter.location` POINT and `feature.explainability`. A location alone returns near level scores and the same global names everywhere; the venue as the signal returns its actual neighbours.
-4. **The match.** The best of those that can host people, then `/v2/analysis/compare` between the venue and the partner for what both crowds share, and the partner's own crowd tags.
-5. **Where the taste runs strongest.** `urn:heatmap` with the venue as the signal, drawn as lit windows on a night map.
-6. **Your crowd's picks.** One insights call each for artist, book, movie, tv_show and podcast with the venue as the signal and the venue's point.
-7. **The joint read.** The same five types with `signal.interests.entities` set to both places and `feature.explainability` on. Each pick's two explainability scores, inside one response, become the split between the two crowds.
-8. **Proof.** A plain model is asked what an owner would ask a chatbot, and every place it names is looked up on Qloo search near the venue. The page leads with its hard failures: closed, not in Qloo, real but not tied to this crowd.
+Qloo returns up to 50 places within 1.2 km that people who like your venue also love. Full House keeps Qloo's order as the rank and sets aside closed places, places that cannot host a night (shops, libraries, parks, churches, hotels) and rivals of your own kind. The rest are ordered on what is already known, and the top 8 go on.
 
-Trending is flat on the hackathon host, so Full House makes no "rising" claims. Ranks are compared only inside one response, and every reason on screen points at the call it came from in the Receipts drawer.
+For each of those 8 it asks Qloo the same question from the other side, with that place as the signal, and looks for your venue in the answer. Daunt Books Marylebone is 17th of the 50 places EtnaCoffee's crowd loves.
 
-## The Monday agent
+The fit score has six checks. Crowd pull (25 points) is how high the place sits on your crowd's list, and loves you back (25) is where you sit on theirs. Both pass in the top half. Good partners (15) comes from a complement matrix over nine kinds of place: a bookshop and a cinema score 1, a cinema and a theatre 0.8, a cafe and a restaurant 0.5, two of a kind 0. Open together (15) counts the next seven evenings on which both are open at their own stop's time, with half for a late opening or unlisted hours. Close enough to walk (10) is full within 300 m and empty at 1.5 km. Shared taste (10) scores tags both places carry by how rare they are on the street: the lower affinity times the log of one over the share of nearby places with the tag. Tags most of the street carries earn nothing.
 
-Each venue is its own Durable Object with an alarm set for Monday 09:00 in the venue's time zone. When it wakes, it:
+The highest score wins, unless the next is within 5 points and a shorter walk. A place shut for its part every evening cannot win while another can open.
 
-1. Reads the street again with the same twelve calls.
-2. Sends the features of the last eight weeks of nights to Qloo as exclusions, so the picks are new, and notes how each pick moved since last week's read, with both dates ("#2 in this read, #4 in the read of 2026-10-20"). It makes no claim of momentum, because Qloo's weekly trend data held flat on this host.
-3. Plans the next quiet slot. If the last night drew under 40 percent of its room, that kind of night is skipped this week; if it filled 60 percent or more, that kind is preferred.
-4. Stores the plan as a proposal from the Monday run, emails the owner a link if they confirmed an email, and sets next Monday's alarm.
+The partner screen shows Qloo's first 15 places plus every place scored, each with a verdict and a reason from its own numbers. For Daunt it read "Full House chose the 11th of Qloo's 50, EtnaCoffee. The 1st, Park Sports The Regent's Park, is a tennis shop." EtnaCoffee and K-POP both scored 73, and EtnaCoffee won as "5 minutes on foot instead of 13."
 
-A venue nobody opens for 8 weeks stops its Monday runs, and after 6 months it is deleted with everything in it.
+## The night
 
-It never publishes. The owner approves every night.
+The two kinds of place pick the format: book then film, film then show, screening then drinks, book club then drinks, a listening party at a record shop, coffee or drinks before a live room's own set, show then drinks, a late view at a gallery, or a TV and film quiz crawl. A film is screened only at a cinema, and the playlist plays only in a bar, a record shop or a cafe after 17:00.
 
-## MCP tools
+The picks come from one Qloo call per kind of pick with both places as the signal and explainability on, so each pick carries each crowd's share. Full House takes picks from the top ten split between 35 and 65, better known first, and drops anything under 0.8 popularity. For a book then film night it finds the book the film was made from.
 
-`/mcp` is a stateless Streamable HTTP endpoint with JSON responses, built on the MCP TypeScript SDK v2. Any MCP client can run the whole flow. Owner tools take the `venue_id` and `owner_token` from the owner's link.
+The day is the owner's quiet slot when both stops are open at their own times, and a stop counts as open only if it stays open 45 minutes after people arrive. Otherwise it tries the nearest weekday, an hour earlier, the other place first, and last the venue opening late. Daunt closes at 19:30 on Tuesdays and EtnaCoffee at 20:00, so the night runs coffee at EtnaCoffee from 19:00, then a book club on The Possession of Mr Cave at Daunt from 20:15, split 51 to 49 between the crowds.
 
-| Tool | What it does | Owner token |
+Mistral Small 3.1 24B on Workers AI writes the description and poster lines from a brief of what Qloo returned. A checker rejects copy naming anything not in the brief, and templates step in.
+
+The owner's night page counts RSVPs per link, "From your link 0. From EtnaCoffee's link 1." Public pages show a count only from 3.
+
+## What Qloo provides
+
+Only the Worker holds the key. The limits are in `src/shared/engine.ts`.
+
+| Step | Request | Calls |
 | --- | --- | --- |
-| `find_venue` | Looks a venue up by name and city and returns up to 8 places with address, coordinates and tags | no |
-| `read_street` | Runs or refreshes the street read, every part with its Qloo provenance | yes |
-| `propose_night` | Drafts a night plus two alternatives, or refines a plan from a request in plain words. Publishes nothing | yes |
-| `publish_night` | Publishes nothing. Returns the link to the approval screen, where the owner reads the words and ticks each action | yes |
-| `log_turnout` | Records how many people came, with an optional note. Never sent to Qloo | yes |
+| Find the venue | `/search` | 1 to 3 per search |
+| The street's and the venue's tags | `/v2/insights`, `urn:tag` | 2 per read |
+| Places the crowd loves | `/v2/insights`, `urn:entity:place`, take 50 | 1 per read |
+| Loves you back | the same, each candidate as signal | up to 8 per read |
+| What the two share | `/v2/analysis/compare` | 1 per read or swap |
+| Where the crowd gathers | `/v2/insights`, `urn:heatmap` | up to 2 per read |
+| What the crowd loves | `/v2/insights`, five kinds | 5 per read |
+| The night's picks | `/v2/insights`, both places | 1 to 3 per night |
+| The book behind the film | `/search` | up to 3 per night |
 
-## Live numbers
+A read makes at most 19 calls under a cap of 30, and a night stays under a cap of 8. The Daunt read made 19 and its night 2. Images come through the Worker, so visitors never talk to Qloo.
 
-- Charts: https://fullhouse.sampark-bhol.workers.dev/live
-- The same numbers as plain text, no JavaScript needed: https://fullhouse.sampark-bhol.workers.dev/live.txt
+## Run it
 
-`/live` shows what this server has done: venues set up, street reads, plans and who wrote their words, nights published, RSVPs, turnout, Monday runs, MCP tool calls, and every Qloo call by endpoint with its cache answers, errors and time to answer. Every figure comes from counters the Worker keeps as things happen. Nothing is seeded. A pane with nothing to count says what will show there once someone uses the app. Each chart covers 24 hours, 7 days or 30 days, opens as a table, and checks for new numbers on its own while the tab is open.
-
-The page keeps each owner's business with the owner. A venue is named only after it confirms an email on its own website's domain, and then only on its published nights and RSVPs. Reads, plans and drafts never carry a name. Head counts and seats show only as a total, and only once five nights are logged in the range, so no one venue's night can be read off the page. Taking a night down removes its lines from the log, and deleting a venue removes all of them.
-
-Each owner also has a Numbers tab behind their owner link: the RSVPs for the next night as they come in, every night against its room, each street read with the Qloo calls it made, and what each Monday run drafted.
-
-## Privacy and safe use
-
-- **What Qloo receives:** the venue as a public place (its Qloo id and map point), ids of places and tags that Qloo itself returned, the names typed into a search, and, on the Proof tab, the names a plain language model suggested, sent to Qloo search only to check whether they exist. Nothing about customers, because Full House never asks for anything about them. The owner's email stays in the venue's Durable Object. RSVPs and turnout reach the public numbers only as counts added up across venues, and never reach Qloo.
-- **Consent both ways:** a partner is never named on a public page, poster or calendar file until it presses We're in on its own invite page. A night the partner hosts cannot be published before that yes. The model never sees partner names, so its copy cannot name one.
-- **Who posted a page:** until a venue confirms an email on its own website domain, its event page and poster say "Posted on Full House by whoever set up the venue. The venue has not confirmed it." Anyone can report a page, three reports take it offline, and the owner can take any page down.
-- **Aggregate, and said so:** every screen with Qloo data ends with a "Receipts" drawer that holds a "What this does not tell you" list. The read asks Qloo nothing about age or gender. Identity themes never reach public copy. Ranks are positions within one answer, never percentages, and a missing score is never shown as zero.
-- **Qloo's answer and Full House's choice stay apart:** each page has one "Receipts" drawer, closed until opened, that says how each part is known and lists each reason with the Qloo call it came from. Where a rule of mine made the choice, the line says so ("tagged movie theater, which Full House pairs with a film night").
-- **The model writes words, not facts:** plain rules pick the night. The model (Mistral Small 3.1 24B on Workers AI by default) gets a JSON brief of what Qloo returned and writes the description, poster lines, social post and partner note. A checker rejects any copy that names a person, place, work or brand that is not in the brief, fixed templates step in, and the plan says which writer was used.
-- **No outreach without the owner:** partner notes open in the owner's own mail app, Gmail or Outlook, unsent. The only email the app sends goes to an address the owner confirmed, at most three a day, and only when email is set up.
-- **Images without tracking:** covers and place photos come from Qloo's image host through the Worker's own `/img/` path, so a visitor's browser never talks to Qloo.
-- **Public pages stay small:** event pages ask search engines not to list them and keep an RSVP count only. One RSVP per browser, through a random cookie stored as a hash salted with the night, and at most three per night from one address.
-- **Owner links can be replaced:** a new owner link from the venue page stops every older one for that venue.
-- **How long things are kept:** a venue nobody opens for 8 weeks stops its Monday runs; after 6 months it is deleted with everything in it.
-- **Licences:** the playlist is a list of artists, not a licence, and film nights carry a screening licence reminder.
-- **Deleting a venue** removes its reads, plans, nights, counts, email and Eventbrite token and its lines in the public log, and its event pages stop working. The totals on `/live` keep what was counted, with no name attached.
-
-## Limits
-
-- Qloo's weekly trend series came back flat or empty on the hackathon host, so nothing is called rising. Changes show only as rank moves between two dated reads.
-- Street tags from a location arrive nearly level and in five namespaces only, so they are shown as a set.
-- Demographics ignore location, so they describe the venue's audience as a whole, never the street.
-- The venue has to be in Qloo's catalog with a location. Search is fuzzy and never comes back empty, which is why the owner picks by address.
-- For a few venues Qloo silently drops the venue from the signal for some kinds of pick. The read spots this from the empty explainability and labels those lists as the area's picks.
-- Data is densest in Manhattan, London, Paris and San Francisco and thinner in Austin, Chicago, Los Angeles and Berlin.
-- A plan is a suggestion from aggregate taste. It says nothing about who will come, and the owner should check a partner fits before sending the note.
-- Qloo calls are capped per day (`QLOO_DAILY_BUDGET`, 4000 by default, with a fifth kept for venues older than a week) and per read (30). Each IP address, or IPv6 /64, gets 20 new venues, 120 searches, 30 reads, 60 plans, 60 RSVPs and 10 proof checks a day, and each venue 3 fresh reads a day. `/mcp` takes 60 requests a minute from one address, and `/api/stats` and `/live.txt` take 30.
-- The Eventbrite step is covered by tests against a stubbed Eventbrite API. I have not run it against a live Eventbrite account yet.
-
-## Run it locally
-
-Node 22.18 or newer on Linux or macOS.
+Node 22.18 or newer.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-This builds the web app, starts a fake Qloo server that answers in Qloo's shapes, and runs the Worker with `wrangler dev`. It prints the local URL. Ctrl+C stops everything.
-
-On live Qloo data, keep the key out of your shell history:
+This runs the Worker with `wrangler dev` against a fake Qloo server. For live data:
 
 ```sh
 read -rs QLOO_API_KEY && export QLOO_API_KEY
 LIVE=1 npm run dev
 ```
 
-The script writes the key to a `.dev.vars` only you can read and deletes it when it stops. With `CLOUDFLARE_API_TOKEN` set, the Workers AI binding runs remotely. Without it, plans use template copy.
+The key goes into a `.dev.vars` that is deleted on exit. To deploy, run `npm run build` and `npx wrangler deploy`, and set `QLOO_API_KEY` and `TOKEN_SECRET` as secrets.
 
-## Test
-
-```sh
-npm run check   # typecheck and unit tests
-npm run build   # web app into web/dist
-npm run e2e     # Playwright, headless, against wrangler dev and the fake Qloo server
-```
-
-Unit test fixtures are small hand written JSON shaped like Qloo's answers. The end to end run starts the Worker without the AI binding, so plans use templates, then restarts it without a key to check the page that says so. On 29 October 2026 all 514 unit tests and all 36 end to end specs passed, plus the key missing spec.
-
-## Deploy for free on Cloudflare
+## Tests
 
 ```sh
-npm ci
-npm run build
-npx wrangler login
-npx wrangler deploy
-npx wrangler secret put QLOO_API_KEY
-openssl rand -hex 32 | npx wrangler secret put TOKEN_SECRET
-curl https://fullhouse.<subdomain>.workers.dev/api/health
+npm run check
+npm run e2e
 ```
 
-For the owner email, also set `RESEND_API_KEY` and `RESEND_FROM` (a sender on a domain you verified with Resend). Without both, email stays off.
+`check` runs the typecheck and the unit tests, whose fixtures include trimmed real Qloo answers. `e2e` runs Playwright against the fake Qloo server. On 30 October 2026, `npx vitest run --maxWorkers=2` passed 610 tests in 78 files, and `npm run e2e` passed 38 tests in the app project and 1 in the no key project.
 
-The Workers Free plan covers it: SQLite Durable Objects, the Cache API and a daily Workers AI allowance are included. The dry run bundle is 1646.04 KiB, 397.58 KiB gzipped. A street read stays well inside the 50 subrequests a free invocation gets: 12 Qloo calls and at most 10 Cache API operations.
+## Privacy
 
-## Security
+Qloo receives your venue as a public place, ids it returned itself, names typed into search, and on the Proof tab the places a plain language model suggested, only to check they exist. Nothing about customers is sent. Your position from "use my location" finds your venue and is never stored.
 
-The Qloo key lives only in the Worker secret and travels only in the request header. It never reaches the browser, a log line, a response body or the call list the owner sees. Owner links carry an HMAC token after the `#`, compared in constant time. Eventbrite tokens are sealed with AES-GCM under a key derived from `TOKEN_SECRET` and never returned. The API and the MCP endpoint refuse writes from any other origin, bodies are capped at 64 KB, limits are counted under a salted hash of the caller's IP address, and API and event page responses carry strict security headers. Server rendered pages escape every user string.
+A partner is never named on a night's event page, poster or calendar file before it says yes on its own invite page, and the landing marks its example as a pair not yet agreed. It first sets its own part: what runs there, when it starts, and whether it is open that evening. The event page says how the yes was given, for example "EtnaCoffee answered through an invite link. Its stop is proposed, subject to its own programme." The owner approves every night, and the Monday run never publishes.
 
-To report a vulnerability, use GitHub private vulnerability reporting on this repository: Security tab, then "Report a vulnerability". Details are in `SECURITY.md`.
+On the hosted demo, email is off, so no venue can confirm an address on its own website and every venue shows as unconfirmed.
 
-## Repository map
-
-| Path | What it is |
-| --- | --- |
-| `src/shared` | Types, words, distance and the turnout rule every layer shares, and the colour tokens |
-| `src/core/qloo` | Qloo client: request builder, retries, cache and budget hooks, parsers, provenance |
-| `src/core/street` | The street read, one step per Qloo call, with reasons and limit lines |
-| `src/core/planner` | Night formats, scoring, partners, menu ideas, playlist, slot dates |
-| `src/core/copy` | Brief, prompt, claim checker, templates, owner edits |
-| `src/core/refine` | Turning a change request in plain words into plan settings |
-| `src/core/baseline` | The Proof tab: the plain model ask and the name checks against Qloo search |
-| `src/worker` | Hono app, routes, owner tokens, meter, MCP server, Workers AI adapter |
-| `src/worker/qloo` | Qloo caches, budget and error mapping for the Worker |
-| `src/worker/qr` | The QR encoder for the poster |
-| `src/worker/venue` | The venue's Durable Object: records, planning, publishing, the Monday run |
-| `src/worker/stats` | The live numbers: counters, Qloo call times, the public log and the owner's Numbers tab |
-| `src/worker/actions` | Event page, calendar file, mail drafts, Eventbrite, owner email |
-| `src/worker/pages` | Server rendered event page and poster |
-| `web/src` | The owner app: pages, UI pieces and styles |
-| `test` | Unit tests and hand written fixtures |
-| `e2e` | Fake Qloo server and Playwright specs |
-| `scripts` | Local dev and e2e runners |
-| `media` | The screenshots in this README: the Housing Works plan, read from the live Qloo API on 27 October 2026 |
+A venue nobody opens for 8 weeks stops its Monday runs and is deleted after 6 months. Security reports go through `SECURITY.md`.
 
 ## Licence
 
