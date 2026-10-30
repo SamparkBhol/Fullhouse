@@ -1,3 +1,4 @@
+import { reasonWords } from "../../../src/shared/answers.ts";
 import { RANGE_WORDS, type StatsBody } from "../../../src/shared/stats.ts";
 import { fitChart } from "../charts/fit.ts";
 import { barGauge } from "../charts/gauge.ts";
@@ -90,6 +91,47 @@ export function copyPane(body: StatsBody, tools: BoardTools): HTMLElement {
         ],
         numeric: [false, true],
       }),
+    ],
+  });
+}
+
+const ANSWERS_TITLE = "Answers to invites";
+
+// Set through the style object, which the page's style policy allows where a style attribute is refused.
+function barFill(share: number): HTMLElement {
+  const fill = h("i");
+  fill.style.width = `${Math.round(share * 100)}%`;
+  return fill;
+}
+
+// Every yes, and every no by the reason the neighbour picked, so the next ask can fit what owners want.
+export function answersPane(body: StatsBody, tools: BoardTools): HTMLElement {
+  const list = body.totals.answers ?? [];
+  const all = list.reduce((n, a) => n + a.n, 0);
+  const line = "Each neighbour who says not this time picks a reason first. Only the reason is counted here, never who said it.";
+  if (!all) return pane({ key: "answers", title: ANSWERS_TITLE, line, span: "side", body: [empty(`No invite answered in ${RANGE_WORDS[tools.range]}. Each yes and each reason for a no shows here.`)] });
+  const max = Math.max(...list.map((a) => a.n));
+  const shown = list.filter((a) => a.n > 0 || a.key !== "unsaid");
+  return pane({
+    key: "answers",
+    title: ANSWERS_TITLE,
+    line,
+    span: "side",
+    body: [
+      h(
+        "ul",
+        { class: "answer-bars" },
+        shown.map((a) =>
+          h(
+            "li",
+            { class: `answer-bar answer-${a.key === "yes" ? "yes" : "no"}` },
+            h("span", { class: "answer-label" }, reasonWords(a.key)),
+            h("span", { class: "answer-track", "aria-hidden": "true" }, barFill(max ? a.n / max : 0)),
+            h("strong", { class: "num" }, count(a.n)),
+          ),
+        ),
+      ),
+      asTable("answers", { caption: ANSWERS_TITLE, head: ["Answer", "Count"], rows: shown.map((a) => [reasonWords(a.key), a.n]), numeric: [false, true] }),
     ],
   });
 }

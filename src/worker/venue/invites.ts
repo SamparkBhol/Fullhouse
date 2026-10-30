@@ -1,4 +1,4 @@
-import type { Invite, InviteAnswer, LovedPlace, Match, MatchPartner, NightPlan, NightStop, PartnerConfirmation, Venue } from "../../shared/contract.ts";
+import type { Invite, InviteAnswer, InviteDecline, LovedPlace, Match, MatchPartner, NightPlan, NightStop, PartnerConfirmation, Venue } from "../../shared/contract.ts";
 import { FORMATS, confirmPartnerStop } from "../../core/index.ts";
 import { NEAR_ME } from "../../shared/cities.ts";
 import { listedHours } from "../../shared/hours.ts";
@@ -111,6 +111,13 @@ async function applyConfirmation(records: VenueRecords, venue: Venue, invite: In
   if (night) await records.store.put(`night:${invite.planId}`, { ...night, night: { ...night.night, ...merge(night.night) } });
 }
 
+function decline(a: InviteAnswer): InviteDecline | null {
+  const d: InviteDecline = {};
+  if (a.reason) d.reason = a.reason;
+  if (a.note?.trim()) d.note = a.note.trim();
+  return d.reason || d.note ? d : null;
+}
+
 export async function answerInvite(records: VenueRecords, deps: VenueDeps, slug: string, answer: InviteAnswer): Promise<Out<Invite>> {
   const invite = await records.inviteBySlug(slug);
   if (!invite) return fail(404, "invite_not_found");
@@ -118,11 +125,18 @@ export async function answerInvite(records: VenueRecords, deps: VenueDeps, slug:
   const at = deps.now().toISOString();
   const yes = answer.answer === "yes";
   const asked = (await records.store.get<NightPlan>(`iplan:${invite.id}`)) ?? (await planById(records, invite.planId));
-  const answered: Invite = { ...invite, status: yes ? "accepted" : "declined", answeredAt: at, ...(yes ? { confirmed: confirmation(answer, at, proposedStop(asked)) } : {}) };
+  const no = yes ? null : decline(answer);
+  const answered: Invite = {
+    ...invite,
+    status: yes ? "accepted" : "declined",
+    answeredAt: at,
+    ...(yes ? { confirmed: confirmation(answer, at, proposedStop(asked)) } : {}),
+    ...(no ? { declined: no } : {}),
+  };
   await records.store.put(`invite:${invite.id}`, answered);
   const venue = await records.venue();
   if (venue && answered.confirmed) await applyConfirmation(records, venue, answered, answered.confirmed);
-  if (venue) recordEvent(deps.stats, inviteAnsweredEvent(venue.id, answer.answer));
+  if (venue) recordEvent(deps.stats, inviteAnsweredEvent(venue.id, answer.answer, yes ? undefined : answer.reason));
   return ok(answered);
 }
 
@@ -179,6 +193,7 @@ export function inviteView(invite: Invite, plan: NightPlan, venue: Venue): Publi
   const c = invite.confirmed;
   if (c) view.confirmed = { tellsRegulars: c.tellsRegulars, ...(c.start ? { start: c.start } : {}), ...(c.what ? { what: c.what } : {}), ...(c.kept !== undefined ? { kept: c.kept } : {}) };
   if (invite.status === "accepted" && venue.contact) view.venueContact = venue.contact;
+  if (invite.status === "declined" && invite.declined?.reason) view.declined = { reason: invite.declined.reason };
   if (invite.status === "accepted") view.spread = { name: view.partner.name, ...(venue.city !== NEAR_ME ? { city: venue.city } : {}) };
   return view;
 }

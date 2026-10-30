@@ -13,6 +13,7 @@ export type Metric =
   | "room_people"
   | "monday"
   | "invite"
+  | "answer"
   | "mcp"
   | "qloo_call"
   | "qloo_cache"
@@ -57,7 +58,7 @@ export function incrementsFor(e: StatEvent): Increment[] {
     case "invite_sent":
       return [inc("invite", 1, "sent")];
     case "invite_answered":
-      return [inc("invite", 1, e.answer)];
+      return [inc("invite", 1, e.answer), inc("answer", 1, e.answer === "yes" ? "yes" : (e.reason ?? "unsaid"))];
     case "mcp_call":
       return [inc("mcp", 1, e.tool)];
     case "qloo_call":

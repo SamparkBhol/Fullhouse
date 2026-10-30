@@ -1,5 +1,6 @@
 import type { NightFormat, NightPlan } from "../../shared/contract.ts";
 import type { MondayProposal } from "../../shared/stats.ts";
+import type { NoReason } from "../../shared/answers.ts";
 
 // Events carry counts, ids and public names only. Owner typed text and owner email never go in one.
 // The venue id lets the Meter drop a venue's log lines when its pages come down; it never reaches a reader.
@@ -13,7 +14,7 @@ export type StatEvent =
   | { kind: "turnout"; venueId: string; nights: number; people: number; roomNights: number; seats: number; roomPeople: number; firstAt?: string }
   | { kind: "monday_run"; venueId: string; planned: boolean; proposal?: MondayProposal }
   | { kind: "invite_sent"; venueId: string }
-  | { kind: "invite_answered"; venueId: string; answer: "yes" | "no" }
+  | { kind: "invite_answered"; venueId: string; answer: "yes" | "no"; reason?: NoReason }
   | { kind: "mcp_call"; tool: string }
   | { kind: "qloo_call"; endpoint: string; cached: boolean; ms: number }
   | { kind: "qloo_error"; endpoint: string; error: string }

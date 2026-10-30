@@ -1,3 +1,4 @@
+import type { NoReason } from "../../shared/answers.ts";
 import type { Night, NightPlan, StreetRead, Venue } from "../../shared/contract.ts";
 import type { StatEvent } from "./events.ts";
 
@@ -57,8 +58,8 @@ export function inviteSentEvent(venueId: string): StatEvent {
   return { kind: "invite_sent", venueId };
 }
 
-export function inviteAnsweredEvent(venueId: string, answer: "yes" | "no"): StatEvent {
-  return { kind: "invite_answered", venueId, answer };
+export function inviteAnsweredEvent(venueId: string, answer: "yes" | "no", reason?: NoReason): StatEvent {
+  return { kind: "invite_answered", venueId, answer, ...(reason ? { reason } : {}) };
 }
 
 export function forgetVenue(venue: Venue, lines: "nights" | "all"): StatEvent {

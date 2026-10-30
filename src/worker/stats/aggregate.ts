@@ -1,3 +1,4 @@
+import { ANSWER_KEYS } from "../../shared/answers.ts";
 import { TURNOUT_SHOWN_FROM, type BudgetToday, type EndpointStats, type LoggedEvent, type SeriesName, type StatsBody, type StatsCounts, type StatsSeries } from "../../shared/stats.ts";
 import type { Metric } from "./counters.ts";
 import { latencySummary, type StepCount } from "./percentile.ts";
@@ -80,6 +81,7 @@ function counts(t: Tally): StatsCounts {
     mondayPlanned: t.total("monday", "planned"),
     invitesSent: t.total("invite", "sent"),
     invitesAccepted: t.total("invite", "yes"),
+    answers: ANSWER_KEYS.map((key) => ({ key, n: t.total("answer", key) })),
     mcpCalls: t.total("mcp"),
     copyModel: t.total("plan", "model"),
     copyTemplate: t.total("plan", "template"),

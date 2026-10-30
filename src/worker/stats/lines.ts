@@ -1,4 +1,5 @@
 import { FORMATS, describeDate } from "../../core/index.ts";
+import { reasonWords } from "../../shared/answers.ts";
 import { ERROR_WORDS, type StatEventKind } from "../../shared/stats.ts";
 import type { StampedEvent, StatEvent } from "./events.ts";
 
@@ -44,7 +45,8 @@ export function lineFor(e: StatEvent): string | null {
     case "invite_sent":
       return "A venue asked the place down the street to share a night.";
     case "invite_answered":
-      return e.answer === "yes" ? "A neighbour said yes to a shared night." : "A neighbour said not this time to a shared night.";
+      if (e.answer === "yes") return "A neighbour said yes to a shared night.";
+      return e.reason ? `A neighbour said not this time to a shared night. Its reason: ${reasonWords(e.reason).toLowerCase()}.` : "A neighbour said not this time to a shared night.";
     case "mcp_call":
       return `An MCP client called ${e.tool}.`;
     case "qloo_error":

@@ -17,5 +17,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src", "../src/shared/contract.ts", "../src/shared/words.ts", "../src/shared/geo.ts", "../src/shared/turnout.ts", "../src/shared/images.ts", "../src/shared/hours.ts", "../src/shared/engine.ts", "../src/shared/verdict.ts", "../src/shared/cities.ts", "../src/shared/walk.ts", "../src/shared/stats.ts", "../src/shared/design_tokens.ts"]
+  "include": ["src", "../src/shared/contract.ts", "../src/shared/words.ts", "../src/shared/geo.ts", "../src/shared/turnout.ts", "../src/shared/images.ts", "../src/shared/hours.ts", "../src/shared/engine.ts", "../src/shared/verdict.ts", "../src/shared/cities.ts", "../src/shared/walk.ts", "../src/shared/stats.ts", "../src/shared/design_tokens.ts", "../src/shared/answers.ts", "../src/shared/scan.ts"]
 }

@@ -1,3 +1,5 @@
+import type { NoReason } from "./answers.ts";
+
 export type QlooType =
   | "place"
   | "artist"
@@ -516,6 +518,13 @@ export interface Invite {
   confirmed?: PartnerConfirmation;
   // When the partner set up its own Full House from the link on its answered invite.
   joinedAt?: string;
+  // Why the partner said not this time, and its few words, shown only to the owner.
+  declined?: InviteDecline;
+}
+
+export interface InviteDecline {
+  reason?: NoReason;
+  note?: string;
 }
 
 export interface InviteInput {
@@ -529,6 +538,8 @@ export interface InviteAnswer {
   tellsRegulars?: boolean;
   open?: boolean;
   contact?: string;
+  reason?: NoReason;
+  note?: string;
 }
 
 export interface ExamplePlace {

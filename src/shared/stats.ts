@@ -1,3 +1,4 @@
+import type { AnswerKey } from "./answers.ts";
 import type { NightFormat, NightPlan } from "./contract.ts";
 
 export type StatsRange = "24h" | "7d" | "30d";
@@ -54,6 +55,8 @@ export interface StatsCounts {
   mondayPlanned: number;
   invitesSent?: number;
   invitesAccepted?: number;
+  // Every answer to an invite in the range, by yes and by each reason for a no, in a fixed order.
+  answers?: Array<{ key: AnswerKey; n: number }>;
   mcpCalls: number;
   copyModel: number;
   copyTemplate: number;

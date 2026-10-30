@@ -129,6 +129,39 @@ describe("invites", () => {
     expect(await no.json()).toMatchObject({ status: "declined" });
     expect(await (await req(h, `/i/${inv.slug}`)).text()).toContain("You said not this time.");
   });
+
+  it("open four reasons before a no is sent, and keep the reason and the few words for the owner", async () => {
+    const { h, events } = jointApp();
+    const p = await jointPlan(h);
+    const inv = (await (await invite(h, p, p.plan.id)).json()) as Invite;
+    const page = await (await req(h, `/i/${inv.slug}`)).text();
+    expect(page).toContain('<details class="decline"><summary class="btn btn-quiet">Not this time</summary>');
+    for (const words of ["Not our kind of night", "Wrong day or time", "We do not run events", "Something else"]) expect(page).toContain(words);
+    expect(page.match(/name="reason" value="(kind|day|events|other)" required/g)).toHaveLength(4);
+    expect(page).toContain('name="note" maxlength="140"');
+    expect(page).not.toContain('name="answer" value="no">Not this time</button>');
+    const no = await say(h, inv.slug, `no&reason=day&note=${encodeURIComponent("Thursdays are our quiz night")}`);
+    expect(no.status).toBe(303);
+    const polled = (await (await req(h, `/api/venues/${p.id}/invites`, { token: p.token })).json()) as Invite[];
+    expect(polled[0]).toMatchObject({ status: "declined", declined: { reason: "day", note: "Thursdays are our quiz night" } });
+    const after = await (await req(h, `/i/${inv.slug}`)).text();
+    expect(after).toContain("sees your reason, wrong day or time.");
+    expect(after).not.toContain("Thursdays are our quiz night");
+    expect(events.filter((e) => e.kind === "invite_answered")).toEqual([{ kind: "invite_answered", venueId: p.id, answer: "no", reason: "day" }]);
+  });
+
+  it("drop a reason sent with a yes, and refuse a reason that is not one of the four", async () => {
+    const { h, events } = jointApp();
+    const p = await jointPlan(h);
+    const inv = (await (await invite(h, p, p.plan.id)).json()) as Invite;
+    expect((await say(h, inv.slug, "no&reason=price")).status).toBe(303);
+    expect(((await (await req(h, `/api/venues/${p.id}/invites`, { token: p.token })).json()) as Invite[])[0]?.status).toBe("waiting");
+    await say(h, inv.slug, "yes&reason=kind&note=x");
+    const polled = ((await (await req(h, `/api/venues/${p.id}/invites`, { token: p.token })).json()) as Invite[])[0];
+    expect(polled?.status).toBe("accepted");
+    expect(polled?.declined).toBeUndefined();
+    expect(events.filter((e) => e.kind === "invite_answered")).toEqual([{ kind: "invite_answered", venueId: p.id, answer: "yes" }]);
+  });
 });
 
 describe("consent", () => {

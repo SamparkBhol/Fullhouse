@@ -1,8 +1,10 @@
+import type { NoReason } from "../../shared/answers.ts";
 import type { CrowdSplit, InviteStatus } from "../../shared/contract.ts";
 import { describeDate } from "../../core/index.ts";
 import { lowerFirst, possessive, shortName } from "../../shared/words.ts";
 import { CREDIT, footer, head, topBar, unconfirmedWord } from "./chrome.ts";
 import { COUNT_SHOWN_FROM } from "./event.ts";
+import { declineForm, declinedLine } from "./decline.ts";
 import { artHtml, type PublicArt } from "./event_art.ts";
 import { zoneCity } from "./guest.ts";
 import { esc, safeHref } from "./html.ts";
@@ -39,6 +41,8 @@ export interface PublicInvite {
   theirList?: TheirList;
   // After the yes: the partner's own name and city, to set up its own Full House from this page.
   spread?: { name: string; city?: string };
+  // The reason picked with a no, said back to the partner. Its few words stay with the owner.
+  declined?: { reason?: NoReason };
 }
 
 function nightPanel(n: PublicInvite): string {
@@ -106,12 +110,12 @@ function acceptedBody(n: PublicInvite, v: string): string {
 }
 
 function openBody(n: PublicInvite, v: string): string {
-  if (n.status === "declined") return `<p class="going">You said not this time. Nothing goes up with your name on it.</p>`;
+  if (n.status === "declined") return declinedLine(shortName(n.venue.name), n.declined?.reason);
   return (
     `<h2 id="answer-title">Your answer</h2>` +
     `<p class="small">If you say yes, ${v} can put your name beside theirs on the event page, the poster and the calendar entry, with your part exactly as you set it below. Nothing goes up with your name before that.</p>` +
-    `<form method="post" action="/i/${esc(n.slug)}/answer">${yourStop(n)}<div class="buttons"><button class="btn btn-them" type="submit" name="answer" value="yes">We're in</button>` +
-    `<button class="btn btn-quiet" type="submit" name="answer" value="no">Not this time</button></div></form>`
+    `<form method="post" action="/i/${esc(n.slug)}/answer">${yourStop(n)}<div class="buttons"><button class="btn btn-them" type="submit" name="answer" value="yes">We're in</button></div></form>` +
+    declineForm(n.slug, shortName(n.venue.name))
   );
 }
 

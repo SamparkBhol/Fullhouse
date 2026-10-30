@@ -1,4 +1,5 @@
 import type { NightPlan } from "../../../src/shared/contract.ts";
+import { reasonWords } from "../../../src/shared/answers.ts";
 import { lowerFirst, shortName } from "../../../src/shared/words.ts";
 import { api } from "../api.ts";
 import { h, prefersReducedMotion, replace, uid } from "../dom.ts";
@@ -61,10 +62,13 @@ function waitingPanel(ctx: VenueCtx, invite: Invite, plan: NightPlan | null): HT
 function answeredPanel(ctx: VenueCtx, invite: Invite): HTMLElement {
   const them = shortName(invite.partner.name);
   if (invite.status === "declined") {
+    const d = invite.declined;
     return h(
       "section",
       { class: "panel", "aria-label": "Their answer" },
       h("p", null, `${them} said not this time. Nothing went out under either name.`),
+      d?.reason ? h("p", { class: "decline-said" }, `Their reason: ${reasonWords(d.reason).toLowerCase()}.`) : null,
+      d?.note ? h("blockquote", { class: "decline-note" }, d.note) : null,
       h("p", { class: "actions" }, h("a", { class: "btn", href: firstPath(ctx.id, "match") }, "Pick another place")),
     );
   }

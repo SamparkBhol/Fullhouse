@@ -1,3 +1,4 @@
+import { reasonWords } from "../../shared/answers.ts";
 import { plural } from "../../shared/words.ts";
 import { ERROR_WORDS, RANGE_WORDS, STATS_MAX_AGE_S, TURNOUT_SHOWN_FROM, type StatsBody } from "../../shared/stats.ts";
 
@@ -47,8 +48,15 @@ function activity(s: StatsBody): string[] {
     row("RSVPs", t.rsvps, ever(s.allTime.rsvps)),
     ...turnout(s),
     row("Monday runs", t.mondayRuns, `${t.mondayPlanned} drafted a night`),
+    ...answers(s),
     row("MCP tool calls", t.mcpCalls, s.mcpTools.map((m) => `${m.tool} ${m.n}`).join(", ")),
   ];
+}
+
+function answers(s: StatsBody): string[] {
+  const list = s.totals.answers ?? [];
+  const all = list.reduce((n, a) => n + a.n, 0);
+  return [row("Answers to invites", all, list.filter((a) => a.n > 0).map((a) => `${reasonWords(a.key).toLowerCase()} ${a.n}`).join(", "))];
 }
 
 function qloo(s: StatsBody): string[] {

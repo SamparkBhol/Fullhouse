@@ -4,7 +4,8 @@ import { h } from "../dom.ts";
 import { credit, focusHeading, page, publicHeader, title } from "../ui/shell.ts";
 import { mountBoard } from "./live-board.ts";
 import { callsPane, statRow } from "./live-panels.ts";
-import { budgetPane, copyPane } from "./live-side.ts";
+import { scanPanel } from "./live-scan.ts";
+import { answersPane, budgetPane, copyPane } from "./live-side.ts";
 import { agentsPane, endpointsPane, logPane } from "./live-tables.ts";
 
 function intro(body: StatsBody | null, zone: string): string {
@@ -28,6 +29,7 @@ export function livePage(): void {
     withRange: true,
     defaultRefresh: "30s",
     extra: h("p", { class: "board-plain" }, h("a", { href: "/live.txt" }, "The same numbers as plain text")),
+    after: scanPanel(),
     // Two columns on a wide screen, the charts and tables on the left; on a phone they read in this order.
     panes: (body, tools) => [
       statRow(body, tools),
@@ -35,7 +37,7 @@ export function livePage(): void {
         "div",
         { class: "board-cols" },
         h("div", { class: "board-col board-main" }, callsPane(body, tools), endpointsPane(body), agentsPane(body)),
-        h("div", { class: "board-col board-side" }, budgetPane(body), copyPane(body, tools), logPane(body, tz)),
+        h("div", { class: "board-col board-side" }, budgetPane(body), answersPane(body, tools), copyPane(body, tools), logPane(body, tz)),
       ),
     ],
   });

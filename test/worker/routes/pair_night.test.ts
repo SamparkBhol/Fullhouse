@@ -57,7 +57,7 @@ describe("a two stop night", () => {
     expect(html).toContain('name="what" maxlength="120" value="Quiz round two, on The Farewell"');
     expect(html).toContain('name="start" value="20:15"');
     expect(html).toContain('name="tellsRegulars" value="on">');
-    expect(html).not.toContain("checked");
+    expect(html).not.toMatch(/<input[^>]*\schecked/);
   });
 
   it("says the partner accepted the proposed stop when the yes sends it back untouched, and makes no regulars claim unticked", async () => {

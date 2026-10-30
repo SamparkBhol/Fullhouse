@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { ActionKind, InviteAnswer, NightFormat, PlanInput, QuietSlot, VenueSettingsInput } from "../shared/contract.ts";
+import { NOTE_MAX, NO_REASON_KEYS } from "../shared/answers.ts";
 import { isEmail } from "./actions/links.ts";
 import { NIGHT_ID_RE } from "./ids.ts";
 import { isValidTimeZone } from "../core/index.ts";
@@ -105,6 +106,8 @@ export const AnswerSchema = z.object({
   tellsRegulars: tick.optional(),
   open: tick.optional(),
   contact: z.string().trim().max(120).optional(),
+  reason: z.union([z.enum(NO_REASON_KEYS), z.literal("")]).optional(),
+  note: z.string().trim().max(400).transform((v) => v.slice(0, NOTE_MAX).trim()).optional(),
 });
 
 export function cleanAnswer(input: z.infer<typeof AnswerSchema>): InviteAnswer {
@@ -114,6 +117,8 @@ export function cleanAnswer(input: z.infer<typeof AnswerSchema>): InviteAnswer {
   if (input.tellsRegulars !== undefined) out.tellsRegulars = input.tellsRegulars;
   if (input.open !== undefined) out.open = input.open;
   if (input.contact) out.contact = input.contact;
+  if (input.answer === "no" && input.reason) out.reason = input.reason;
+  if (input.answer === "no" && input.note) out.note = input.note;
   return out;
 }
 
