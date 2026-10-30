@@ -164,6 +164,18 @@ On the hosted demo email is off, so venues show as unconfirmed.
 
 A venue nobody opens for 8 weeks stops its Monday runs and is deleted after 6 months.
 
+## Known limitations
+
+The neighbour's yes comes through an invite link. Email is off on the hosted demo, so a venue can't prove it owns its page yet, and every venue shows as unconfirmed.
+
+Some places, cinemas especially, list no opening hours in Qloo. Full House says so and asks the owner to check instead of guessing.
+
+Taste data is thinner away from big US and European cities, so pairs there come out weaker.
+
+No real night has run yet. The ledger counts sign ups by the link they came through, not people through the door.
+
+In the demo video the neighbour's phone is played by us.
+
 ## Sources
 
 - https://www.musicweek.com/public_html/index.php/live/read/music-venue-trust-175-towns-cities-with-grassroots-venues-no-longer-receive-regular-touring-shows/093415
