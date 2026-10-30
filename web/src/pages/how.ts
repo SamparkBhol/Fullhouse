@@ -2,6 +2,7 @@ import type { FitKey } from "../../../src/shared/contract.ts";
 import { BACK_CHECKS, BOARD_TOP, CACHE_TTL_SEC, COUNT_SHOWN_FROM, DELETE_AFTER_DAYS, FIT_CHECKS, FIT_LABELS, FIT_MAX, LOVED_RADIUS_M, LOVED_TAKE, NEAR_MILES, NEAR_TIE, PAIR_CANDIDATES, PAUSE_AFTER_DAYS, READ_CAP } from "../../../src/shared/engine.ts";
 import { keptWords, milesWords, numberWord, spanWords } from "../../../src/shared/words.ts";
 import { h, replace } from "../dom.ts";
+import { mcpSection } from "./how-mcp.ts";
 import { credit, focusHeading, page, publicHeader, title } from "../ui/shell.ts";
 
 const km = (m: number) => `${(m / 1000).toFixed(1)} km`;
@@ -127,6 +128,7 @@ export function howPage(): void {
         stepsSection(),
         callsSection(),
         neverSection(),
+        mcpSection(),
       ),
     ),
   );

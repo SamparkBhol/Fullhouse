@@ -79,3 +79,21 @@ describe("MCP endpoint", () => {
     expect((await req(h, "/mcp", { method: "DELETE" })).status).toBe(405);
   });
 });
+
+describe("MCP tool list for the How it works page", () => {
+  it("is built from the same definitions the server registers", async () => {
+    const h = testApp();
+    const shown = (await (await req(h, "/api/mcp/tools")).json()) as { endpoint: string; tools: Array<{ name: string; title: string; description: string; readOnly: boolean; args: Array<{ name: string; required: boolean }> }> };
+    const listed = (await (
+      await req(h, "/mcp", { method: "POST", headers: { accept: "application/json, text/event-stream", "mcp-protocol-version": "2025-11-25", origin: ORIGIN }, body: { jsonrpc: "2.0", id: 1, method: "tools/list", params: {} } })
+    ).json()) as { result: { tools: Array<{ name: string; title: string; description: string; annotations: { readOnlyHint: boolean }; inputSchema: { required?: string[]; properties: Record<string, unknown> } }> } };
+    expect(shown.endpoint).toMatch(/\/mcp$/);
+    expect(shown.tools.map((t) => t.name)).toEqual(listed.result.tools.map((t) => t.name));
+    for (const t of shown.tools) {
+      const live = listed.result.tools.find((x) => x.name === t.name)!;
+      expect([t.title, t.description, t.readOnly]).toEqual([live.title, live.description, live.annotations.readOnlyHint === true]);
+      expect(t.args.map((a) => a.name)).toEqual(Object.keys(live.inputSchema.properties));
+      expect(t.args.filter((a) => a.required).map((a) => a.name)).toEqual(live.inputSchema.required ?? []);
+    }
+  });
+});

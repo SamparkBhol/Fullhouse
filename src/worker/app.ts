@@ -72,8 +72,8 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
   ownerRoutes(app, deps);
   statsRoutes(app, deps);
   scanRoutes(app, deps);
-  app.all("/api/*", () => apiError(404, "not_found", "No such API route."));
   mcpRoutes(app, deps);
+  app.all("/api/*", () => apiError(404, "not_found", "No such API route."));
   publicRoutes(app, deps);
   inviteRoutes(app, deps);
   imageRoutes(app);

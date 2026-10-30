@@ -1,9 +1,7 @@
 import { McpServer, WebStandardStreamableHTTPServerTransport, type CallToolResult } from "@modelcontextprotocol/server";
-import { z } from "zod";
 import type { ActionKind, PlanInput, VenueCandidate } from "../shared/contract.ts";
-import { NIGHT_ID_RE, VENUE_ID_RE } from "./ids.ts";
+import { TOOLS } from "./mcp_defs.ts";
 import type { LimitKind } from "./meter_core.ts";
-import { ACTIONS, FORMATS } from "./validate.ts";
 import type { Out, VenueApi } from "./venue/api.ts";
 
 export const MCP_VERSION = "0.1.0";
@@ -20,15 +18,6 @@ const INSTRUCTIONS =
   "Full House plans a quiet night for a small venue from Qloo taste data. Call find_venue first and let the owner pick the right place. " +
   "Owner tools need the venue_id and owner_token from the owner's Full House link. propose_night only drafts. " +
   "publish_night publishes nothing: it returns the approval screen where the owner reads the plan and says yes. Never claim a result Qloo did not return.";
-
-const ownerArgs = {
-  venue_id: z.string().regex(VENUE_ID_RE).describe("The venue id from the owner link /v/<venue_id>"),
-  owner_token: z.string().min(10).max(128).describe("The owner token from the owner link after #t="),
-};
-
-const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
-
-const loose = (shape: Record<string, z.ZodType>) => z.looseObject(shape);
 
 function textAndData(summary: string, data: Record<string, unknown>, includeJson = true): CallToolResult {
   return {
@@ -78,13 +67,7 @@ export function buildMcpServer(ports: McpPorts): McpServer {
 
   tool(
     "find_venue",
-    {
-      title: "Find a venue",
-      description: "Look up a venue by name and city in Qloo and return up to 8 matching places with address, coordinates and tags.",
-      inputSchema: z.object({ name: z.string().min(1).max(120), city: z.string().min(1).max(120) }),
-      outputSchema: z.object({ candidates: z.array(loose({ id: z.string(), name: z.string() })) }),
-      annotations: { readOnlyHint: true, openWorldHint: true },
-    },
+    TOOLS.find_venue,
     async ({ name, city }) => {
       const out = await ports.findVenues(name, city);
       if (!out.ok) return outError(out) as CallToolResult;
@@ -97,13 +80,7 @@ export function buildMcpServer(ports: McpPorts): McpServer {
 
   tool(
     "read_street",
-    {
-      title: "Read the street",
-      description: "Run or refresh the street read for the owner's venue: heat cells, street and venue taste tags, the gap, loved places nearby and the picks its audience loves, each with its Qloo provenance.",
-      inputSchema: z.object({ ...ownerArgs, refresh: z.boolean().optional().describe("Run a fresh read even if one is stored") }),
-      outputSchema: z.object({ read: loose({ venueId: z.string(), at: z.string() }) }),
-      annotations: { readOnlyHint: false, openWorldHint: true, idempotentHint: true },
-    },
+    TOOLS.read_street,
     async ({ venue_id, owner_token, refresh }) => {
       const venue = await ports.owner(venue_id, owner_token);
       if (!venue) return toolError(UNAUTHORIZED);
@@ -126,25 +103,7 @@ export function buildMcpServer(ports: McpPorts): McpServer {
 
   tool(
     "propose_night",
-    {
-      title: "Propose a night",
-      description:
-        "Draft a night for the venue's quiet slot plus two alternatives, every pick with its Qloo reason. Pass plan_id with change_request to refine an earlier plan in plain words. Nothing is published.",
-      inputSchema: z.object({
-        ...ownerArgs,
-        weekday: z.number().int().min(0).max(6).optional(),
-        start: hhmm.optional(),
-        duration_min: z.number().int().min(30).max(720).optional(),
-        max_people: z.number().int().min(1).max(5000).optional(),
-        avoid_formats: z.array(z.enum(FORMATS)).max(7).optional(),
-        prefer_formats: z.array(z.enum(FORMATS)).max(7).optional(),
-        no_live_music: z.boolean().optional(),
-        plan_id: z.string().regex(NIGHT_ID_RE).optional(),
-        change_request: z.string().min(1).max(500).optional(),
-      }),
-      outputSchema: loose({ plan: loose({ id: z.string() }), alternatives: z.array(loose({ id: z.string() })) }),
-      annotations: { readOnlyHint: false, openWorldHint: true },
-    },
+    TOOLS.propose_night,
     async (args) => {
       const venue = await ports.owner(args.venue_id, args.owner_token);
       if (!venue) return toolError(UNAUTHORIZED);
@@ -175,18 +134,7 @@ export function buildMcpServer(ports: McpPorts): McpServer {
 
   tool(
     "publish_night",
-    {
-      title: "Prepare a night for the owner's approval",
-      description:
-        "Publishes nothing. Checks the plan and returns the link to the approval screen, where the owner sees every action (event page, poster, calendar file, Google Calendar link, partner drafts, Eventbrite, owner email) and says yes.",
-      inputSchema: z.object({
-        ...ownerArgs,
-        plan_id: z.string().regex(NIGHT_ID_RE),
-        actions: z.array(z.enum(ACTIONS)).max(ACTIONS.length).optional().describe("The actions to suggest; the owner chooses on the screen"),
-      }),
-      outputSchema: z.object({ approveUrl: z.string(), plan: loose({ id: z.string() }), actions: z.array(loose({ kind: z.string(), does: z.string() })) }),
-      annotations: { readOnlyHint: true, openWorldHint: false },
-    },
+    TOOLS.publish_night,
     async (args) => {
       const venue = await ports.owner(args.venue_id, args.owner_token);
       if (!venue) return toolError(UNAUTHORIZED);
@@ -208,18 +156,7 @@ export function buildMcpServer(ports: McpPorts): McpServer {
 
   tool(
     "log_turnout",
-    {
-      title: "Log turnout",
-      description: "Record how many people came to an approved night, with an optional note. The number stays with the venue and is never sent to Qloo.",
-      inputSchema: z.object({
-        ...ownerArgs,
-        night_id: z.string().regex(NIGHT_ID_RE),
-        headcount: z.number().int().min(0).max(100000),
-        note: z.string().max(500).optional(),
-      }),
-      outputSchema: z.object({ night: loose({ id: z.string(), headcount: z.number() }) }),
-      annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
-    },
+    TOOLS.log_turnout,
     async (args) => {
       const venue = await ports.owner(args.venue_id, args.owner_token);
       if (!venue) return toolError(UNAUTHORIZED);

@@ -1,7 +1,8 @@
 import type { Hono } from "hono";
 import { BurstLimiter } from "../burst.ts";
 import { VENUE_ID_RE } from "../ids.ts";
-import { handleMcp } from "../mcp.ts";
+import { handleMcp, MCP_VERSION } from "../mcp.ts";
+import { toolRows } from "../mcp_defs.ts";
 import type { LimitKind } from "../meter_core.ts";
 import { recordEvent } from "../stats/events.ts";
 import type { Out } from "../venue/api.ts";
@@ -48,6 +49,8 @@ export function mcpRoutes(app: Hono<AppEnv>, deps: AppDeps): void {
       },
     });
   });
+
+  app.get("/api/mcp/tools", (c) => json({ endpoint: `${new URL(c.req.url).origin}/mcp`, name: "fullhouse", version: MCP_VERSION, tools: toolRows() }));
 
   app.on(["GET", "DELETE"], "/mcp", () =>
     json({ jsonrpc: "2.0", error: { code: -32000, message: "Method not allowed. This MCP server is stateless; send POST." }, id: null }, 405, { allow: "POST, OPTIONS" }),

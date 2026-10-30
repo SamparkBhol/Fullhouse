@@ -20,3 +20,14 @@
   .calls li::before { grid-row: span 3; }
   .calls .endpoint, .calls .call-sent { grid-column: 2; grid-row: auto; }
 }
+
+.mcp-body { margin-top: 12px; display: grid; gap: 12px; }
+.mcp-endpoint { font-size: 1.0625rem; overflow-wrap: anywhere; }
+.mcp-endpoint code { font-weight: 700; }
+.mcp-tools { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 48px; }
+.mcp-tools li { padding: 18px 0; border-top: 1px solid var(--rule); }
+.mcp-tools h3 { font-size: 1.0625rem; font-weight: 750; }
+.mcp-tools p { margin-top: 6px; color: var(--ink-2); font-size: 0.9375rem; }
+.mcp-tools code, .mcp-endpoint code { font-family: inherit; font-weight: 700; color: var(--ink); }
+.mcp-args { color: var(--ink-3); }
+@media (max-width: 800px) { .mcp-tools { grid-template-columns: minmax(0, 1fr); } }
