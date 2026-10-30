@@ -6,6 +6,8 @@ Full House finds the place down the street your crowd already loves, checks that
 
 Live site: https://fullhouse.sampark-bhol.workers.dev
 
+Demo video, under three minutes and filmed on the live site: https://youtu.be/W3bhAgIGaXQ
+
 ## Why this exists
 
 Every small venue has a dead night. The bookshop is packed on Saturday and empty on Tuesday. The jazz club fills for the late set and nobody comes to the early one. Owners fix this with a neighbour, a reading and then the film down the road, drinks and then the set. Bookshops even run crawls with passport stamps. People already do this by hand.
