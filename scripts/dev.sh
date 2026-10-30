@@ -6,6 +6,8 @@
 # binding does not start, the Worker runs without the binding and plans use template copy.
 # The secrets go into a .dev.vars only this user can read, and it is deleted when the script stops.
 # A live run also deletes its local Worker state on exit, because that state caches Qloo answers.
+# KEEP_STATE=1 leaves that state in .tmp/dev for a second run; whoever sets it deletes .tmp/dev/state-* afterwards.
+# EXAMPLE_VENUE=<venue id> makes a venue set up locally the landing's example.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -22,7 +24,7 @@ mkdir -p "$RUN_DIR"
 cleanup() {
   stop_all
   rm -f "$DEV_VARS"
-  if [ "${LIVE:-0}" = "1" ]; then rm -rf "$RUN_DIR"/state-*; fi
+  if [ "${LIVE:-0}" = "1" ] && [ "${KEEP_STATE:-0}" != "1" ]; then rm -rf "$RUN_DIR"/state-*; fi
 }
 trap cleanup EXIT
 trap 'exit 130' INT TERM HUP
@@ -47,7 +49,8 @@ else
   images="$FAKE_URL"
   qloo_line="fake server at $base, log at $base/__fake/log"
 fi
-write_env "$DEV_VARS" "QLOO_API_KEY=$key" "TOKEN_SECRET=$(random_secret)" ${base:+"QLOO_BASE_URL=$base"} ${images:+"QLOO_IMAGE_BASE=$images"}
+example="${EXAMPLE_VENUE:-}"
+write_env "$DEV_VARS" "QLOO_API_KEY=$key" "TOKEN_SECRET=$(random_secret)" ${base:+"QLOO_BASE_URL=$base"} ${images:+"QLOO_IMAGE_BASE=$images"} ${example:+"EXAMPLE_VENUE=$example"}
 unset key QLOO_API_KEY QLOO_BASE_URL
 
 if [ -n "${CLOUDFLARE_API_TOKEN:-}" ] && start_worker app "$DEV_VARS" "$RUN_DIR/wrangler-remote-ai.log"; then
