@@ -1,6 +1,6 @@
 import type { StreetRead } from "../../../src/shared/contract.ts";
-import { BACK_CHECKS } from "../../../src/shared/engine.ts";
-import { plainName, possessive, shortName } from "../../../src/shared/words.ts";
+import { BACK_CHECKS, FIT_CHECKS } from "../../../src/shared/engine.ts";
+import { numberWord, plainName, possessive, shortName } from "../../../src/shared/words.ts";
 import { api } from "../api.ts";
 import { h, replace } from "../dom.ts";
 import { readDate } from "../format.ts";
@@ -11,6 +11,7 @@ import { serverProgress, type ServerStep } from "../ui/progress.ts";
 import { credit, title } from "../ui/shell.ts";
 import { decisionPanel } from "../ui/decision.ts";
 import { evidenceRow } from "../ui/evidence.ts";
+import { callsLine } from "../ui/calls-line.ts";
 import { failure } from "../ui/states.ts";
 import { limitsLine, screenHead } from "./crowd-screen.ts";
 import { matchLead, matchPair, runnerRow, verdictSub } from "./match-view.ts";
@@ -20,7 +21,7 @@ const FINDING: ServerStep[] = [
   { label: "Places within a short walk that people who like you also love", call: /^loved_places$/ },
   { label: `Asking the ${BACK_CHECKS} that score best whether their crowd loves you back`, call: /^loves_back$/ },
   { label: "Comparing the best of them with you", call: /^compare$/ },
-  { label: "Scoring each one on six checks" },
+  { label: `Scoring each one on ${numberWord(FIT_CHECKS)} checks` },
 ];
 
 function frame(main: HTMLElement, ...children: (HTMLElement | null)[]): void {
@@ -85,7 +86,7 @@ function drawMatch(run: Run, main: HTMLElement, m: Match, name: string, read: St
       "div",
       { class: "screen-grid partner-grid" },
       h("div", { class: "stack" }, pair, evidence, actions, scored, board ? status : runnersPanel(m, swap, status)),
-      h("div", { class: "stack" }, board),
+      h("div", { class: "stack" }, board, callsLine(read, venue.tz)),
     ),
     limitsLine(name),
   );
@@ -97,7 +98,7 @@ export async function matchScreen(run: Run, main: HTMLElement): Promise<void> {
   const name = plainName(run.ctx.state.venue.entity.name);
   title(`Your partner, ${name}`);
   const steps = serverProgress(`Finding the place ${possessive(name)} crowd also loves`, FINDING, () => api.progress(run.ctx.id, run.ctx.token));
-  frame(main, screenHead("Your partner", `Full House scores the places your crowd loves on six checks and picks the one that fits best.`), h("section", { class: "panel screen-one" }, steps.el));
+  frame(main, screenHead("Your partner", `Full House scores the places your crowd loves on ${numberWord(FIT_CHECKS)} checks and picks the one that fits best.`), h("section", { class: "panel screen-one" }, steps.el));
   const at = ticket();
   try {
     const m = await matchOf(run);

@@ -9,12 +9,12 @@ import { dayFit, type DayFit } from "../night/schedule.ts";
 import { article, complement, groupOf, kindOf, pluralWord } from "./groups.ts";
 import { SHOWN_TAGS, type TasteTag } from "./taste.ts";
 
-export { FIT_LABELS, FIT_MAX } from "../../shared/engine.ts";
+export { EVENINGS, FIT_LABELS, FIT_MAX } from "../../shared/engine.ts";
+import { EVENINGS } from "../../shared/engine.ts";
 
 const WALK_FULL_M = 300;
 const WALK_NONE_M = 1500;
 const BOTH_WAYS_TOP = 10;
-export const EVENINGS = 7;
 
 export interface FitInput {
   venue: Pick<Venue, "entity" | "quietSlot">;

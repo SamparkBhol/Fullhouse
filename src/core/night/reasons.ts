@@ -1,9 +1,11 @@
 import type { Because, EntityRef, Match, PairNight, Rising, SharedPicks, Venue } from "../../shared/contract.ts";
-import { TYPE_PLURAL, capFirst, listWords, ordinal, possessive, shortName } from "../../shared/words.ts";
+import { TYPE_PLURAL, capFirst, listWords, ordinal, possessive, sharedPicksLine, shortName } from "../../shared/words.ts";
 import { shortTitle } from "../copy/text.ts";
 import type { QuizRound } from "./activity.ts";
 import type { Chosen } from "./picks.ts";
 import type { PairCtx } from "./build.ts";
+
+export { sharedPicksLine } from "../../shared/words.ts";
 
 function known(r: Pick<Rising, "popularity">): number | null {
   return r.popularity === undefined ? null : Math.min(99, Math.floor(r.popularity * 100));
@@ -53,10 +55,6 @@ function fitBecause(match: Match, fallback: number): Because[] {
     .map((c) => ({ kind: c.key === "partners" ? "tag" : "affinity", text: c.sentence.replace(/\.$/, ""), provenance: c.provenance ?? fallback }) as Because);
 }
 
-export function sharedPicksLine(p: SharedPicks | undefined): string | null {
-  if (!p || p.names.length < 2) return null;
-  return `Both crowds put ${listWords(p.names.map(shortTitle))} in their top ten ${p.type === "tv_show" ? "TV shows" : TYPE_PLURAL[p.type]}`;
-}
 
 export function nightReasons(pair: PairNight, pickReasons: Because[], playlist: EntityRef[], ctx: PairCtx, picks?: SharedPicks): Because[] {
   const { match } = ctx;

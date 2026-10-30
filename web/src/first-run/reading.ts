@@ -1,12 +1,14 @@
 import { BACK_CHECKS } from "../../../src/shared/engine.ts";
-import { plainName } from "../../../src/shared/words.ts";
+import type { Venue } from "../../../src/shared/contract.ts";
+import { listWords, numberWord, plainName, weekdayName } from "../../../src/shared/words.ts";
 import { api } from "../api.ts";
 import { h, replace } from "../dom.ts";
 import { isCurrent, navigate, ticket } from "../router.ts";
 import { warmImages } from "../ui/cover.ts";
 import { serverProgress, type ServerStep } from "../ui/progress.ts";
 import { readingMap } from "../ui/reading-map.ts";
-import { roomForm } from "../ui/room-form.ts";
+import { RULES, roomForm } from "../ui/room-form.ts";
+import { answersSoFar } from "../ui/calls-words.ts";
 import { credit, title } from "../ui/shell.ts";
 import { failure } from "../ui/states.ts";
 import { screenHead } from "./crowd-screen.ts";
@@ -22,10 +24,17 @@ export const READ_STEPS: ServerStep[] = [
 // The plum pin stays in view this long before the partner screen takes over, so the choice is seen on the map.
 const SEE_PARTNER_MS = 900;
 
+// What was set by default rather than by the owner, read from the venue as it was created.
+function assumedLine(v: Venue): string {
+  const parts = [v.assumed?.slot ? `a quiet ${weekdayName(v.quietSlot.weekday)} from ${v.quietSlot.start}` : null, v.assumed?.room && v.capacity ? `room for ${v.capacity}` : null].filter((x): x is string => Boolean(x));
+  if (!parts.length) return "Say what your room can and cannot do.";
+  return `Full House assumed ${listWords(parts)}. Set the real ${parts.length === 1 ? "one" : "ones"}, and say what your room can and cannot do.`;
+}
+
 function whileReading(run: Run): HTMLElement | null {
   const v = run.ctx.state.venue;
   if (!v.assumed?.slot && !v.assumed?.room && v.house) return null;
-  return roomForm(run.ctx, { heading: "While it reads, three things about your room", lead: "Full House assumed a quiet Tuesday from 19:00 and room for 40. Set the real ones, and say what your room can and cannot do." });
+  return roomForm(run.ctx, { heading: `While it reads, ${numberWord(RULES.length)} things about your room`, lead: assumedLine(v) });
 }
 
 const wait = (ms: number): Promise<void> => new Promise((r) => window.setTimeout(r, ms));
@@ -41,11 +50,19 @@ export async function readingScreen(run: Run, main: HTMLElement): Promise<void> 
   title(`Reading the crowd of ${name}`);
   credit("Taste data from Qloo. Map data from OpenStreetMap contributors. Choice by Full House.");
   const map = readingMap(venue);
+  const tally = h("p", { class: "state-tally", hidden: true });
+  const count = (calls: string[]): void => {
+    const line = answersSoFar(calls);
+    if (!line) return;
+    tally.textContent = line;
+    tally.hidden = false;
+  };
   const steps = serverProgress("Each line ticks when its step is done", READ_STEPS, () => api.progress(run.ctx.id, run.ctx.token), (p) => {
     if (p.places) map.places(p.places);
     if (p.partnerId) map.partner(p.partnerId);
+    count(p.done);
   });
-  const stepsPanel = h("section", { class: "panel" }, steps.el);
+  const stepsPanel = h("section", { class: "panel" }, steps.el, tally);
   const head = screenHead(`Reading the crowd of ${name}`, "Full House takes the places your crowd loves nearby, checks each one and chooses one partner.");
   replace(
     main,
@@ -57,6 +74,8 @@ export async function readingScreen(run: Run, main: HTMLElement): Promise<void> 
     const read = await readOf(run);
     steps.finish();
     if (!isCurrent(at)) return;
+    // A read answered from the cache can finish before the first check, so its own receipts give the final count.
+    count(read.provenance.map((p) => p.call));
     const m = read.match;
     warmImages([venue.entity, m?.partner, ...(m?.runnersUp ?? [])]);
     map.places(read.lovedPlaces);

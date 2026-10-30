@@ -1,5 +1,6 @@
 import type { Fit, Venue } from "../../../src/shared/contract.ts";
-import { capFirst, plainName, shortName } from "../../../src/shared/words.ts";
+import { FIT_CHECKS, PICKS_PER_TYPE } from "../../../src/shared/engine.ts";
+import { capFirst, numberWord, plainName, shortName } from "../../../src/shared/words.ts";
 import { h } from "../dom.ts";
 import { prettyTag, streetPart, walkMinutes } from "../format.ts";
 import type { Match, MatchPartner } from "../joint.ts";
@@ -48,7 +49,7 @@ export function matchPair(m: Match, venue: Venue): HTMLElement {
       "div",
       { class: "night-line" },
       h("b", null, "What both places share."),
-      !tags.length ? " Only what the whole street shares. The night screen says what both crowds put in their top ten instead." : " These set the two of you apart from the street around you.",
+      !tags.length ? ` Only what the whole street shares. The night screen says what both crowds put in their top ${numberWord(PICKS_PER_TYPE)} instead.` : " These set the two of you apart from the street around you.",
       tags.length ? tagList(tags.map((t) => ({ name: prettyTag(t.name), ...(t.carriers !== undefined ? { carriers: t.carriers } : {}), ...(t.pool !== undefined ? { pool: t.pool } : {}) }))) : null,
     ),
   );
@@ -58,7 +59,7 @@ export function verdictSub(m: Match): string {
   const n = m.runnersUp.length;
   if (!n) return "The only place nearby that could host with you.";
   const next = m.runnersUp[0];
-  return next?.fit ? `Ahead of ${shortName(next.name)} at ${next.fit.score}, on the same six checks.` : "Ahead of the places below, on the same six checks.";
+  return next?.fit ? `Ahead of ${shortName(next.name)} at ${next.fit.score}, on the same ${numberWord(FIT_CHECKS)} checks.` : `Ahead of the places below, on the same ${numberWord(FIT_CHECKS)} checks.`;
 }
 
 export function runnerRow(p: MatchPartner, onSwap: (button: HTMLButtonElement) => void): HTMLElement {

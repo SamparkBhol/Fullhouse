@@ -18,6 +18,7 @@
 
 .map-key { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 12px; font-size: 0.875rem; color: var(--ink-2); }
 .map-key li { display: inline-flex; align-items: center; gap: 8px; }
+.map-key li[hidden] { display: none; }
 .key { display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: var(--ink); flex: none; }
 .key-you { background: var(--you); }
 .key-them { background: var(--them); }

@@ -1,5 +1,6 @@
 import type { Provenance } from "../../shared/contract.ts";
-import { CACHE_TTL_SEC, cacheEntry, isCacheEntry, type QlooCache } from "./cache.ts";
+import { CACHE_TTL_SEC } from "../../shared/engine.ts";
+import { cacheEntry, isCacheEntry, type QlooCache } from "./cache.ts";
 import { QlooError, classify, errorMessage } from "./errors.ts";
 import { checkParams } from "./guards.ts";
 import { QLOO_BASE_URL, buildUrl, provenanceParams, type Params } from "./request.ts";

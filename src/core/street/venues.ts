@@ -12,7 +12,8 @@ import { namedLike, rankResults } from "./search_rank.ts";
 export const MAX_CANDIDATES = 8;
 // Enough answers to rank by name and distance before the list is cut to eight.
 const GEO_TAKE = 20;
-export const NEAR_MILES = 1;
+export { NEAR_MILES } from "../../shared/engine.ts";
+import { NEAR_MILES } from "../../shared/engine.ts";
 
 export interface FindOptions {
   // The owner's position for this one search. It goes to Qloo as the search point and is never stored.

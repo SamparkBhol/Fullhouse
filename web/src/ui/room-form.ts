@@ -9,7 +9,7 @@ import { refreshState } from "../venue-context.ts";
 
 const STARTS = ["17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00"];
 
-const RULES: Array<{ key: keyof HouseRules; ask: string }> = [
+export const RULES: Array<{ key: keyof HouseRules; ask: string }> = [
   { key: "music", ask: "Recorded music plays in your room" },
   { key: "stage", ask: "You have a stage with its own programme" },
   { key: "spoken", ask: "There is room for a spoken event, such as a quiz or a book club" },

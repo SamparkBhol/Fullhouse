@@ -1,4 +1,6 @@
 import type { Because, NightPlan, Provenance } from "../../../src/shared/contract.ts";
+import { FIT_CHECKS } from "../../../src/shared/engine.ts";
+import { numberWord } from "../../../src/shared/words.ts";
 import { h } from "../dom.ts";
 import { prettyTag } from "../format.ts";
 import { pickLine } from "./lines.ts";
@@ -46,7 +48,7 @@ export function nightSources(plan: NightPlan, venueName: string, calls: Provenan
       plan.partners.length
         ? sourcePart({
             heading: plan.pair ? "Your partner" : "Places nearby",
-            plain: [plan.pair ? "Your partner comes from the places nearby your crowd loves, scored on six checks." : "Places nearby your crowd loves, preferring ones tagged with the night's theme and leaving out places that do what you do."],
+            plain: [plan.pair ? `Your partner comes from the places nearby your crowd loves, scored on ${numberWord(FIT_CHECKS)} checks.` : "Places nearby your crowd loves, preferring ones tagged with the night's theme and leaving out places that do what you do."],
             parts: [{ because: shared ? [shared] : [] }, ...plan.partners.map((p) => ({ heading: p.name, because: ownReasons(p, shared) }))],
             calls,
             tz,

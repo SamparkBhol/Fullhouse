@@ -45,7 +45,7 @@ describe("Eventbrite", () => {
       venue_id: "V9",
       capacity: 40,
     });
-    expect(f.calls[2]!.body).toEqual({ ticket_class: { name: "Free entry", free: true, quantity_total: 40 } });
+    expect(f.calls[2]!.body).toEqual({ ticket_class: { name: "RSVP", free: true, quantity_total: 40 } });
     const venue = (f.calls[0]!.body as { venue: { name: string; address: Record<string, string> } }).venue;
     expect(venue.name).toBe("Blue Hour Records");
     expect(venue.address).toMatchObject({ address_1: "12 Canal Street", city: "Berlin", latitude: "52.52", longitude: "13.405" });

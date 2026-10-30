@@ -1,4 +1,5 @@
 import type { QuietSlot } from "../../shared/contract.ts";
+import { MONDAY_HOUR } from "../../shared/engine.ts";
 import { MONTH_NAMES, WEEKDAY_NAMES } from "../../shared/words.ts";
 
 export interface LocalParts {
@@ -119,7 +120,7 @@ export function nextMondayNine(tz: string, now: Date): Date {
   let add = (1 - local.weekday + 7) % 7;
   for (let tries = 0; tries < 3; tries++) {
     const d = new Date(Date.UTC(local.year, local.month - 1, local.day + add));
-    const at = zonedToUtc(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate(), 9, 0, tz);
+    const at = zonedToUtc(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate(), MONDAY_HOUR, 0, tz);
     if (at.getTime() > now.getTime()) return at;
     add += 7;
   }

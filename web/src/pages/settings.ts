@@ -1,4 +1,6 @@
 import type { Venue } from "../../../src/shared/contract.ts";
+import { DELETE_AFTER_DAYS, PAUSE_AFTER_DAYS } from "../../../src/shared/engine.ts";
+import { spanWords } from "../../../src/shared/words.ts";
 import { api } from "../api.ts";
 import { h, replace, uid } from "../dom.ts";
 import { zoneTime } from "../charts/time.ts";
@@ -93,7 +95,7 @@ function deleteSection(ctx: VenueCtx): HTMLElement {
   });
   return note(
     "What is kept, and deleting it",
-    "Your venue's public listing, the street reads, your plans and nights, RSVP counts and the turnout you log. Your email and turnout stay with your venue and are never sent for taste data. A venue nobody opens for 8 weeks stops its Monday runs, and after 6 months it is deleted with everything in it.",
+    `Your venue's public listing, the street reads, your plans and nights, RSVP counts and the turnout you log. Your email and turnout stay with your venue and are never sent for taste data. A venue nobody opens for ${spanWords(PAUSE_AFTER_DAYS)} stops its Monday runs, and after ${spanWords(DELETE_AFTER_DAYS)} it is deleted with everything in it.`,
     form,
   );
 }

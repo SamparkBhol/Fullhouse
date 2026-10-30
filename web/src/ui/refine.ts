@@ -1,17 +1,30 @@
 import type { NightPlan } from "../../../src/shared/contract.ts";
+import { weekdayName } from "../../../src/shared/words.ts";
+import { weekdayOf } from "./week.ts";
 import { api } from "../api.ts";
 import { h, replace, uid } from "../dom.ts";
 import { navigate } from "../router.ts";
 import { failure, loading } from "./states.ts";
 import { refreshState, rememberPlanResponse, type VenueCtx } from "../venue-context.ts";
 
-const EXAMPLES = ["Make it Friday", "No live music", "Under 40 people", "Start at 20:00", "Something with films instead"];
+// Requests the owner could make of this plan: the next evening, no live music, an hour later, another kind of night.
+function examples(plan: NightPlan): string[] {
+  const day = weekdayName((weekdayOf(plan.date) + 1) % 7);
+  const at = /^(\d{2}):(\d{2})$/.exec(plan.start);
+  const later = at ? { h: Number(at[1]), m: at[2] } : null;
+  return [
+    `Make it ${day}`,
+    "No live music",
+    later && later.h < 22 ? `Start at ${String(later.h + 1).padStart(2, "0")}:${later.m}` : null,
+    plan.format === "film" ? "Something with books instead" : "Something with films instead",
+  ].filter((x): x is string => Boolean(x));
+}
 
-function exampleChips(area: HTMLTextAreaElement): HTMLElement {
+function exampleChips(area: HTMLTextAreaElement, list: string[]): HTMLElement {
   return h(
     "div",
     { class: "examples" },
-    EXAMPLES.map((ex) =>
+    list.map((ex) =>
       h(
         "button",
         {
@@ -29,12 +42,13 @@ function exampleChips(area: HTMLTextAreaElement): HTMLElement {
 }
 
 export function refineBox(ctx: VenueCtx, plan: NightPlan): HTMLElement {
-  const area = h("textarea", { id: uid("refine"), rows: "3", maxlength: "300", placeholder: "Make it Friday, no live music, under 40 people" });
+  const list = examples(plan);
+  const area = h("textarea", { id: uid("refine"), rows: "3", maxlength: "300", placeholder: list.slice(0, 3).join(", ").replace(/, (\w)/g, (_, c: string) => `, ${c.toLowerCase()}`) });
   const slot = h("div", { "aria-live": "polite" });
   const form = h(
     "form",
     { class: "form refine" },
-    h("div", { class: "field-row" }, h("label", { for: area.id }, "What should change?"), h("p", { class: "hint" }, "Say it in your own words, or tap an example."), exampleChips(area), area),
+    h("div", { class: "field-row" }, h("label", { for: area.id }, "What should change?"), h("p", { class: "hint" }, "Say it in your own words, or tap an example."), exampleChips(area, list), area),
     h("p", { class: "actions actions-tight" }, h("button", { class: "btn", type: "submit" }, "Change the plan")),
     slot,
   );

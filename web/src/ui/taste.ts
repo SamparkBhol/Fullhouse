@@ -1,4 +1,6 @@
 import type { StreetRead, StreetTag } from "../../../src/shared/contract.ts";
+import { MIN_CARRIERS } from "../../../src/shared/engine.ts";
+import { numberWord } from "../../../src/shared/words.ts";
 import { h, uid } from "../dom.ts";
 import { prettyTag } from "../format.ts";
 import { gapLines } from "./lines.ts";
@@ -73,9 +75,9 @@ export function gapPanel(read: StreetRead): HTMLElement {
     "section",
     { class: "panel", "aria-labelledby": "gaps-title" },
     h("h2", { id: "gaps-title" }, "What the places your crowd loves have that you do not"),
-    h("p", null, intro ?? "Tags two or more of the places your crowd loves carry, and your venue does not."),
+    h("p", null, intro ?? `Tags ${numberWord(MIN_CARRIERS)} or more of the places your crowd loves carry, and your venue does not.`),
     lines.length
       ? h("ul", { class: "items" }, lines.map((l) => h("li", { class: "item item-text" }, h("div", null, h("span", { class: "item-name" }, l.text), l.note ? h("span", { class: "item-sub" }, l.note) : null), l.count ? h("span", { class: "item-end num" }, l.count) : h("span"))))
-      : h("p", { class: "empty" }, "No tag is on two or more of the places your crowd loves most and missing from yours."),
+      : h("p", { class: "empty" }, `No tag is on ${numberWord(MIN_CARRIERS)} or more of the places your crowd loves most and missing from yours.`),
   );
 }

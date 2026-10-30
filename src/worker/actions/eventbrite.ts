@@ -91,7 +91,7 @@ export function eventBody(d: EventbriteDraft, venueId: string | null): Record<st
 }
 
 export function ticketBody(d: EventbriteDraft): Record<string, unknown> {
-  return { ticket_class: { name: "Free entry", free: true, quantity_total: d.capacity } };
+  return { ticket_class: { name: "RSVP", free: true, quantity_total: d.capacity } };
 }
 
 export async function createEventbriteEvent(token: string, d: EventbriteDraft, fetcher: Fetcher): Promise<EventbriteOutcome> {
@@ -121,7 +121,7 @@ export async function createEventbriteEvent(token: string, d: EventbriteDraft, f
 
   const t = await post(`/events/${encodeURIComponent(eventId)}/ticket_classes/`, ticketBody(d));
   if (!t) return { ok: false, reason: `The event exists as a draft but Eventbrite could not be reached to add tickets. Draft: ${url}` };
-  if (!t.res.ok) return { ok: false, reason: `${reasonOf(t.res.status, t.json, "add free tickets")} The draft is at ${url}` };
+  if (!t.res.ok) return { ok: false, reason: `${reasonOf(t.res.status, t.json, "add the RSVP tickets")} The draft is at ${url}` };
 
   const p = await post(`/events/${encodeURIComponent(eventId)}/publish/`, {});
   if (!p) return { ok: false, reason: `The event exists as a draft but Eventbrite could not be reached to publish it. Draft: ${url}` };
@@ -152,7 +152,7 @@ const CURRENCY_BY_ZONE: Array<[RegExp, string]> = [
   [/^Asia\/Hong_Kong$/, "HKD"],
 ];
 
-// Tickets are free; Eventbrite still requires a currency on every event.
+// Eventbrite still requires a currency on every event.
 export function currencyForZone(tz: string): string {
   for (const [re, cur] of CURRENCY_BY_ZONE) if (re.test(tz)) return cur;
   return "USD";

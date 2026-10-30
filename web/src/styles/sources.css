@@ -37,3 +37,7 @@
 .call-params dd { overflow-wrap: anywhere; }
 .call-facts { margin-top: 6px; font-size: 0.8125rem; color: var(--ink-3); }
 .call-focus { margin: 0 -12px; padding: 16px 12px; border-radius: 10px; background: var(--you-tint); border-top-color: transparent; }
+
+.calls-line { display: grid; gap: 14px; justify-items: start; }
+.calls-sentence { font-size: 0.9375rem; color: var(--ink-2); line-height: 1.5; }
+.state-tally { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--rule); font-size: 0.9375rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }

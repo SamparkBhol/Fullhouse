@@ -1,4 +1,4 @@
-export const CACHE_TTL_SEC = 86400;
+export { CACHE_TTL_SEC } from "../../shared/engine.ts";
 
 export interface QlooCache {
   get(key: string): Promise<unknown | undefined>;

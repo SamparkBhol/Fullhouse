@@ -1,4 +1,5 @@
 import type { DashboardMonday, DashboardNight, VenueDashboard } from "../../../src/shared/stats.ts";
+import { mondayAt } from "../../../src/shared/words.ts";
 import { saying } from "../charts/counter.ts";
 import { fitChart } from "../charts/fit.ts";
 import { legend } from "../charts/panel.ts";
@@ -117,7 +118,7 @@ function mondaysPanel(d: VenueDashboard): HTMLElement {
   return panel(
     "mondays",
     "Monday runs",
-    "Every Monday at 09:00 your agent reads the street again and drafts a night. It never publishes one on its own.",
+    `Every Monday at ${mondayAt()} your agent reads the street again and drafts a night. It never publishes one on its own.`,
     h("p", { class: "pane-note runs-next" }, next),
     runs.length ? runList(runs.slice(0, LISTED), d.tz) : empty("No Monday runs yet. The first one shows here with the night it drafted."),
   );

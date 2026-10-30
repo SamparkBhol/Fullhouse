@@ -20,7 +20,7 @@ async function cacheRequest(key: string): Promise<Request> {
   return new Request(`https://qloo-cache.fullhouse.internal/v1/${await sha256hex(key)}`);
 }
 
-// Cache API calls share the 50 subrequest quota of a free plan invocation with fetch, so each
+// Cache API calls share one invocation's subrequest quota of 50 with fetch, so each
 // instance stops touching the cache after `cap` operations and lets the call go to Qloo instead.
 export function cacheApiCache(cap: number, open: (name: string) => Promise<CacheLike | null> = openCache): QlooCache {
   let ops = 0;

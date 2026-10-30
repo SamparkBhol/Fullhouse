@@ -1,5 +1,6 @@
 import type { FitKey } from "../../../src/shared/contract.ts";
-import { BACK_CHECKS, BOARD_TOP, FIT_LABELS, FIT_MAX, LOVED_RADIUS_M, LOVED_TAKE, NEAR_TIE, PAIR_CANDIDATES, READ_CAP } from "../../../src/shared/engine.ts";
+import { BACK_CHECKS, BOARD_TOP, CACHE_TTL_SEC, COUNT_SHOWN_FROM, DELETE_AFTER_DAYS, FIT_CHECKS, FIT_LABELS, FIT_MAX, LOVED_RADIUS_M, LOVED_TAKE, NEAR_MILES, NEAR_TIE, PAIR_CANDIDATES, PAUSE_AFTER_DAYS, READ_CAP } from "../../../src/shared/engine.ts";
+import { keptWords, milesWords, numberWord, spanWords } from "../../../src/shared/words.ts";
 import { h, replace } from "../dom.ts";
 import { credit, focusHeading, page, publicHeader, title } from "../ui/shell.ts";
 
@@ -7,7 +8,7 @@ const km = (m: number) => `${(m / 1000).toFixed(1)} km`;
 const fitParts = (Object.keys(FIT_MAX) as FitKey[]).map((k) => `${FIT_LABELS[k].toLowerCase()} ${FIT_MAX[k]}`).join(", ");
 
 const CALLS: [string, string, string][] = [
-  ["Find your venue", "GET /search", "Your venue's name, searched round the centre of the city you picked, or within a mile of you when you use your location. Your position is used for that one search and never kept. Closed places are dropped and places that cannot host go last."],
+  ["Find your venue", "GET /search", `Your venue's name, searched round the centre of the city you picked, or within ${milesWords(NEAR_MILES)} of you when you use your location. Your position is used for that one search and never kept. Closed places are dropped and places that cannot host go last.`],
   ["The street's taste", "GET /v2/insights, tag mode", "Your venue's map point. Qloo answers with the taste tags the area around it carries."],
   ["Your audience's taste", "GET /v2/insights, tag mode", "Your venue's Qloo id. Qloo answers with the tags that describe the people who like your venue."],
   ["Places your audience loves", "GET /v2/insights, places", `Your venue's Qloo id and a ${km(LOVED_RADIUS_M)} circle around it. Qloo answers with up to ${LOVED_TAKE} nearby places people who like your venue also love, with their opening hours.`],
@@ -21,11 +22,11 @@ const CALLS: [string, string, string][] = [
 
 const STEPS: [string, string[]][] = [
   ["Find your venue", ["Pick your city and type the name. You pick the right place from the list, with its address and neighbourhood."]],
-  ["Read the street", ["Full House makes the calls listed below. Each answer is kept for a day, and every screen can show the call each part came from."]],
+  ["Read the street", [`Full House makes the calls listed below. Each answer is kept for ${keptWords(CACHE_TTL_SEC)}, and every screen can show the call each part came from.`]],
   [
     "Score the neighbours",
     [
-      `Up to ${PAIR_CANDIDATES} places your crowd loves that can host a night and do not sell what you sell. Each gets a fit score out of 100 from six checks: ${fitParts}.`,
+      `Up to ${PAIR_CANDIDATES} places your crowd loves that can host a night and do not sell what you sell. Each gets a fit score out of 100 from ${numberWord(FIT_CHECKS)} checks: ${fitParts}.`,
       `A bookshop and a cinema send each other people; two cafes compete for them. The place with the highest score is your match, unless the next is within ${NEAR_TIE} points and a shorter walk. The next two are the runners up, and every point is shown with the sentence behind it.`,
       `The partner screen shows the list in its own order, the first ${BOARD_TOP} places and every place scored, with what Full House decided about each: chosen, runner up, scored lower and the check that cost it most, a rival after the same customers, not a room for a night, or no website and so no owner to ask.`,
     ],
@@ -49,12 +50,12 @@ const STEPS: [string, string[]][] = [
       "Your neighbour gets an invite page, sets its own part of the night in its own words and at its own time, and answers yes or no. The night goes up only after that yes, and the public page says the yes came through an invite link. One screen lists every action and the exact words before anything leaves, and you can take a page down or change the words at any time.",
     ],
   ],
-  ["Count the swap", ["Each place gets its own link to the event page. Every RSVP says whose link it came through, so you both see who sent whom."]],
+  ["Count the swap", [`Each place gets its own link to the event page. Every RSVP says whose link it came through. You see who sent whom, and your neighbour sees the count for its own link once it reaches ${COUNT_SHOWN_FROM}.`]],
   [
     "Every Monday",
     [
       "The agent reads the street again, leaves out what you already ran, drafts the next night, and waits for you.",
-      "A venue nobody opens for 8 weeks stops its Monday runs. After 6 months it is deleted with everything in it.",
+      `A venue nobody opens for ${spanWords(PAUSE_AFTER_DAYS)} stops its Monday runs. After ${spanWords(DELETE_AFTER_DAYS)} it is deleted with everything in it.`,
     ],
   ],
 ];
@@ -73,7 +74,7 @@ function callsSection(): HTMLElement {
     "section",
     { class: "section", "aria-labelledby": "calls-title" },
     h("div", { class: "section-head" }, h("h2", { id: "calls-title" }, "What Full House asks Qloo, in order"), h("p", { class: "meta" }, `A street read never makes more than ${READ_CAP} calls.`)),
-    h("p", { class: "meta how-note" }, "Weekly trend data for these picks held flat, so Full House shows no trend."),
+    h("p", { class: "meta how-note" }, "Full House asks for no trend data, so no pick is called rising. Each pick's place is compared with the last weekly read instead."),
     h(
       "ol",
       { class: "calls panel" },
@@ -120,7 +121,7 @@ export function howPage(): void {
           { class: "screen-head" },
           h("h1", null, "How Full House works"),
           h("p", null, "Full House finds the place down the street whose crowd already loves yours, plans one night that walks both crowds through both doors, and acts only after you and your neighbour say yes."),
-          h("p", null, "The taste data comes from Qloo, a service that knows which places, books, films, shows, artists and podcasts the same people love. Everything built on it is Full House's own: which neighbour fits, the six checks and their points, the format, the day, the two stops, the invite and the count of who sent whom."),
+          h("p", null, `The taste data comes from Qloo, a service that knows which places, books, films, shows, artists and podcasts the same people love. Everything built on it is Full House's own: which neighbour fits, the ${numberWord(FIT_CHECKS)} checks and their points, the format, the day, the two stops, the invite and the count of who sent whom.`),
           h("p", { class: "actions" }, h("a", { class: "btn", href: "/#find" }, "Find your neighbour")),
         ),
         stepsSection(),

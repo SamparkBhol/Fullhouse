@@ -206,7 +206,7 @@ export async function runActions(ctx: ActionContext): Promise<ActionRun> {
         const out = await createEventbriteEvent(ctx.eventbrite.token, draft, ctx.fetch);
         if (out.ok) {
           const notes = [
-            out.venueAttached ? "Published on your Eventbrite organization with free tickets." : "Published with free tickets. Eventbrite would not take the venue record, so the address is in the description.",
+            out.venueAttached ? "Published on your Eventbrite organization, with RSVP tickets for the room." : "Published with RSVP tickets for the room. Eventbrite would not take the venue record, so the address is in the description.",
             capacity ? "" : `No capacity was set, so it has ${DEFAULT_TICKETS} tickets. Change that on Eventbrite if needed.`,
           ].filter(Boolean);
           results.push({ kind, ok: true, url: out.url, label: "Eventbrite event", detail: notes.join(" ") });

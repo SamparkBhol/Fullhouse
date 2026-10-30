@@ -1,4 +1,5 @@
 import { ERROR_WORDS, RANGE_WORDS, type LoggedEvent, type StatEventKind, type StatsBody } from "../../../src/shared/stats.ts";
+import { mondayAt } from "../../../src/shared/words.ts";
 import { pane } from "../charts/panel.ts";
 import { dataTable } from "../charts/table.ts";
 import { count, longDay, stamp } from "../charts/time.ts";
@@ -90,8 +91,8 @@ function agentNotes(body: StatsBody, now: Date): HTMLElement[] {
   if (!t.mondayRuns) {
     notes.push(
       body.allTime.venues
-        ? `No Monday runs in ${RANGE_WORDS[body.range]}. The next ones are on ${nextMonday(now)} at 09:00 in each venue's own time zone.`
-        : "Monday runs start once a venue is set up, at 09:00 on Monday in the venue's own time zone.",
+        ? `No Monday runs in ${RANGE_WORDS[body.range]}. The next ones are on ${nextMonday(now)} at ${mondayAt()} in each venue's own time zone.`
+        : `Monday runs start once a venue is set up, at ${mondayAt()} on Monday in the venue's own time zone.`,
     );
   }
   notes.push(t.mcpCalls ? `Tools called: ${body.mcpTools.map((m) => `${m.tool} ${count(m.n)}`).join(", ")}.` : `No MCP calls yet. Point an MCP client at /mcp to call ${MCP_TOOLS}.`);

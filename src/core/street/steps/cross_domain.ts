@@ -1,4 +1,5 @@
 import type { EntityRef, LovedPlace, QlooType, Rising } from "../../../shared/contract.ts";
+import { PICKS_PER_TYPE } from "../../../shared/engine.ts";
 import { TYPE_PLURAL, TYPE_SINGULAR, capFirst, listWords, plainName, plural } from "../../../shared/words.ts";
 import { parseEntities, type QEntity } from "../../qloo/entities.ts";
 import { explainSummary, type ExplainRow } from "../../qloo/explain.ts";
@@ -15,7 +16,6 @@ import type { ReadContext } from "./resolve.ts";
 // Video games are left out: one title tops most venues, so they add little for a night.
 // bias.trends is never sent: books and video games refuse it with HTTP 400 and it changed nothing for the rest.
 export const CROSS_TYPES: QlooType[] = ["artist", "book", "movie", "tv_show", "podcast"];
-const PICKS_PER_TYPE = 10;
 export interface CrossInput {
   exclude: EntityRef[];
   // Places read beside the venue as signals. The street read sends none, so its picks are the venue's own;

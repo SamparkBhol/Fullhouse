@@ -70,13 +70,7 @@ export function hasDash(text: string): boolean {
   return /[\u2013\u2014\u2015]|\s-{1,2}\s/.test(text);
 }
 
-// "Walden: Or, Life in the Woods" reads as "Walden" on a title line; a name with no subtitle stays whole.
-// "Dune: Part Two" keeps its part, because "Dune" would name another film.
-export function shortTitle(name: string): string {
-  const [cut = name, rest = ""] = name.split(/: | \(| \[/);
-  if (/^(part|chapter|vol(ume)?|episode|book)\b|^\d/i.test(rest.trim())) return name;
-  return cut.trim().length >= 2 ? cut.trim() : name;
-}
+export { shortTitle } from "../../shared/words.ts";
 
 export function fit(options: string[], max: number): string {
   for (const o of options) if (o.length <= max) return o;

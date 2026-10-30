@@ -12,7 +12,8 @@ import type { NightRecord, VenueRecords } from "./records.ts";
 import { shortSlugFor } from "../slug.ts";
 import { EMPTY_LEDGER, newViaCodes, shareLinks } from "./ledger.ts";
 
-export const REPORTS_TO_HIDE = 3;
+export { REPORTS_TO_HIDE } from "../../shared/engine.ts";
+import { REPORTS_TO_HIDE } from "../../shared/engine.ts";
 const HIDDEN: Published = { page: false, poster: false, ics: false };
 
 // Approving twice returns the night already published instead of running its actions again.

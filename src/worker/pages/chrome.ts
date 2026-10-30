@@ -1,3 +1,5 @@
+import { REPORTS_TO_HIDE } from "../../shared/engine.ts";
+import { numberWord } from "../../shared/words.ts";
 import { esc } from "./html.ts";
 import { PAGE_CSS } from "./style.ts";
 
@@ -59,6 +61,6 @@ export function renderMissing(): string {
 export function renderReported(hidden: boolean): string {
   const text = hidden
     ? "Enough people reported this page that it is offline until the person who set it up puts it back."
-    : "The owner sees the number of reports on their night page. A page reported by three different people goes offline.";
+    : `The owner sees the number of reports on their night page. A page reported by ${numberWord(REPORTS_TO_HIDE)} different people goes offline.`;
   return plainPage("Report received", "Thanks for telling us.", "Thanks, the report is in", text);
 }

@@ -1,5 +1,5 @@
 import type { NightPlan, NightStop, Venue } from "../../../src/shared/contract.ts";
-import { TYPE_PLURAL, listWords, plainName, possessive, shortName } from "../../../src/shared/words.ts";
+import { TYPE_PLURAL, listWords, plainName, possessive, sharedPicksLine, shortName } from "../../../src/shared/words.ts";
 import { h } from "../dom.ts";
 import { byLine, planMatch } from "../joint.ts";
 import { displayTitle, nightKind } from "../format.ts";
@@ -64,8 +64,15 @@ export function evening(plan: NightPlan, venue: Venue, opts: { partnerProposed?:
 export function eveningNotes(plan: NightPlan, opts: { leadSaid?: string | null } = {}): HTMLElement | null {
   const link = plan.pair?.link?.trim() && !opts.leadSaid?.includes(plan.pair.link.trim()) ? plan.pair.link.trim() : null;
   const note = plan.day?.note?.trim() || null;
-  if (!link && !note) return null;
-  return h("div", null, link ? h("p", { class: "night-link" }, link) : null, note ? h("ul", { class: "night-notes" }, splitSentences(note).map((t) => h("li", null, t))) : null);
+  const picks = plan.match && !plan.match.shared.length ? sharedPicksLine(plan.match.sharedPicks) : null;
+  if (!link && !note && !picks) return null;
+  return h(
+    "div",
+    null,
+    link ? h("p", { class: "night-link" }, link) : null,
+    picks ? h("p", { class: "night-link" }, `${picks}.`) : null,
+    note ? h("ul", { class: "night-notes" }, splitSentences(note).map((t) => h("li", null, t))) : null,
+  );
 }
 
 function splitSentences(text: string): string[] {

@@ -1,4 +1,6 @@
 import type { Because, QlooType, Rising, StreetRead } from "../../../src/shared/contract.ts";
+import { MIN_CARRIERS } from "../../../src/shared/engine.ts";
+import { numberWord } from "../../../src/shared/words.ts";
 import { TREND_WORDS, distance, prettyTag } from "../format.ts";
 import { ownReasons, sharedLine } from "./lists.ts";
 import { sourcePart, type SourcePart } from "./sources.ts";
@@ -66,7 +68,7 @@ export function lovedPart(read: StreetRead, venueName: string, tz: string): HTML
 export function gapPart(read: StreetRead, tz: string): HTMLElement {
   return sourcePart({
     heading: "What the places your crowd loves have that you do not",
-    plain: ["Your venue's tags against the tags of the places your crowd loves most nearby. A gap is a tag two or more of them carry and you do not."],
+    plain: [`Your venue's tags against the tags of the places your crowd loves most nearby. A gap is a tag ${numberWord(MIN_CARRIERS)} or more of them carry and you do not.`],
     parts: read.gaps.map((g) => ({ heading: prettyTag(g.tag.name), because: g.because })),
     calls: read.provenance,
     callNames: ["compare"],

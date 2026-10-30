@@ -5,7 +5,8 @@ import { isNamespaceRoot, type QTag } from "../../qloo/tags.ts";
 import type { ReadContext } from "./resolve.ts";
 
 export const MAX_GAPS = 6;
-export const MIN_CARRIERS = 2;
+export { MIN_CARRIERS } from "../../../shared/engine.ts";
+import { MIN_CARRIERS } from "../../../shared/engine.ts";
 
 // Compare lists every catalogue tag of the nearby places, repair services and hotel amenities included.
 // Only these namespaces describe what a place is or offers for an evening, most useful first.

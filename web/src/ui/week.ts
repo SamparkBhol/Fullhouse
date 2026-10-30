@@ -19,12 +19,16 @@ interface DayRead {
   shut: boolean;
 }
 
+// "open" only where both places list hours; with the partner's missing it says only that you open.
 function readDay(d: number, venue: Hours, partner: Hours | null, quiet: number): DayRead {
-  const known = listedHours(venue) !== null || (partner !== null && listedHours(partner) !== null);
+  const yours = listedHours(venue) !== null;
+  const theirs = partner !== null && listedHours(partner) !== null;
   if (dayVerdict(venue, d) === "closed") return { word: "you are shut", under: "you shut", shut: true };
   if (partner && dayVerdict(partner, d) === "closed") return { word: "they are shut", under: "they shut", shut: true };
   if (d === quiet) return { word: "your quiet night", under: "quiet", shut: false };
-  return { word: known ? "open" : "", under: known ? "open" : "", shut: false };
+  if (yours && partner && !theirs) return { word: "you are open, their hours are not listed", under: "you open", shut: false };
+  if (!yours && theirs) return { word: "they are open, your hours are not listed", under: "they open", shut: false };
+  return { word: yours || theirs ? "open" : "", under: yours || theirs ? "open" : "", shut: false };
 }
 
 // The week as seven evenings, both places' open and shut days marked; the night's own day is the dark one.

@@ -14,8 +14,8 @@ import { planWithMatch } from "./joint.ts";
 import type { VenueRecords } from "./records.ts";
 
 const DAY_MS = 86_400_000;
-export const PAUSE_AFTER_DAYS = 56;
-export const DELETE_AFTER_DAYS = 180;
+export { DELETE_AFTER_DAYS, PAUSE_AFTER_DAYS } from "../../shared/engine.ts";
+import { DELETE_AFTER_DAYS, PAUSE_AFTER_DAYS } from "../../shared/engine.ts";
 
 // A night that drew under 40 percent of its room is not repeated the next week; one that filled 60 percent is kept in the mix.
 export function mondayInput(venue: Venue, nights: Night[]): PlanInput {
